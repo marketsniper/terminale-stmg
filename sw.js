@@ -1,4 +1,4 @@
-const CACHE = 'stmg-v1';
+const CACHE = 'stmg-v2';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -17,10 +17,13 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+  // l'app Maths (/maths/) a son propre service worker : ne pas intercepter
+  if (url.pathname.includes('/maths/')) return;
+  const key = e.request.mode === 'navigate' ? './index.html' : e.request;
   e.respondWith(
-    caches.match(e.request.mode === 'navigate' ? './index.html' : e.request).then(hit => {
+    caches.match(key).then(hit => {
       const fetched = fetch(e.request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(e.request.mode === 'navigate' ? './index.html' : e.request, res.clone()));
+        if (res.ok) caches.open(CACHE).then(c => c.put(key, res.clone()));
         return res;
       }).catch(() => hit);
       return hit || fetched;
