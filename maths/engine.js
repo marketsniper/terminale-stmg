@@ -190,12 +190,14 @@ function askQuestion(box, opts, cb){
   snd.deal();
   const zone = box.querySelector('[data-zone]'), fb = box.querySelector('[data-fb]');
   const t0 = performance.now();
+  window.ASSIST_CTX = {ex, skillId: opts.skillId || null, famId: opts.famId || null, repondu: false, juste: false, donnee: ''};
   let chInt = null;
   if (opts.chrono){ const chEl = box.querySelector('[data-ch]');
     chInt = setInterval(() => { const s = Math.floor((performance.now() - t0) / 1000); chEl.textContent = s + ' s'; if (s >= 8) chEl.classList.add('warn'); }, 500); }
   function finish(ok, given){
     if (chInt) clearInterval(chInt);
     const dt = performance.now() - t0;
+    if (window.ASSIST_CTX && window.ASSIST_CTX.ex === ex) Object.assign(window.ASSIST_CTX, {repondu: true, juste: ok, donnee: given});
     if (ok) snd.good(); else { snd.bad(); box.querySelector('.exo-card').classList.add('shake'); }
     fb.innerHTML = `<p class="verdict ${ok ? 'ok' : 'ko'}">${ok ? R.pick(['✔ Exact !','✔ Parfait.','✔ Oui !','✔ Très bien.']) : '✘ Pas ça. Réponse : ' + esc(ex.a)}</p>` +
       (ex.expl ? `<div class="explain">${esc(ex.expl)}</div>` : '') +
@@ -245,7 +247,7 @@ function runSerie(box, skill, n, opts, done){
     const wrap = document.createElement('div');
     box.innerHTML = ''; box.appendChild(wrap);
     askQuestion(wrap, {ex, tag: skill.titre, lvl: level, chrono: opts.chrono !== false,
-      count: (res.length + 1) + ' / ' + n}, r => {
+      skillId: skill.id, count: (res.length + 1) + ' / ' + n}, r => {
       res.push(r.ok ? 1 : 0);
       logAnswer(r.ok);
       if (opts.recordSkill !== false){
@@ -460,7 +462,7 @@ function vSeance(){
         return; }
       const fam = cmPick(), ex = fam.gen(R);
       const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
-      askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, chrono: true, count: (i + 1) + ' / ' + N}, r => {
+      askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, famId: fam.id, chrono: true, count: (i + 1) + ' / ' + N}, r => {
         cmRecord(fam.id, r.ok); logAnswer(r.ok); if (r.ok) ok++;
         i++; ask();
       });
@@ -561,7 +563,7 @@ function vCalculMental(only){
     }
     const fam = only ? fams[0] : cmPick(), ex = fam.gen(R);
     const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
-    askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, chrono: true, count: (i + 1) + ' / ' + N}, r => {
+    askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, famId: fam.id, chrono: true, count: (i + 1) + ' / ' + N}, r => {
       cmRecord(fam.id, r.ok); logAnswer(r.ok); if (r.ok) ok++; i++; ask();
     });
   })();
@@ -741,6 +743,18 @@ function vRegles(){
     </div>
   </section>`;
 }
+
+/* ---------- passerelle pour l'assistant ---------- */
+window.ASSIST_GO = function(quoi, id){
+  snd.click();
+  if (quoi === 'skill'){ currentView = 'programme';
+    document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.v === 'programme'));
+    vSkill(id); }
+  else { currentView = 'techniques';
+    document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.v === 'techniques'));
+    vTechniques(id); }
+  scrollTo({top: 0});
+};
 
 /* ---------- init ---------- */
 function initSnd(){
