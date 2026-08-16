@@ -405,10 +405,14 @@ window.CM_FAMS = [
 <div class="box retenir"><p class="box-t">À retenir</p><p>Devant un pourcentage pénible, retourne-le. Cherche toujours le sens où tu tombes sur 50 %, 25 % ou 10 %.</p></div>
 <div class="box astuce"><p class="box-t">Astuce</p><p>Aux concours SESAME et ACCÈS, ce réflexe transforme des questions « longues » en calculs de deux secondes.</p></div>`,
   gen(R){
-    const petits = [4, 5, 8, 12, 16, 20, 24], bases = [25, 50, 75, 200, 400];
+    // on ne tire que des cas où le retournement rend le calcul VRAIMENT facile :
+    // la base devient 50 % (moitié), 25 % (quart) ou 75 % (trois quarts) du petit nombre.
+    const petits = [4, 8, 12, 16, 20, 24, 28, 36, 40, 60], bases = [25, 50, 75];
     const x = R.pick(petits), y = R.pick(bases);
     const res = +(x * y / 100).toFixed(2);
-    return {q: x + ' % de ' + y, a: String(res), expl: 'Retourne : ' + x + ' % de ' + y + ' = ' + y + ' % de ' + x + ' = ' + String(res).replace('.', ',') + '.'};
+    const aide = y === 50 ? 'la moitié de ' + x : y === 25 ? 'le quart de ' + x : 'les trois quarts de ' + x;
+    return {q: x + ' % de ' + y, a: String(res),
+      expl: 'Retourne : ' + x + ' % de ' + y + ' = ' + y + ' % de ' + x + ', c\'est-à-dire ' + aide + ' = ' + String(res).replace('.', ',') + '.'};
   }
 },
 {
