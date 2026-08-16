@@ -135,17 +135,9 @@ function streak(){
   return n;
 }
 
-/* ---------- calcul mental ---------- */
-const CM_FAMS = [
-  {id:'tables', nom:'Tables ×', gen(){ const a = R.int(3, 12), b = R.int(3, 12); return {q:`${a} × ${b}`, a:String(a * b)}; }},
-  {id:'tables-inv', nom:'Tables ÷', gen(){ const a = R.int(3, 12), b = R.int(3, 12); return {q:`${a * b} ÷ ${a}`, a:String(b)}; }},
-  {id:'add', nom:'Additions', gen(){ const a = R.int(15, 89), b = R.int(15, 89); return {q:`${a} + ${b}`, a:String(a + b)}; }},
-  {id:'sub', nom:'Soustractions', gen(){ const a = R.int(30, 99), b = R.int(11, a - 5); return {q:`${a} − ${b}`, a:String(a - b)}; }},
-  {id:'compl', nom:'Compléments à 100', gen(){ const a = R.int(11, 89); return {q:`${a} + ? = 100`, a:String(100 - a)}; }},
-  {id:'doubles', nom:'Doubles et moitiés', gen(){ if (Math.random() < .5){ const a = R.int(13, 240); return {q:`Le double de ${a}`, a:String(2 * a)}; } const a = R.int(7, 120) * 2; return {q:`La moitié de ${a}`, a:String(a / 2)}; }},
-  {id:'x10', nom:'× et ÷ par 10, 100', gen(){ const p = R.pick([10, 100]); if (Math.random() < .5){ const a = R.int(3, 99); return {q:`${a} × ${p}`, a:String(a * p)}; } const a = R.int(3, 99) * p; return {q:`${a} ÷ ${p}`, a:String(a / p)}; }},
-  {id:'pct', nom:'Pourcentages de tête', gen(){ const p = R.pick([10, 25, 50]); const base = R.pick([40, 60, 80, 120, 200, 240, 300, 400, 500]); return {q:`${p} % de ${base}`, a:String(base * p / 100)}; }},
-];
+/* ---------- calcul mental (familles + techniques : techniques.js) ---------- */
+const CM_FAMS = window.CM_FAMS || [];
+const CM_CATS = [...new Set(CM_FAMS.map(f => f.cat))];
 function cmPick(){
   const weights = CM_FAMS.map(f => { const s = S.cm.fam[f.id] || {n:0, ok:0}; const err = s.n ? 1 - s.ok / s.n : .5; return .25 + err; });
   let tot = weights.reduce((a,b)=>a+b,0), r = Math.random() * tot;
@@ -167,8 +159,8 @@ function coachMessages(){
   if (sk >= 3) msgs.push({t:`🔥 ${sk} jours d\'affilée — c\'est exactement comme ça qu\'on devient fort. La régularité bat le talent.`, p:5});
   if (sk === 0 && Object.keys(S.journal).length > 0) msgs.push({t:'⏰ Pas encore de séance aujourd\'hui. Même 20 minutes comptent : lance la séance du jour, je m\'occupe du menu.', p:7});
   const fam = Object.entries(S.cm.fam).filter(([, v]) => v.n >= 8).sort((a, b) => a[1].ok / a[1].n - b[1].ok / b[1].n)[0];
-  if (fam && fam[1].ok / fam[1].n < .7){ const fnom = (CM_FAMS.find(x => x.id === fam[0]) || {}).nom || fam[0];
-    msgs.push({t:`🧮 En calcul mental, « ${fnom} » est ton point faible (${Math.round(100 * fam[1].ok / fam[1].n)} % de réussite). Je te en servirai davantage à l\'échauffement.`, p:6}); }
+  if (fam && fam[1].ok / fam[1].n < .7){ const fo = CM_FAMS.find(x => x.id === fam[0]) || {};
+    msgs.push({t:`🧮 En calcul mental, « ${fo.nom || fam[0]} » est ton point faible (${Math.round(100 * fam[1].ok / fam[1].n)} % de réussite). Relis la technique — ${fo.astuce || 'elle est dans l\'onglet ⚡ Techniques'} — puis fais-en un sprint dédié.`, p:6, tech: fam[0]}); }
   if (new Date().getDay() === 0) msgs.push({t:'📅 C\'est dimanche : jour du test hebdomadaire ! 20 questions pour valider ta semaine et réactiver les anciennes. Il est sur ton tableau de bord.', p:8});
   if (alt > 0) msgs.push({t:`⛰️ Tu es à ${alt} m d\'altitude (${masteredCount()}/${SKILLS.length} compétences maîtrisées). Chaque compétence validée à 90 % te fait grimper — le sommet est à ${SOMMET} m.`, p:3});
   if (f) msgs.push({t:`👉 Ta prochaine marche : « ${f.titre} » (${PHASES[f.phase].nom}). C\'est elle qui débloque la suite.`, p:4});
@@ -191,6 +183,7 @@ function askQuestion(box, opts, cb){
       ${opts.count ? `<span class="count">${esc(opts.count)}</span>` : ''}
     </div>
     <p class="qtext">${esc(ex.q)}</p>
+    ${opts.hint ? `<p class="hint-line">💡 ${esc(opts.hint)}</p>` : ''}
     <div data-zone></div>
     <div data-fb></div>
   </div>`;
@@ -278,7 +271,7 @@ const app = () => $('app');
 let currentView = 'accueil';
 function nav(v){ currentView = v;
   document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
-  ({accueil: vAccueil, programme: vProgramme, erreurs: vErreurs, coach: vCoach, regles: vRegles}[v] || vAccueil)();
+  ({accueil: vAccueil, programme: vProgramme, techniques: vTechniques, erreurs: vErreurs, coach: vCoach, regles: vRegles}[v] || vAccueil)();
   scrollTo({top: 0});
 }
 
@@ -336,12 +329,14 @@ function vAccueil(){
     <div class="row" style="margin-top:.7rem">
       <button class="primary" id="go-seance">${j.seance ? 'Refaire une séance 💪' : 'Commencer ma séance →'}</button>
       <button class="ghost" id="go-cm">🧮 Calcul mental seul</button>
+      <button class="ghost" id="go-tech">⚡ Techniques</button>
       ${dim || S.tests.length === 0 ? `<button class="ghost" id="go-test">📅 Test hebdo (20 q)</button>` : `<button class="ghost" id="go-test">📅 Test hebdo</button>`}
     </div>
     ${j.seance ? '<p class="small" style="color:var(--ok);margin:.6rem 0 0">✔ Séance du jour terminée — la série continue !</p>' : ''}
   </section>`;
   $('go-seance').addEventListener('click', () => { snd.click(); vSeance(); });
   $('go-cm').addEventListener('click', () => { snd.click(); vCalculMental(); });
+  $('go-tech').addEventListener('click', () => { snd.click(); nav('techniques'); });
   $('go-test').addEventListener('click', () => { snd.click(); vTest(); });
 }
 
@@ -463,9 +458,9 @@ function vSeance(){
           <button class="primary" id="c">Continuer →</button></div>`;
         snd.win(ok / N); $('c').addEventListener('click', () => { snd.click(); advance(); });
         return; }
-      const fam = cmPick(), ex = fam.gen();
+      const fam = cmPick(), ex = fam.gen(R);
       const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
-      askQuestion(wrap, {ex: {q: ex.q, a: ex.a, accept: null, choix: null, expl: ''}, tag: '🧮 ' + fam.nom, chrono: true, count: (i + 1) + ' / ' + N}, r => {
+      askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, chrono: true, count: (i + 1) + ' / ' + N}, r => {
         cmRecord(fam.id, r.ok); logAnswer(r.ok); if (r.ok) ok++;
         i++; ask();
       });
@@ -532,30 +527,78 @@ function vSeance(){
 }
 
 /* ---------- calcul mental seul ---------- */
-function vCalculMental(){
-  let i = 0, ok = 0; const N = 20; const t0 = performance.now();
-  app().innerHTML = `<section class="card"><h2>🧮 Calcul mental — sprint de ${N}</h2><p class="muted small">Objectif : moins de 4 secondes par question. C'est l'arme secrète des concours.</p></section><div id="zone"></div>`;
+function vCalculMental(only){
+  const fams = only ? CM_FAMS.filter(f => f.id === only) : CM_FAMS;
+  const titre = only ? (fams[0].icone + ' ' + fams[0].nom) : '🧮 Calcul mental — mix complet';
+  const N = only ? 10 : 20;
+  let i = 0, ok = 0; const t0 = performance.now();
+  app().innerHTML = `<section class="card"><h2>${esc(titre)} — sprint de ${N}</h2>
+    <p class="muted small">${only ? esc(fams[0].astuce) : "Objectif : moins de 4 secondes par question. La technique s'affiche sous chaque calcul — applique-la, ne calcule pas « à l'ancienne »."}</p>
+    ${only ? `<button class="ghost" id="voir-methode" style="margin-top:.5rem">📖 Revoir la méthode</button>` : ''}
+  </section><div id="zone"></div>`;
+  if (only) $('voir-methode').addEventListener('click', () => { snd.click(); vTechniques(only); });
   const box = $('zone');
   (function ask(){
     if (i >= N){
       const secs = Math.round((performance.now() - t0) / 1000);
-      const best = S.cm.best;
-      const better = !best || ok > best.ok || (ok === best.ok && secs < best.secs);
-      if (better) { S.cm.best = {ok, secs, date: Date.now()}; save(); }
+      let recordTxt = '';
+      if (!only){
+        const best = S.cm.best;
+        const better = !best || ok > best.ok || (ok === best.ok && secs < best.secs);
+        if (better){ S.cm.best = {ok, secs, date: Date.now()}; save(); recordTxt = ' — 🏆 nouveau record !'; if (ok >= N * .9) confetti(false); }
+        else if (best) recordTxt = ` · record : ${best.ok}/${N} en ${best.secs} s`;
+      } else if (ok === N) confetti(false);
       box.innerHTML = `<div class="card fin-card"><div class="score">${ok} / ${N}</div>
-        <p class="msg">en ${secs} s (${(secs / N).toFixed(1)} s/question)${better ? ' — 🏆 nouveau record !' : best ? ` · record : ${best.ok}/${N} en ${best.secs} s` : ''}</p>
-        <div class="row" style="justify-content:center"><button class="primary" id="re">Rejouer</button><button class="ghost" id="home">Tableau de bord</button></div></div>`;
-      snd.win(ok / N); if (better && ok >= N * .9) confetti(false);
-      $('re').addEventListener('click', () => { snd.click(); vCalculMental(); });
+        <p class="msg">en ${secs} s (${(secs / N).toFixed(1)} s/question)${recordTxt}</p>
+        <div class="row" style="justify-content:center"><button class="primary" id="re">Rejouer</button>
+        <button class="ghost" id="tech">⚡ Techniques</button>
+        <button class="ghost" id="home">Tableau de bord</button></div></div>`;
+      snd.win(ok / N);
+      $('re').addEventListener('click', () => { snd.click(); vCalculMental(only); });
+      $('tech').addEventListener('click', () => { snd.click(); nav('techniques'); });
       $('home').addEventListener('click', () => { snd.click(); nav('accueil'); });
       return;
     }
-    const fam = cmPick(), ex = fam.gen();
+    const fam = only ? fams[0] : cmPick(), ex = fam.gen(R);
     const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
-    askQuestion(wrap, {ex: {q: ex.q, a: ex.a, accept: null, choix: null, expl: ''}, tag: '🧮 ' + fam.nom, chrono: true, count: (i + 1) + ' / ' + N}, r => {
+    askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, chrono: true, count: (i + 1) + ' / ' + N}, r => {
       cmRecord(fam.id, r.ok); logAnswer(r.ok); if (r.ok) ok++; i++; ask();
     });
   })();
+}
+
+/* ---------- techniques de calcul mental ---------- */
+function vTechniques(openId){
+  const stat = fid => { const s = S.cm.fam[fid]; return s && s.n ? Math.round(100 * s.ok / s.n) : null; };
+  let html = `<section class="card"><h2>⚡ Les techniques de calcul mental</h2>
+    <p class="muted small">${CM_FAMS.length} méthodes de calculateur rapide, une par type de calcul. Elles s'affichent aussi en indice pendant tes sprints. Entraîne-toi technique par technique jusqu'à ce que le geste devienne automatique.</p>
+    <div class="row" style="margin-top:.7rem"><button class="primary" id="mix">🧮 Sprint mix complet (20)</button></div>
+  </section>`;
+  for (const cat of CM_CATS){
+    html += `<p class="k" style="margin:1.3rem 0 .4rem">${esc(cat)}</p>`;
+    for (const f of CM_FAMS.filter(x => x.cat === cat)){
+      const pct = stat(f.id);
+      html += `<section class="card" style="margin:.5rem 0">
+        <details ${openId === f.id ? 'open' : ''} data-fam="${f.id}">
+          <summary style="cursor:pointer;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap">
+            <span style="font-size:1.15rem">${f.icone}</span>
+            <strong>${esc(f.nom)}</strong>
+            ${pct !== null ? `<span class="pill">${pct} % de réussite</span>` : ''}
+          </summary>
+          <p class="hint-line" style="margin:.6rem 0">💡 ${esc(f.astuce)}</p>
+          <div class="lecon">${f.methode}</div>
+          <div class="row"><button class="primary" data-train="${f.id}">S'entraîner sur cette technique (10) →</button></div>
+        </details>
+      </section>`;
+    }
+  }
+  app().innerHTML = html;
+  $('mix').addEventListener('click', () => { snd.click(); vCalculMental(); });
+  document.querySelectorAll('[data-train]').forEach(b => b.addEventListener('click', e => {
+    e.preventDefault(); snd.click(); vCalculMental(b.dataset.train);
+  }));
+  document.querySelectorAll('[data-fam] summary').forEach(s => s.addEventListener('click', () => snd.click()));
+  if (openId){ const el = document.querySelector(`[data-fam="${openId}"]`); if (el) el.scrollIntoView({block: 'start'}); }
 }
 
 /* ---------- test hebdo ---------- */
@@ -662,7 +705,7 @@ function vCoach(){
   app().innerHTML = `
   <section class="card"><h2>🤖 Ton coach adaptatif</h2>
     <p class="muted small">Un algorithme local (il fonctionne même hors-ligne) : il mesure chaque réponse, applique la règle des 90 %, programme tes révisions espacées et construit ta séance. Pour une explication détaillée d'une notion, ouvre une session avec Claude — ton vrai prof — qui a conçu ce programme.</p>
-    ${msgs.map(m => `<div class="coach-msg"><p>${m.t}</p></div>`).join('')}
+    ${msgs.map(m => `<div class="coach-msg"><p>${m.t}</p>${m.tech ? `<p><button class="ghost small" data-tech="${m.tech}">⚡ Ouvrir la technique</button></p>` : ''}</div>`).join('')}
   </section>
   <section class="card"><h2>Progression par phase</h2><div class="bars">${bars}</div></section>
   <section class="card"><h2>Tes chiffres</h2>
@@ -678,6 +721,9 @@ function vCoach(){
       ${weak.map(s => `<button class="skill" data-skill="${s.id}"><span class="num">${s.phase}.${s.ordre}</span><span class="t">${esc(s.titre)}</span><span class="etat">${Math.round(tauxRecent(s.id) * 100)} %</span></button>`).join('')}` : ''}
   </section>`;
   document.querySelectorAll('[data-skill]').forEach(b => b.addEventListener('click', () => { snd.click(); vSkill(b.dataset.skill); }));
+  document.querySelectorAll('[data-tech]').forEach(b => b.addEventListener('click', () => { snd.click(); currentView = 'techniques';
+    document.querySelectorAll('.nav button').forEach(x => x.classList.toggle('active', x.dataset.v === 'techniques'));
+    vTechniques(b.dataset.tech); }));
 }
 
 /* ---------- règles ---------- */
@@ -687,7 +733,7 @@ function vRegles(){
     <div class="lecon">
     <div class="box retenir"><p class="box-t">Règle 1 · Les 90 %</p><p>On ne passe jamais à la suite tant qu'une compétence n'est pas réussie à <mark>9 sur 10</mark>. L'app verrouille les phases pour toi : impossible de tricher avec soi-même.</p></div>
     <div class="box retenir"><p class="box-t">Règle 2 · Le cahier d'erreurs</p><p>Chaque erreur entre automatiquement dans ton <mark>cahier d'erreurs</mark>. Elle n'en sort qu'après avoir été refaite juste <mark>deux fois</mark>. Tes erreurs sont ta mine d'or.</p></div>
-    <div class="box retenir"><p class="box-t">Règle 3 · Le calcul mental quotidien</p><p><mark>Chaque séance commence par l'échauffement chrono</mark>. Objectif : moins de 4 secondes par réponse. C'est ce qui fera la différence aux concours SESAME et ACCÈS.</p></div>
+    <div class="box retenir"><p class="box-t">Règle 3 · Le calcul mental quotidien</p><p><mark>Chaque séance commence par l'échauffement chrono</mark>. Objectif : moins de 4 secondes par réponse. Mais attention : on ne calcule pas « à l'ancienne » — on applique une <mark>technique</mark>. L'onglet ⚡ Techniques en contient une pour chaque type de calcul, et elle s'affiche en indice pendant l'entraînement. C'est ce qui fera la différence aux concours SESAME et ACCÈS.</p></div>
     <div class="box retenir"><p class="box-t">Règle 4 · Refaire, ne jamais relire</p><p>Ici, on ne « relit » pas : on répond, encore et encore. Les exercices sont <mark>générés à l'infini</mark> — jamais deux fois le même, jusqu'à l'automatisme.</p></div>
     <div class="box retenir"><p class="box-t">Règle 5 · La répétition espacée</p><p>Une compétence validée revient <mark>2, 4, 8, 16, 32 jours</mark> plus tard. Si elle a rouillé, le coach la remet en révision. C'est comme ça que le cerveau retient à vie.</p></div>
     <div class="box astuce"><p class="box-t">Le rythme</p><p>6 jours sur 7, 30 à 60 minutes : échauffement → révisions → nouvelle compétence → erreurs. Le dimanche, <mark>test hebdomadaire</mark> de 20 questions. La régularité bat le talent, toujours.</p></div>

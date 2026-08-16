@@ -127,7 +127,9 @@ table.tbl{border-collapse:collapse; font-size:.88rem}
 .exo-top .count{margin-left:auto; font-size:.82rem; color:var(--muted); font-variant-numeric:tabular-nums}
 .chrono{font-variant-numeric:tabular-nums; font-size:.82rem; color:var(--muted)}
 .chrono.warn{color:var(--ko); font-weight:700}
-.qtext{font-size:1.12rem; font-weight:600; margin:.2rem 0 1rem; white-space:pre-line}
+.qtext{font-size:1.12rem; font-weight:600; margin:.2rem 0 .55rem; white-space:pre-line}
+.hint-line{margin:0 0 .9rem; font-size:.85rem; color:var(--muted); background:color-mix(in srgb, var(--gold) 10%, transparent); border-left:2px solid var(--gold); padding:.35rem .6rem; border-radius:0 6px 6px 0}
+button.small{font-size:.82rem; padding:.35rem .7rem}
 .answer-row{display:flex; gap:.6rem; flex-wrap:wrap}
 .answer-row input{flex:1 1 160px; font:inherit; font-size:1.1rem; padding:.6rem .8rem; color:var(--ink); background:var(--card2); border:1px solid var(--line); border-radius:9px}
 .opts{display:flex; flex-direction:column; gap:.5rem}
