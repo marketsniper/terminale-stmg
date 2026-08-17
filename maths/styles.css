@@ -223,6 +223,8 @@ button.small{font-size:.82rem; padding:.35rem .7rem}
 .assist-err{color:var(--ko)}
 .assist-cfg{display:flex; flex-direction:column; gap:.5rem; margin:.5rem 0}
 .assist-cfg input[type=password]{font:inherit; font-size:.9rem; padding:.45rem .6rem; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px}
+.assist-cfg select{font:inherit; font-size:.88rem; margin-left:.3rem; padding:.25rem .4rem; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:7px}
+.assist-src{display:inline-block; margin-top:.4rem; font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--muted); border:1px solid var(--line); border-radius:99px; padding:.05rem .45rem}
 .assist-foot{border-top:1px solid var(--line); padding:.55rem .7rem; background:var(--card2)}
 .assist-chips{display:flex; gap:.35rem; overflow-x:auto; padding-bottom:.45rem; scrollbar-width:none}
 .assist-chips::-webkit-scrollbar{display:none}

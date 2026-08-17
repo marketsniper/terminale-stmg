@@ -7,18 +7,40 @@
 (function(){
 'use strict';
 
-const K_KEY = 'mzs-cle-api';
-const K_WEB = 'mzs-web';
-const MODEL = 'claude-opus-5';
+const K_CLAUDE = 'mzs-cle-api';    // clé Anthropic (payant, qualité maximale)
+const K_GROQ   = 'mzs-cle-groq';   // clé Groq (gratuit)
+const K_PREF   = 'mzs-ia-pref';    // 'groq' | 'claude' | 'local'
+const K_WEB    = 'mzs-web';
+const MODEL_CLAUDE = 'claude-opus-5';
+const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
+const GROQ_MODEL = 'openai/gpt-oss-120b';   // solide en maths, 1 000 requêtes/jour en gratuit
+const GROQ_WEB   = 'groq/compound';         // même API + recherche web intégrée
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const strip = h => String(h).replace(/<[^>]+>/g, ' ').replace(/&[a-z]+;/g, ' ').replace(/\s+/g, ' ').trim();
 
-function getKey(){ try { return localStorage.getItem(K_KEY) || ''; } catch(e){ return ''; } }
-function setKey(v){ try { v ? localStorage.setItem(K_KEY, v) : localStorage.removeItem(K_KEY); } catch(e){} }
-function webOn(){ try { return localStorage.getItem(K_WEB) === '1'; } catch(e){ return false; } }
-function setWeb(v){ try { localStorage.setItem(K_WEB, v ? '1' : '0'); } catch(e){} }
+function lire(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+function ecrire(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+const cleGroq   = () => lire(K_GROQ);
+const cleClaude = () => lire(K_CLAUDE);
+function webOn(){ return lire(K_WEB) === '1'; }
+function setWeb(v){ ecrire(K_WEB, v ? '1' : '0'); }
+
+/* Quel moteur d'IA ? La préférence de l'élève, sinon la clé disponible.
+   Groq d'abord : il est gratuit. */
+function fournisseur(){
+  const p = lire(K_PREF);
+  if (p === 'local') return null;
+  if (p === 'groq' && cleGroq()) return 'groq';
+  if (p === 'claude' && cleClaude()) return 'claude';
+  if (cleGroq()) return 'groq';
+  if (cleClaude()) return 'claude';
+  return null;
+}
+const enLigne = () => navigator.onLine !== false;
+function iaDispo(){ return !!fournisseur() && enLigne(); }
+const nomFournisseur = f => f === 'groq' ? 'Groq' : f === 'claude' ? 'Claude' : 'local';
 
 /* ============================================================
    1. MOTEUR LOCAL — calcul, résolution, recherche dans le cours
@@ -167,8 +189,9 @@ function extrait(entry, q){
   return t.slice(start, start + 320).trim() + (t.length > start + 320 ? '…' : '');
 }
 
-/* --- moteur local : produit une réponse HTML --- */
-function localAnswer(q, ctx){
+/* --- moteur local : renvoie {html, sur} — sur = réponse exacte et certaine --- */
+function localAnswer(q, ctx){ const r = localCalc(q, ctx); return r ? r.html : localCours(q, ctx); }
+function localCalc(q, ctx){
   const nq = norm(q);
   // on retire les verbes de commande pour ne garder que l'expression mathématique
   const q2 = q.replace(/^\s*(peux[- ]tu\s+|est[- ]ce que\s+|stp\s+|s'il te pla[iî]t\s+)*/i, '')
@@ -180,10 +203,10 @@ function localAnswer(q, ctx){
   const frm = (/simplifi/i.test(q) ? q2 : '').match(/([0-9]+)\s*\/\s*([0-9]+)/);
   if (frm){
     const a = +frm[1], b = +frm[2], g = pgcd(a, b);
-    return g <= 1
+    return {html: g <= 1
       ? `<p>La fraction <strong>${a}/${b}</strong> est déjà irréductible : leur seul diviseur commun est 1.</p>`
       : `<p>Je divise le haut et le bas par leur plus grand diviseur commun, <strong>${g}</strong> :</p>
-         <div class="etapes"><p>${a} ÷ ${g} = ${a / g} et ${b} ÷ ${g} = ${b / g}</p><p>→ <mark>${a / g}/${b / g}</mark> (soit ${fmt(a / b)})</p></div>`;
+         <div class="etapes"><p>${a} ÷ ${g} = ${a / g} et ${b} ÷ ${g} = ${b / g}</p><p>→ <mark>${a / g}/${b / g}</mark> (soit ${fmt(a / b)})</p></div>`};
   }
 
   // 2) équation
@@ -193,16 +216,16 @@ function localAnswer(q, ctx){
     if (r){
       if (r.type === 'ok'){
         const x = r.x;
-        return `<p>Je résous <strong>${esc(eqm[1].trim())}</strong> :</p>
+        return {html: `<p>Je résous <strong>${esc(eqm[1].trim())}</strong> :</p>
         <div class="etapes">
         <p>1. Je regroupe les termes en x d'un côté et les nombres de l'autre.</p>
         <p>2. J'obtiens <strong>${fmt(r.a)} x = ${fmt(r.b)}</strong>.</p>
         <p>3. Je divise les deux côtés par ${fmt(r.a)} : <mark>x = ${fmt(x)}</mark></p>
         </div>
-        <p class="small muted">Vérifie toujours en remplaçant x par ${fmt(x)} dans l'équation de départ.</p>`;
+        <p class="small muted">Vérifie toujours en remplaçant x par ${fmt(x)} dans l'équation de départ.</p>`};
       }
-      if (r.type === 'infini') return `<p>Cette équation est vraie pour <strong>toutes</strong> les valeurs de x : les deux côtés sont identiques.</p>`;
-      return `<p>Cette équation n'a <strong>aucune solution</strong> : les x s'annulent et il reste une égalité fausse.</p>`;
+      if (r.type === 'infini') return {html: `<p>Cette équation est vraie pour <strong>toutes</strong> les valeurs de x : les deux côtés sont identiques.</p>`};
+      return {html: `<p>Cette équation n'a <strong>aucune solution</strong> : les x s'annulent et il reste une égalité fausse.</p>`};
     }
   }
 
@@ -211,7 +234,7 @@ function localAnswer(q, ctx){
   if (pctm){
     const p = parseFloat(pctm[1].replace(/\s/g, '').replace(',', '.')), b = parseFloat(pctm[2].replace(/\s/g, '').replace(',', '.'));
     if (isFinite(p) && isFinite(b))
-      return `<p><strong>${fmt(p * b / 100)}</strong></p><div class="etapes"><p>10 % de ${fmt(b)} = ${fmt(b / 10)}, donc ${fmt(p)} % = ${fmt(p / 10)} × ${fmt(b / 10)} = <mark>${fmt(p * b / 100)}</mark>.</p></div>`;
+      return {html: `<p><strong>${fmt(p * b / 100)}</strong></p><div class="etapes"><p>10 % de ${fmt(b)} = ${fmt(b / 10)}, donc ${fmt(p)} % = ${fmt(p / 10)} × ${fmt(b / 10)} = <mark>${fmt(p * b / 100)}</mark>.</p></div>`};
   }
 
   // 4) calcul d'une expression — il faut un opérateur, ou un verbe de calcul explicite
@@ -219,10 +242,14 @@ function localAnswer(q, ctx){
               : q2.match(/([0-9(][0-9\s+\-*/^%().,×÷−]*[0-9%)])\s*$/);
   if (calcm && (/[+\-*/^×÷−]/.test(calcm[1]) || veutCalcul)){
     const v = evalExpr(calcm[1]);
-    if (v !== null) return `<p><strong>${esc(calcm[1].trim())} = ${fmt(v)}</strong></p>`;
+    if (v !== null) return {html: `<p><strong>${esc(calcm[1].trim())} = ${fmt(v)}</strong></p>`};
   }
+  return null;   // rien de certain : c'est à l'IA (ou au cours) de répondre
+}
 
-  // 5) explication de l'exercice en cours
+/* --- réponses issues du cours : exercice en cours, puis recherche --- */
+function localCours(q, ctx){
+  const nq = norm(q);
   const veutExpl = /expliqu|pourquoi|comprend|compris|aide|bloqu|coince|indice|comment.*(fai|résou|trouv)/.test(nq);
   if (veutExpl && ctx && ctx.ex){
     const sk = ctx.skill, fam = ctx.fam;
@@ -314,11 +341,61 @@ function contexteRag(q, ctx){
   return bouts.join('\n\n') || 'Pas de contexte particulier.';
 }
 
+/* --- Groq : gratuit, API compatible OpenAI, streaming SSE --- */
+async function askGroq(q, ctx, hist, onDelta, onInfo){
+  const cle = cleGroq();
+  if (!cle) throw new Error('PAS_DE_CLE');
+  const avecWeb = webOn();
+  const messages = [{role: 'system', content: SYSTEME + '\n\nCONTEXTE ACTUEL\n\n' + contexteRag(q, ctx)}]
+    .concat(hist, [{role: 'user', content: q}]);
+
+  async function envoi(extras){
+    return fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + cle},
+      body: JSON.stringify(Object.assign({
+        model: avecWeb ? GROQ_WEB : GROQ_MODEL,
+        messages, stream: true, max_completion_tokens: 2000
+      }, extras))
+    });
+  }
+  // on cache le raisonnement interne du modèle ; si le paramètre est refusé, on réessaie sans
+  let r = await envoi(avecWeb ? {} : {reasoning_effort: 'low', reasoning_format: 'hidden'});
+  if (r.status === 400) r = await envoi({});
+
+  if (!r.ok){
+    let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+    if (r.status === 401) throw new Error('CLE_INVALIDE');
+    if (r.status === 429) throw new Error('QUOTA');
+    throw new Error('HTTP ' + r.status + (msg ? ' — ' + msg : ''));
+  }
+
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = '', texte = '', outils = [];
+  for (;;){
+    const {done, value} = await reader.read(); if (done) break;
+    buf += dec.decode(value, {stream: true});
+    const lignes = buf.split('\n'); buf = lignes.pop();
+    for (const l of lignes){
+      if (!l.startsWith('data:')) continue;
+      const d = l.slice(5).trim();
+      if (!d || d === '[DONE]') continue;
+      let ev; try { ev = JSON.parse(d); } catch(e){ continue; }
+      const ch = ev.choices && ev.choices[0]; if (!ch) continue;
+      const t = ch.delta && ch.delta.content;
+      if (t){ texte += t; onDelta(t); }
+      const ex = (ch.delta && ch.delta.executed_tools) || ch.executed_tools;
+      if (ex && ex.length && !texte){ outils = ex; onInfo && onInfo('🔎 recherche sur le web…'); }
+    }
+  }
+  return texte;
+}
+
 async function askClaude(q, ctx, hist, onDelta, onInfo){
-  const cle = getKey();
+  const cle = cleClaude();
   if (!cle) throw new Error('PAS_DE_CLE');
   const body = {
-    model: MODEL,
+    model: MODEL_CLAUDE,
     max_tokens: 16000,
     stream: true,
     output_config: {effort: 'medium'},
@@ -435,10 +512,11 @@ function ui(){
     return d;
   }
   function majMode(){
-    const m = p.querySelector('#assist-mode');
-    const k = !!getKey();
-    m.textContent = k ? (webOn() ? 'Claude + web' : 'Claude') : 'local';
-    m.className = 'assist-mode' + (k ? ' on' : '');
+    const m = p.querySelector('#assist-mode'), f = fournisseur();
+    if (!f){ m.textContent = 'local'; m.className = 'assist-mode'; return; }
+    if (!enLigne()){ m.textContent = 'local · hors-ligne'; m.className = 'assist-mode'; return; }
+    m.textContent = nomFournisseur(f) + (webOn() ? ' + web' : '');
+    m.className = 'assist-mode on';
   }
   function chips(){
     const c = p.querySelector('#assist-chips'), ctx = ctxCourant();
@@ -451,33 +529,55 @@ function ui(){
 
   function bienvenue(){
     body.innerHTML = '';
-    say('bot', `<p>Salut 👋 Je suis ton prof de maths. Pose-moi n'importe quelle question — sur l'exercice affiché, sur une notion, ou un calcul à vérifier.</p>
-      <p class="small muted">Mode <strong>local</strong> : gratuit et hors-ligne (calculs, résolutions, recherche dans tes 52 leçons). Pour une vraie discussion, active le <strong>mode Claude</strong> avec ⚙︎.</p>`);
+    const f = fournisseur();
+    say('bot', `<p>Salut 👋 Je suis ton prof de maths. Pose-moi n'importe quelle question — sur l'exercice affiché, sur une notion, ou un calcul à vérifier.</p>` +
+      (f ? `<p class="small muted">Je bascule tout seul : calculs exacts et hors-ligne → moteur <strong>local</strong> ; questions de fond → <strong>${nomFournisseur(f)}</strong>.</p>`
+         : `<p class="small muted">Mode <strong>local</strong> : gratuit et hors-ligne (calculs, résolutions, recherche dans tes 52 leçons). Pour les questions de fond, ajoute une clé gratuite avec ⚙︎.</p>`));
     chips();
   }
 
   function reglages(){
-    const k = getKey();
+    const pref = lire(K_PREF) || 'groq';
     say('bot', `
-      <p class="k">Mode Claude — réglages</p>
-      <p class="small">Colle ta clé API Anthropic. Elle est enregistrée <strong>uniquement sur cet appareil</strong> (localStorage), n'est jamais publiée dans le code du site, et n'est envoyée qu'à <code>api.anthropic.com</code>.</p>
+      <p class="k">Réglages de l'IA</p>
+      <p class="small">Le moteur <strong>local</strong> marche toujours, gratuitement et hors-ligne. Pour les questions plus poussées, ajoute une clé ci-dessous. Elle est enregistrée <strong>uniquement sur cet appareil</strong>, jamais dans le code du site.</p>
       <div class="assist-cfg">
-        <input type="password" id="assist-key" placeholder="sk-ant-…" value="${esc(k)}" autocomplete="off" spellcheck="false">
+        <label class="small"><strong>Groq — gratuit</strong> (1 000 questions/jour, sans carte bancaire)</label>
+        <input type="password" id="assist-groq" placeholder="gsk_…" value="${esc(cleGroq())}" autocomplete="off" spellcheck="false">
+        <label class="small"><strong>Claude — payant</strong> (~2 ct/question, qualité maximale)</label>
+        <input type="password" id="assist-claude" placeholder="sk-ant-…" value="${esc(cleClaude())}" autocomplete="off" spellcheck="false">
+        <label class="small">À utiliser en priorité :
+          <select id="assist-pref">
+            <option value="groq" ${pref==='groq'?'selected':''}>Groq (gratuit)</option>
+            <option value="claude" ${pref==='claude'?'selected':''}>Claude (payant)</option>
+            <option value="local" ${pref==='local'?'selected':''}>Local uniquement</option>
+          </select></label>
         <label class="small"><input type="checkbox" id="assist-web" ${webOn() ? 'checked' : ''}> Autoriser la recherche web</label>
         <div class="row">
           <button class="primary small" id="assist-save" type="button">Enregistrer</button>
-          <button class="ghost small" id="assist-clear" type="button">Effacer la clé</button>
+          <button class="ghost small" id="assist-clear" type="button">Tout effacer</button>
         </div>
       </div>
-      <p class="small muted">Une clé se crée sur console.anthropic.com (compte séparé de l'abonnement Claude, facturé à l'usage). Sans clé, le mode local continue de fonctionner.</p>`, 'cfg');
+      <p class="small muted">Clé Groq gratuite : <strong>console.groq.com</strong> → API Keys. Clé Claude : <strong>platform.claude.com/settings/keys</strong>. Les clés partent uniquement vers le fournisseur choisi.</p>`, 'cfg');
     const last = body.lastElementChild;
     last.querySelector('#assist-save').addEventListener('click', () => {
-      setKey(last.querySelector('#assist-key').value.trim());
+      ecrire(K_GROQ, last.querySelector('#assist-groq').value.trim());
+      ecrire(K_CLAUDE, last.querySelector('#assist-claude').value.trim());
+      ecrire(K_PREF, last.querySelector('#assist-pref').value);
       setWeb(last.querySelector('#assist-web').checked);
-      majMode(); say('bot', getKey() ? '<p>✅ Mode Claude activé. Pose ta question.</p>' : '<p>Clé vide : je reste en mode local.</p>');
+      majMode();
+      const f = fournisseur();
+      say('bot', f ? `<p>✅ IA activée (<strong>${nomFournisseur(f)}</strong>). Le moteur local reste utilisé pour les calculs exacts et hors-ligne.</p>`
+                   : '<p>Mode local uniquement. Calculs, résolutions et recherche dans ton cours restent disponibles.</p>');
     });
-    last.querySelector('#assist-clear').addEventListener('click', () => { setKey(''); majMode(); last.querySelector('#assist-key').value = ''; say('bot', '<p>Clé effacée de cet appareil. Retour au mode local.</p>'); });
+    last.querySelector('#assist-clear').addEventListener('click', () => {
+      ecrire(K_GROQ, ''); ecrire(K_CLAUDE, ''); ecrire(K_PREF, 'local');
+      last.querySelector('#assist-groq').value = ''; last.querySelector('#assist-claude').value = '';
+      majMode(); say('bot', '<p>Clés effacées de cet appareil. Retour au mode local.</p>');
+    });
   }
+
+  const tag = f => `<span class="assist-src">${f === 'local' ? '📴 hors-ligne' : nomFournisseur(f)}</span>`;
 
   async function envoyer(){
     if (occupe) return;
@@ -486,31 +586,54 @@ function ui(){
     say('moi', '<p>' + esc(q) + '</p>');
     const ctx = ctxCourant();
 
-    if (!getKey()){
-      say('bot', localAnswer(q, ctx));
+    // 1. Calcul exact : le moteur local est instantané, gratuit et sûr — sauf si
+    //    l'élève demande une explication, auquel cas l'IA fait mieux.
+    const veutComprendre = /expliqu|pourquoi|comment ça marche|d[ée]taill|comprend/i.test(q);
+    const exact = localCalc(q, ctx);
+    if (exact && !veutComprendre){
+      const d = say('bot', exact.html);
+      if (iaDispo()) d.insertAdjacentHTML('beforeend',
+        '<p><button class="assist-chip" data-approfondir="1">Pourquoi ça marche ?</button></p>');
       chips(); return;
     }
-    occupe = true;
+
+    // 2. Sinon : l'IA si elle est joignable, le cours hors-ligne.
+    const f = fournisseur();
+    if (!f || !enLigne()){
+      const d = say('bot', localCours(q, ctx));
+      if (!enLigne() && f) d.insertAdjacentHTML('afterbegin',
+        '<p class="small muted">📴 Hors-ligne : je réponds avec ton cours. Reconnecte-toi pour l\'IA.</p>');
+      chips(); return;
+    }
+
+    occupe = true; majMode();
     const d = say('bot', '<p class="assist-think">réfléchit…</p>');
     let acc = '';
     try {
-      await askClaude(q, ctx, hist.slice(-8),
+      const moteur = f === 'groq' ? askGroq : askClaude;
+      await moteur(q, ctx, hist.slice(-8),
         t => { acc += t; d.innerHTML = md(acc); body.scrollTop = body.scrollHeight; },
         info => { if (!acc) d.innerHTML = '<p class="assist-think">' + esc(info) + '</p>'; });
       if (!acc) d.innerHTML = '<p class="muted">(réponse vide)</p>';
+      else d.insertAdjacentHTML('beforeend', tag(f));
       hist.push({role: 'user', content: q}, {role: 'assistant', content: acc});
       if (hist.length > 16) hist = hist.slice(-16);
     } catch(e){
       const m = String(e.message || e);
-      const txt = m === 'CLE_INVALIDE' ? 'Ta clé API est refusée. Vérifie-la dans ⚙︎.'
-        : m === 'TROP_DE_REQUETES' ? 'Trop de requêtes d\'un coup — attends quelques secondes et réessaie.'
-        : m === 'CREDIT' ? 'Ton compte API n\'a plus de crédit. Le mode local reste disponible.'
-        : m === 'REFUS' ? 'Je ne peux pas répondre à cette demande. Reformule-la côté maths.'
-        : m === 'PAS_DE_CLE' ? 'Aucune clé enregistrée — ouvre ⚙︎.'
-        : 'Connexion impossible (' + esc(m) + '). Je bascule en mode local :';
-      d.innerHTML = '<p class="assist-err">⚠️ ' + txt + '</p>';
-      if (/Connexion impossible/.test(txt)) d.insertAdjacentHTML('beforeend', localAnswer(q, ctx));
-    } finally { occupe = false; chips(); }
+      const connu = {
+        CLE_INVALIDE: 'Ta clé ' + nomFournisseur(f) + ' est refusée. Vérifie-la dans ⚙︎.',
+        QUOTA: 'Quota gratuit atteint pour aujourd\'hui (il se remet à zéro chaque jour). Je continue avec ton cours :',
+        TROP_DE_REQUETES: 'Trop de questions d\'un coup — attends quelques secondes.',
+        CREDIT: 'Ton compte ' + nomFournisseur(f) + ' n\'a plus de crédit. Je continue avec ton cours :',
+        REFUS: 'Je ne peux pas répondre à cette demande. Reformule-la côté maths.',
+        PAS_DE_CLE: 'Aucune clé enregistrée — ouvre ⚙︎.'
+      };
+      const txt = connu[m] || 'Connexion impossible. Je bascule sur ton cours :';
+      d.innerHTML = '<p class="assist-err">⚠️ ' + esc(txt) + '</p>';
+      if (!connu[m] || m === 'QUOTA' || m === 'CREDIT'){
+        d.insertAdjacentHTML('beforeend', (exact ? exact.html : localCours(q, ctx)) + tag('local'));
+      }
+    } finally { occupe = false; majMode(); chips(); }
   }
 
   btn.addEventListener('click', () => { ouvert = !ouvert; p.classList.toggle('hidden', !ouvert); btn.classList.toggle('on', ouvert);
@@ -522,6 +645,11 @@ function ui(){
   input.addEventListener('input', () => { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 110) + 'px'; });
 
   body.addEventListener('click', e => {
+    const app = e.target.closest('[data-approfondir]');
+    if (app){ e.preventDefault(); app.remove();
+      const q = [...body.querySelectorAll('.assist-msg.moi')].pop();
+      input.value = 'Explique-moi pourquoi : ' + (q ? q.textContent.trim() : '');
+      envoyer(); return; }
     const a = e.target.closest('[data-goto-skill],[data-goto-tech]');
     if (!a) return;
     e.preventDefault();
