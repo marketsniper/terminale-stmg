@@ -341,54 +341,78 @@ function contexteRag(q, ctx){
   return bouts.join('\n\n') || 'Pas de contexte particulier.';
 }
 
-/* --- Groq : gratuit, API compatible OpenAI, streaming SSE --- */
+/* --- Groq : gratuit, API compatible OpenAI, streaming SSE ---
+   Le modèle « compound » (recherche web) ne renvoie pas toujours de texte :
+   on ne l'utilise que si la question a vraiment besoin du web, et on retombe
+   automatiquement sur le modèle standard si le flux revient vide. */
+const BESOIN_WEB = /\b(cherche|recherche|internet|web|actualit|r[ée]cent|aujourd|202[6-9]|date du|source|site|lien|programme officiel|sesame|acc[eè]s|concours)\b/i;
+
+/* Certains modèles de raisonnement encadrent leur réflexion dans <think>…</think>.
+   On la retire — y compris pendant le streaming, où la balise n'est pas encore fermée. */
+function nettoie(t){
+  let s = t.replace(/<think>[\s\S]*?<\/think>/gi, '');
+  const i = s.toLowerCase().lastIndexOf('<think>');
+  if (i >= 0) s = s.slice(0, i);
+  return s.replace(/<\/?think>/gi, '').trim();
+}
+
 async function askGroq(q, ctx, hist, onDelta, onInfo){
   const cle = cleGroq();
   if (!cle) throw new Error('PAS_DE_CLE');
-  const avecWeb = webOn();
   const messages = [{role: 'system', content: SYSTEME + '\n\nCONTEXTE ACTUEL\n\n' + contexteRag(q, ctx)}]
     .concat(hist, [{role: 'user', content: q}]);
+  const veutWeb = webOn() && BESOIN_WEB.test(q);
 
-  async function envoi(extras){
-    return fetch(GROQ_URL, {
+  async function appel(modele, extras){
+    const r = await fetch(GROQ_URL, {
       method: 'POST',
       headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + cle},
-      body: JSON.stringify(Object.assign({
-        model: avecWeb ? GROQ_WEB : GROQ_MODEL,
-        messages, stream: true, max_completion_tokens: 2000
-      }, extras))
+      body: JSON.stringify(Object.assign({model: modele, messages, stream: true, max_completion_tokens: 4000}, extras))
     });
-  }
-  // on cache le raisonnement interne du modèle ; si le paramètre est refusé, on réessaie sans
-  let r = await envoi(avecWeb ? {} : {reasoning_effort: 'low', reasoning_format: 'hidden'});
-  if (r.status === 400) r = await envoi({});
-
-  if (!r.ok){
-    let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
-    if (r.status === 401) throw new Error('CLE_INVALIDE');
-    if (r.status === 429) throw new Error('QUOTA');
-    throw new Error('HTTP ' + r.status + (msg ? ' — ' + msg : ''));
-  }
-
-  const reader = r.body.getReader(), dec = new TextDecoder();
-  let buf = '', texte = '', outils = [];
-  for (;;){
-    const {done, value} = await reader.read(); if (done) break;
-    buf += dec.decode(value, {stream: true});
-    const lignes = buf.split('\n'); buf = lignes.pop();
-    for (const l of lignes){
-      if (!l.startsWith('data:')) continue;
-      const d = l.slice(5).trim();
-      if (!d || d === '[DONE]') continue;
-      let ev; try { ev = JSON.parse(d); } catch(e){ continue; }
-      const ch = ev.choices && ev.choices[0]; if (!ch) continue;
-      const t = ch.delta && ch.delta.content;
-      if (t){ texte += t; onDelta(t); }
-      const ex = (ch.delta && ch.delta.executed_tools) || ch.executed_tools;
-      if (ex && ex.length && !texte){ outils = ex; onInfo && onInfo('🔎 recherche sur le web…'); }
+    if (!r.ok){
+      let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+      const err = new Error(r.status === 401 ? 'CLE_INVALIDE' : r.status === 429 ? 'QUOTA'
+                  : 'HTTP ' + r.status + (msg ? ' — ' + msg : ''));
+      err.statut = r.status; err.detail = msg; throw err;
     }
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = '', texte = '', raison = '', fin = '', outil = false;
+    for (;;){
+      const {done, value} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream: true});
+      const lignes = buf.split('\n'); buf = lignes.pop();
+      for (const l of lignes){
+        if (!l.startsWith('data:')) continue;
+        const d = l.slice(5).trim(); if (!d || d === '[DONE]') continue;
+        let ev; try { ev = JSON.parse(d); } catch(e){ continue; }
+        const ch = ev.choices && ev.choices[0]; if (!ch) continue;
+        const dl = ch.delta || {};
+        if (dl.content){ const t = dl.content; texte += t; onDelta(t); }
+        else if (dl.reasoning) raison += dl.reasoning;       // filet de sécurité
+        if (ch.finish_reason) fin = ch.finish_reason;
+        if (!outil && ((dl.executed_tools && dl.executed_tools.length) || (ch.executed_tools && ch.executed_tools.length))){
+          outil = true; onInfo && onInfo('🔎 recherche sur le web…');
+        }
+      }
+    }
+    return {texte: nettoie(texte), raison: nettoie(raison), fin};
   }
-  return texte;
+
+  // 1er essai : modèle standard (ou compound si la question appelle vraiment le web)
+  let res;
+  try { res = await appel(veutWeb ? GROQ_WEB : GROQ_MODEL, veutWeb ? {} : {reasoning_effort: 'low'}); }
+  catch(e){ if (e.statut === 400) res = await appel(GROQ_MODEL, {}); else throw e; }
+
+  // 2e essai : le flux est revenu sans texte → on repasse sur le modèle standard
+  if (!res.texte && veutWeb){
+    onInfo && onInfo('nouvelle tentative…');
+    res = await appel(GROQ_MODEL, {reasoning_effort: 'low'});   // appel() diffuse déjà le texte
+  }
+  if (!res.texte && res.raison){ onDelta(res.raison); return res.raison; }
+  if (!res.texte){
+    const e = new Error('VIDE'); e.detail = res.fin || 'aucun texte reçu'; throw e;
+  }
+  return res.texte;
 }
 
 async function askClaude(q, ctx, hist, onDelta, onInfo){
@@ -515,7 +539,8 @@ function ui(){
     const m = p.querySelector('#assist-mode'), f = fournisseur();
     if (!f){ m.textContent = 'local'; m.className = 'assist-mode'; return; }
     if (!enLigne()){ m.textContent = 'local · hors-ligne'; m.className = 'assist-mode'; return; }
-    m.textContent = nomFournisseur(f) + (webOn() ? ' + web' : '');
+    m.textContent = nomFournisseur(f) + (webOn() && f === 'groq' ? ' + web' : '');
+    m.title = webOn() && f === 'groq' ? 'La recherche web ne se déclenche que sur les questions qui en ont besoin' : '';
     m.className = 'assist-mode on';
   }
   function chips(){
@@ -612,9 +637,11 @@ function ui(){
     try {
       const moteur = f === 'groq' ? askGroq : askClaude;
       await moteur(q, ctx, hist.slice(-8),
-        t => { acc += t; d.innerHTML = md(acc); body.scrollTop = body.scrollHeight; },
-        info => { if (!acc) d.innerHTML = '<p class="assist-think">' + esc(info) + '</p>'; });
-      if (!acc) d.innerHTML = '<p class="muted">(réponse vide)</p>';
+        t => { acc += t; const v = nettoie(acc); if (v) d.innerHTML = md(v); body.scrollTop = body.scrollHeight; },
+        info => { if (!nettoie(acc)) d.innerHTML = '<p class="assist-think">' + esc(info) + '</p>'; });
+      acc = nettoie(acc);
+      if (!acc){ d.innerHTML = '<p class="assist-err">⚠️ L\'IA n\'a rien renvoyé. Je réponds avec ton cours :</p>'
+        + (exact ? exact.html : localCours(q, ctx)) + tag('local'); }
       else d.insertAdjacentHTML('beforeend', tag(f));
       hist.push({role: 'user', content: q}, {role: 'assistant', content: acc});
       if (hist.length > 16) hist = hist.slice(-16);
@@ -626,11 +653,12 @@ function ui(){
         TROP_DE_REQUETES: 'Trop de questions d\'un coup — attends quelques secondes.',
         CREDIT: 'Ton compte ' + nomFournisseur(f) + ' n\'a plus de crédit. Je continue avec ton cours :',
         REFUS: 'Je ne peux pas répondre à cette demande. Reformule-la côté maths.',
-        PAS_DE_CLE: 'Aucune clé enregistrée — ouvre ⚙︎.'
+        PAS_DE_CLE: 'Aucune clé enregistrée — ouvre ⚙︎.',
+        VIDE: 'L\'IA n\'a rien renvoyé (' + (e.detail || '?') + '). Je réponds avec ton cours :'
       };
       const txt = connu[m] || 'Connexion impossible. Je bascule sur ton cours :';
       d.innerHTML = '<p class="assist-err">⚠️ ' + esc(txt) + '</p>';
-      if (!connu[m] || m === 'QUOTA' || m === 'CREDIT'){
+      if (!connu[m] || m === 'QUOTA' || m === 'CREDIT' || m === 'VIDE'){
         d.insertAdjacentHTML('beforeend', (exact ? exact.html : localCours(q, ctx)) + tag('local'));
       }
     } finally { occupe = false; majMode(); chips(); }
