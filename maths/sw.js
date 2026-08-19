@@ -1,5 +1,6 @@
-const CACHE = 'mzs-v5';
+const CACHE = 'mzs-v6';
 const ASSETS = ['./', './index.html', './styles.css', './engine.js', './techniques.js', './assistant.js',
+  './papier/papier-a.js', './papier/papier-b.js', './papier/papier-c.js', './papier/papier-d.js',
   './skills/skills-p1.js', './skills/skills-p2.js', './skills/skills-p3.js',
   './skills/skills-p4.js', './skills/skills-p4b.js', './skills/skills-p5.js', './skills/skills-p6.js', './skills/skills-p7.js',
   './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];

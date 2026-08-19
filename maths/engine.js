@@ -125,8 +125,9 @@ function masteredCount(){ return SKILLS.filter(s => st(s.id).mastered).length; }
 function altitude(){ return SKILLS.length ? Math.round(SOMMET * masteredCount() / SKILLS.length) : 0; }
 
 /* ---------- journal & série (streak) ---------- */
-function jToday(){ const k = todayKey(); return S.journal[k] || (S.journal[k] = {a:0, ok:0, cm:0, seance:false}); }
-function logAnswer(ok){ const j = jToday(); j.a++; if (ok) j.ok++; save(); }
+function jToday(){ const k = todayKey(); return S.journal[k] || (S.journal[k] = {a:0, ok:0, cm:0, seance:false, ms:0}); }
+function logAnswer(ok, ms){ const j = jToday(); j.a++; if (ok) j.ok++; if (ms) j.ms = (j.ms || 0) + ms; save(); }
+function noteType(type){ if (!type) return; S.typErr = S.typErr || {}; S.typErr[type] = (S.typErr[type] || 0) + 1; save(); }
 function dayDone(k){ const j = S.journal[k]; return !!j && (j.seance || j.a >= 15); }
 function streak(){
   let n = 0; const d = new Date();
@@ -169,6 +170,16 @@ function coachMessages(){
   return msgs;
 }
 
+/* ---------- typologie des erreurs ---------- */
+const TYPES_ERR = [
+  {id:'signe',      ic:'\u00b1',  nom:'Signe',      conseil:"Avant de calculer, d\u00e9termine le signe \u00e0 part \u2014 puis les nombres. Deux gestes s\u00e9par\u00e9s."},
+  {id:'calcul',     ic:'\ud83d\udd22', nom:'Calcul',     conseil:"Ce sont les automatismes : reprends le calcul mental chronom\u00e9tr\u00e9 tous les jours."},
+  {id:'methode',    ic:'\ud83e\udded', nom:'M\u00e9thode',    conseil:"Relis la le\u00e7on et la technique, puis refais une s\u00e9rie en niveau D\u00e9couverte."},
+  {id:'lecture',    ic:'\ud83d\udc53', nom:'Lecture',    conseil:"Relis l'\u00e9nonc\u00e9 deux fois et souligne ce qu'on te demande vraiment."},
+  {id:'etourderie', ic:'\ud83d\udca8', nom:'\u00c9tourderie', conseil:"Tu savais faire. Ralentis de deux secondes avant de valider."}
+];
+const nomType = id => (TYPES_ERR.find(x => x.id === id) || {}).nom || 'non class\u00e9e';
+
 /* ---------- moteur d'exercices (composant partagé) ---------- */
 let qSeq = 0;
 function askQuestion(box, opts, cb){
@@ -194,6 +205,7 @@ function askQuestion(box, opts, cb){
   let chInt = null;
   if (opts.chrono){ const chEl = box.querySelector('[data-ch]');
     chInt = setInterval(() => { const s = Math.floor((performance.now() - t0) / 1000); chEl.textContent = s + ' s'; if (s >= 8) chEl.classList.add('warn'); }, 500); }
+  let typeErr = '';
   function finish(ok, given){
     if (chInt) clearInterval(chInt);
     const dt = performance.now() - t0;
@@ -201,10 +213,16 @@ function askQuestion(box, opts, cb){
     if (ok) snd.good(); else { snd.bad(); box.querySelector('.exo-card').classList.add('shake'); }
     fb.innerHTML = `<p class="verdict ${ok ? 'ok' : 'ko'}">${ok ? R.pick(['✔ Exact !','✔ Parfait.','✔ Oui !','✔ Très bien.']) : '✘ Pas ça. Réponse : ' + esc(ex.a)}</p>` +
       (ex.expl ? `<div class="explain">${esc(ex.expl)}</div>` : '') +
+      (ok || opts.sansType ? '' : `<p class="err-q">Qu'est-ce qui s'est passé ?</p><div class="err-types">` +
+        TYPES_ERR.map(x => `<button class="err-type" type="button" data-t="${x.id}">${x.ic} ${esc(x.nom)}</button>`).join('') + `</div>`) +
       `<div class="next-row"><button class="primary" data-next>Continuer</button></div>`;
+    fb.querySelectorAll('.err-type').forEach(b => b.addEventListener('click', () => {
+      typeErr = b.dataset.t; snd.click();
+      fb.querySelectorAll('.err-type').forEach(x => x.classList.toggle('sel', x === b));
+    }));
     const btn = fb.querySelector('[data-next]');
     btn.focus();
-    btn.addEventListener('click', () => { snd.click(); cb({ok, ms: dt, given, ex}); });
+    btn.addEventListener('click', () => { snd.click(); cb({ok, ms: dt, given, ex, type: typeErr}); });
   }
   if (ex.choix){
     const opts4 = R.shuffle(ex.choix);
@@ -249,13 +267,13 @@ function runSerie(box, skill, n, opts, done){
     askQuestion(wrap, {ex, tag: skill.titre, lvl: level, chrono: opts.chrono !== false,
       skillId: skill.id, count: (res.length + 1) + ' / ' + n}, r => {
       res.push(r.ok ? 1 : 0);
-      logAnswer(r.ok);
+      logAnswer(r.ok, r.ms); noteType(r.type);
       if (opts.recordSkill !== false){
         const evt = record(skill.id, r.ok);
         if (evt === 'mastered') opts.onMastered && opts.onMastered();
       }
       if (!r.ok){
-        S.erreurs.unshift({sid: skill.id, q: r.ex.q, a: r.ex.a, given: r.given, expl: r.ex.expl || '', choix: r.ex.choix || null, ts: Date.now(), redo: 0});
+        S.erreurs.unshift({sid: skill.id, q: r.ex.q, a: r.ex.a, given: r.given, expl: r.ex.expl || '', choix: r.ex.choix || null, ts: Date.now(), redo: 0, type: r.type || ''});
         if (S.erreurs.length > 120) S.erreurs.pop();
         save();
         okStreak = 0; if (level > startLevel) level--;
@@ -273,7 +291,8 @@ const app = () => $('app');
 let currentView = 'accueil';
 function nav(v){ currentView = v;
   document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('active', b.dataset.v === v));
-  ({accueil: vAccueil, programme: vProgramme, techniques: vTechniques, erreurs: vErreurs, coach: vCoach, regles: vRegles}[v] || vAccueil)();
+  ({accueil: vAccueil, programme: vProgramme, papier: vPapier, techniques: vTechniques, erreurs: vErreurs, coach: vCoach, regles: vRegles,
+    micro: vMicro, ds: vDS, epreuve: vEpreuve}[v] || vAccueil)();
   scrollTo({top: 0});
 }
 
@@ -331,20 +350,25 @@ function vAccueil(){
     <div class="row" style="margin-top:.7rem">
       <button class="primary" id="go-seance">${j.seance ? 'Refaire une séance 💪' : 'Commencer ma séance →'}</button>
       <button class="ghost" id="go-cm">🧮 Calcul mental seul</button>
+      <button class="ghost" id="go-micro">⏱️ 5 minutes</button>
       <button class="ghost" id="go-tech">⚡ Techniques</button>
       ${dim || S.tests.length === 0 ? `<button class="ghost" id="go-test">📅 Test hebdo (20 q)</button>` : `<button class="ghost" id="go-test">📅 Test hebdo</button>`}
+      <button class="ghost" id="go-epreuve">⏳ Épreuve blanche</button>
     </div>
     ${j.seance ? '<p class="small" style="color:var(--ok);margin:.6rem 0 0">✔ Séance du jour terminée — la série continue !</p>' : ''}
   </section>`;
   $('go-seance').addEventListener('click', () => { snd.click(); vSeance(); });
   $('go-cm').addEventListener('click', () => { snd.click(); vCalculMental(); });
   $('go-tech').addEventListener('click', () => { snd.click(); nav('techniques'); });
+  $('go-micro').addEventListener('click', () => { snd.click(); nav('micro'); });
+  $('go-epreuve').addEventListener('click', () => { snd.click(); nav('epreuve'); });
   $('go-test').addEventListener('click', () => { snd.click(); vTest(); });
 }
 
 function vProgramme(){
   let html = `<section class="card"><h2>🗺️ Le programme — 7 phases, ${SKILLS.length} compétences</h2>
-  <p class="muted small">Règle des 90 % : une compétence est validée quand tu réussis 9 de tes 10 dernières réponses. Chaque phase se déverrouille quand la précédente est entièrement maîtrisée. Les leçons, elles, sont toujours lisibles.</p></section>`;
+  <p class="muted small">Règle des 90 % : une compétence est validée quand tu réussis 9 de tes 10 dernières réponses. Chaque phase se déverrouille quand la précédente est entièrement maîtrisée. Les leçons, elles, sont toujours lisibles.</p>
+  <button class="ghost" id="go-ds" style="margin-top:.6rem">📝 Un DS en vue ? Réviser un chapitre précis</button></section>`;
   const f = frontier();
   for (let p = 1; p <= 7; p++){
     const list = SKILLS.filter(s => s.phase === p);
@@ -368,6 +392,7 @@ function vProgramme(){
       }).join('') + `</div></div>`;
   }
   app().innerHTML = html;
+  $('go-ds') && $('go-ds').addEventListener('click', () => { snd.click(); nav('ds'); });
   document.querySelectorAll('[data-skill]').forEach(b => b.addEventListener('click', () => { snd.click(); vSkill(b.dataset.skill); }));
 }
 
@@ -463,7 +488,7 @@ function vSeance(){
       const fam = cmPick(), ex = fam.gen(R);
       const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
       askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, famId: fam.id, chrono: true, count: (i + 1) + ' / ' + N}, r => {
-        cmRecord(fam.id, r.ok); logAnswer(r.ok); if (r.ok) ok++;
+        cmRecord(fam.id, r.ok); logAnswer(r.ok, r.ms); if (r.ok) ok++;
         i++; ask();
       });
     })();
@@ -503,7 +528,7 @@ function vSeance(){
       const e = errs[i];
       const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
       askQuestion(wrap, {ex: {q: e.q, a: e.a, accept: null, choix: e.choix, expl: e.expl}, tag: '📕 Cahier d\'erreurs', chrono: false, count: (i + 1) + ' / ' + errs.length}, r => {
-        logAnswer(r.ok);
+        logAnswer(r.ok, r.ms); noteType(r.type);
         if (r.ok){ ok++; e.redo = (e.redo || 0) + 1; if (e.redo >= 2) S.erreurs = S.erreurs.filter(x => x !== e); }
         else e.redo = 0;
         save(); i++; one();
@@ -564,7 +589,7 @@ function vCalculMental(only){
     const fam = only ? fams[0] : cmPick(), ex = fam.gen(R);
     const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
     askQuestion(wrap, {ex, tag: (fam.icone || '🧮') + ' ' + fam.nom, hint: fam.astuce, famId: fam.id, chrono: true, count: (i + 1) + ' / ' + N}, r => {
-      cmRecord(fam.id, r.ok); logAnswer(r.ok); if (r.ok) ok++; i++; ask();
+      cmRecord(fam.id, r.ok); logAnswer(r.ok, r.ms); if (r.ok) ok++; i++; ask();
     });
   })();
 }
@@ -639,10 +664,10 @@ function vTest(){
     const skill = picks[i], ex = genFor(skill, 2);
     const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
     askQuestion(wrap, {ex, tag: skill.titre, chrono: true, count: (i + 1) + ' / ' + N}, r => {
-      logAnswer(r.ok); if (r.ok) ok++;
+      logAnswer(r.ok, r.ms); noteType(r.type); if (r.ok) ok++;
       (perSkill[skill.id] = perSkill[skill.id] || [0, 0])[1]++;
       if (r.ok) perSkill[skill.id][0]++;
-      if (!r.ok){ S.erreurs.unshift({sid: skill.id, q: r.ex.q, a: r.ex.a, given: r.given, expl: r.ex.expl || '', choix: r.ex.choix || null, ts: Date.now(), redo: 0}); save(); }
+      if (!r.ok){ S.erreurs.unshift({sid: skill.id, q: r.ex.q, a: r.ex.a, given: r.given, expl: r.ex.expl || '', choix: r.ex.choix || null, ts: Date.now(), redo: 0, type: r.type || ''}); save(); }
       i++; ask();
     });
   })();
@@ -678,13 +703,48 @@ function vErreurs(){
       const e = errs[i];
       const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
       askQuestion(wrap, {ex: {q: e.q, a: e.a, accept: null, choix: e.choix, expl: e.expl}, tag: '📕 À refaire', chrono: false, count: (i + 1) + ' / ' + errs.length}, r => {
-        logAnswer(r.ok);
+        logAnswer(r.ok, r.ms); noteType(r.type);
         if (r.ok){ ok++; e.redo = (e.redo || 0) + 1; if (e.redo >= 2) S.erreurs = S.erreurs.filter(x => x !== e); }
         else e.redo = 0;
         save(); i++; one();
       });
     })();
   });
+}
+
+/* --- courbe de vitesse : secondes par réponse, 10 derniers jours travaillés --- */
+function serieVitesse(){
+  return Object.keys(S.journal).sort()
+    .filter(k => S.journal[k].a >= 5 && S.journal[k].ms)
+    .slice(-10)
+    .map(k => ({jour: k, s: (S.journal[k].ms / S.journal[k].a) / 1000}));
+}
+function sparkVitesse(){
+  const d = serieVitesse();
+  if (d.length < 2) return '<p class="small muted">Ta courbe de vitesse apparaîtra après quelques jours d\'entraînement.</p>';
+  const vs = d.map(x => x.s), mx = Math.max(...vs), mn = Math.min(...vs);
+  const W = 320, H = 70, pad = 6, ec = Math.max(mx - mn, .5);
+  const pts = d.map((x, i) => [pad + i * (W - 2 * pad) / (d.length - 1), H - pad - (x.s - mn) / ec * (H - 2 * pad)]);
+  const chemin = pts.map((p, i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  const delta = vs[0] - vs[vs.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H}" class="spark" role="img" aria-label="Vitesse : ${vs[vs.length-1].toFixed(1)} secondes par réponse">
+      <path d="${chemin}" fill="none" stroke="var(--gold)" stroke-width="2"/>
+      ${pts.map(p => `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="2.5" fill="var(--gold)"/>`).join('')}
+    </svg>
+    <p class="small">${vs[vs.length - 1].toFixed(1)} s par réponse aujourd'hui${delta > .3 ? ` — <strong style="color:var(--ok)">${delta.toFixed(1)} s plus rapide</strong> qu'il y a ${d.length} jours 🚀` : delta < -.3 ? ' — un peu plus lent que la semaine dernière, c\'est normal quand les notions se corsent.' : ''}</p>
+    <p class="small muted">Objectif concours : moins de 4 s sur le calcul mental.</p>`;
+}
+function profilErreurs(){
+  const e = S.typErr || {}; const tot = Object.values(e).reduce((a, b) => a + b, 0);
+  if (tot < 5) return '<p class="small muted">Classe tes erreurs après chaque faute : au bout d\'une vingtaine, je te dirai laquelle te coûte le plus cher.</p>';
+  const lignes = TYPES_ERR.map(x => ({x, n: e[x.id] || 0})).sort((a, b) => b.n - a.n);
+  const top = lignes[0];
+  return `<div class="bars">${lignes.filter(l => l.n).map(l => `<div class="bar-row">
+      <span class="lab">${l.x.ic} ${esc(l.x.nom)}</span>
+      <span class="pbar"><i style="width:${Math.round(100 * l.n / tot)}%"></i></span>
+      <span class="val">${Math.round(100 * l.n / tot)} %</span></div>`).join('')}</div>
+    <div class="coach-msg"><p class="qui">🤖 Ce que ça dit</p>
+      <p>Ton erreur n°1, c'est <strong>${esc(top.x.nom.toLowerCase())}</strong> (${Math.round(100 * top.n / tot)} % de tes fautes). ${esc(top.x.conseil)}</p></div>`;
 }
 
 /* ---------- coach (stats) ---------- */
@@ -721,8 +781,51 @@ function vCoach(){
       <p>${lastTests.map(t => `<span class="badge">${new Date(t.date).toLocaleDateString('fr-FR')} · <b>${t.ok}/${t.n}</b></span>`).join('')}</p>` : ''}
     ${weak.length ? `<p class="k" style="margin-top:.8rem">À consolider en priorité</p>
       ${weak.map(s => `<button class="skill" data-skill="${s.id}"><span class="num">${s.phase}.${s.ordre}</span><span class="t">${esc(s.titre)}</span><span class="etat">${Math.round(tauxRecent(s.id) * 100)} %</span></button>`).join('')}` : ''}
-  </section>`;
+  </section>
+  <section class="card"><h2>⚡ Ta vitesse</h2>${sparkVitesse()}</section>
+  <section class="card"><h2>🔍 Le profil de tes erreurs</h2>${profilErreurs()}</section>
+  <section class="card"><h2>🗓️ Débrief de la semaine</h2>
+    <p class="muted small">Je transmets tes statistiques au Prof : il te fait un bilan et te fixe trois objectifs.</p>
+    <button class="primary" id="debrief" style="margin-top:.6rem">Demander mon débrief</button></section>
+  <section class="card"><h2>💾 Sauvegarde</h2>
+    <p class="muted small">Ta progression n'existe que dans ce navigateur : si tu effaces tes données ou changes de téléphone, elle est perdue. Copie ce texte de temps en temps et garde-le dans tes notes.</p>
+    <div class="row" style="margin-top:.6rem">
+      <button class="primary" id="sv-copier">Copier ma sauvegarde</button>
+      <button class="ghost" id="sv-restaurer">Restaurer</button>
+    </div>
+    <div id="sv-zone"></div></section>`;
   document.querySelectorAll('[data-skill]').forEach(b => b.addEventListener('click', () => { snd.click(); vSkill(b.dataset.skill); }));
+  $('debrief').addEventListener('click', () => {
+    snd.click();
+    const e = S.typErr || {}, tot = Object.values(e).reduce((a, b) => a + b, 0);
+    const pire = TYPES_ERR.map(x => ({x, n: e[x.id] || 0})).sort((a, b) => b.n - a.n)[0];
+    const v = serieVitesse();
+    const q = 'Fais-moi le débrief de ma semaine et donne-moi trois objectifs précis pour la semaine qui vient. '
+      + 'Mes chiffres : ' + masteredCount() + '/' + SKILLS.length + ' compétences maîtrisées, '
+      + streak() + ' jours de série, ' + Object.keys(S.journal).filter(dayDone).length + ' jours travaillés au total'
+      + (v.length ? ', vitesse actuelle ' + v[v.length - 1].s.toFixed(1) + ' s par réponse' : '')
+      + (tot >= 5 ? ', erreur dominante : ' + pire.x.nom.toLowerCase() + ' (' + Math.round(100 * pire.n / tot) + ' % de mes fautes)' : '')
+      + ((S.epreuves || []).length ? ', dernière épreuve blanche : ' + S.epreuves[S.epreuves.length - 1].note + '/20' : '')
+      + '. Sois direct et concret.';
+    const fab = $('assist-fab'); if (fab && $('assist-panel').classList.contains('hidden')) fab.click();
+    setTimeout(() => { const i = $('assist-in'); if (i){ i.value = q; $('assist-send').click(); } }, 250);
+  });
+  $('sv-copier').addEventListener('click', async () => {
+    snd.click(); const txt = exportEtat();
+    try { await navigator.clipboard.writeText(txt); $('sv-zone').innerHTML = '<p class="small" style="color:var(--ok)">✅ Sauvegarde copiée. Colle-la dans tes notes.</p>'; }
+    catch(e){ $('sv-zone').innerHTML = '<p class="small muted">Copie ce texte à la main :</p><textarea class="sv-txt" readonly>' + esc(txt) + '</textarea>'; }
+  });
+  $('sv-restaurer').addEventListener('click', () => {
+    snd.click();
+    $('sv-zone').innerHTML = '<p class="small muted" style="margin-top:.6rem">Colle ici une sauvegarde. ⚠️ Elle remplacera toute ta progression actuelle.</p>'
+      + '<textarea class="sv-txt" id="sv-in" placeholder=\'{"v":1,"app":"mzs"…\'></textarea>'
+      + '<button class="ghost small" id="sv-go">Remplacer ma progression</button>';
+    $('sv-go').addEventListener('click', () => {
+      const err = importEtat($('sv-in').value.trim());
+      if (err) $('sv-zone').insertAdjacentHTML('beforeend', '<p class="small" style="color:var(--ko)">⚠️ ' + esc(err) + '</p>');
+      else { snd.win(1); nav('coach'); }
+    });
+  });
   document.querySelectorAll('[data-tech]').forEach(b => b.addEventListener('click', () => { snd.click(); currentView = 'techniques';
     document.querySelectorAll('.nav button').forEach(x => x.classList.toggle('active', x.dataset.v === 'techniques'));
     vTechniques(b.dataset.tech); }));
@@ -742,6 +845,269 @@ function vRegles(){
     <div class="box astuce"><p class="box-t">Le cap</p><p>Phase après phase : 6e → 3e → seconde → première → terminale → concours. Destination : <mark>excellente moyenne en STMG</mark>, <mark>SESAME</mark> et <mark>ACCÈS</mark> (≈ avril 2027), bac (juin 2027). Ton altitude sur la montagne = ta progression réelle.</p></div>
     </div>
   </section>`;
+}
+
+/* ============================================================
+   SAUVEGARDE — la progression ne vit que dans ce navigateur
+   ============================================================ */
+function exportEtat(){
+  return JSON.stringify({v: 1, app: 'mzs', date: new Date().toISOString(), etat: S});
+}
+function importEtat(txt){
+  let o; try { o = JSON.parse(txt); } catch(e){ return 'Ce texte n\'est pas une sauvegarde valide.'; }
+  const e = o && (o.etat || (o.skills ? o : null));
+  if (!e || typeof e !== 'object' || !e.skills) return 'Sauvegarde non reconnue.';
+  S = Object.assign(defState(), e); save();
+  return null;
+}
+
+/* ============================================================
+   MICRO-SÉANCE — 3 questions, pour les jours sans
+   ============================================================ */
+function vMicro(){
+  const due = dueReviews(), f = frontier();
+  const cible = due.length ? due[0] : f;
+  if (!cible){ app().innerHTML = '<section class="card"><p>Rien à réviser pour l\'instant — lance une séance complète.</p></section>'; return; }
+  app().innerHTML = `<section class="card"><h2>⏱️ 5 minutes chrono</h2>
+    <p class="muted small">Trois questions sur « ${esc(cible.titre)} ». L'essentiel, c'est de ne pas casser la série.</p></section><div id="zone"></div>`;
+  runSerie($('zone'), cible, 3, {level: 2, adapt: false, chrono: true, skillId: cible.id}, ({res}) => {
+    const ok = res.reduce((a, b) => a + b, 0);
+    const j = jToday(); j.seance = true; save();
+    $('zone').innerHTML = `<div class="card fin-card"><div class="score">${ok} / 3</div>
+      <p class="msg">Série préservée 🔥 ${streak()} jour${streak() > 1 ? 's' : ''}. C'est tout ce qui compte aujourd'hui.</p>
+      <button class="primary" id="h">Tableau de bord</button></div>`;
+    snd.win(ok / 3);
+    $('h').addEventListener('click', () => { snd.click(); nav('accueil'); });
+  });
+}
+
+/* ============================================================
+   DS EN VUE — réviser un chapitre précis avec ses prérequis
+   ============================================================ */
+function vDS(){
+  const ouverts = SKILLS.filter(s => phaseUnlocked(s.phase));
+  app().innerHTML = `<section class="card"><h2>📝 DS en vue</h2>
+    <p class="muted small">Choisis le chapitre de ton prochain contrôle : je te fabrique une séance de 12 questions mêlant ce chapitre et ses prérequis immédiats.</p>
+    <div class="skills" style="margin-top:.7rem">${ouverts.map(s => `<button class="skill" data-ds="${s.id}">
+      <span class="num">${s.phase}.${s.ordre}</span><span class="t">${esc(s.titre)}</span>
+      <span class="etat">${st(s.id).mastered ? '✅' : '·'}</span></button>`).join('')}</div></section>`;
+  document.querySelectorAll('[data-ds]').forEach(b => b.addEventListener('click', () => { snd.click(); lancerDS(b.dataset.ds); }));
+}
+function lancerDS(id){
+  const i = SKILLS.findIndex(s => s.id === id), cible = SKILLS[i];
+  const prereq = SKILLS.slice(Math.max(0, i - 2), i).filter(s => phaseUnlocked(s.phase));
+  const lot = [cible, cible, cible].concat(prereq);
+  app().innerHTML = `<section class="card"><h2>📝 ${esc(cible.titre)}</h2>
+    <p class="muted small">12 questions : ce chapitre${prereq.length ? ' + ' + prereq.map(s => esc(s.titre)).join(', ') : ''}.</p></section><div id="zone"></div>`;
+  let i2 = 0, ok = 0; const N = 12, box = $('zone');
+  (function ask(){
+    if (i2 >= N){
+      box.innerHTML = `<div class="card fin-card"><div class="score">${ok} / ${N}</div>
+        <p class="msg">${ok >= 10 ? 'Tu es prêt pour ce DS.' : ok >= 7 ? 'Presque — refais une série sur les points ratés.' : 'Reprends la leçon avant le contrôle, il reste du travail.'}</p>
+        <div class="row" style="justify-content:center"><button class="primary" id="re">Recommencer</button><button class="ghost" id="h">Tableau de bord</button></div></div>`;
+      snd.win(ok / N);
+      $('re').addEventListener('click', () => { snd.click(); lancerDS(id); });
+      $('h').addEventListener('click', () => { snd.click(); nav('accueil'); });
+      return;
+    }
+    const sk = lot[i2 % lot.length], ex = genFor(sk, 2);
+    const wrap = document.createElement('div'); box.innerHTML = ''; box.appendChild(wrap);
+    askQuestion(wrap, {ex, tag: sk.titre, chrono: true, skillId: sk.id, count: (i2 + 1) + ' / ' + N}, r => {
+      logAnswer(r.ok, r.ms); noteType(r.type); if (r.ok) ok++;
+      record(sk.id, r.ok);
+      if (!r.ok){ S.erreurs.unshift({sid: sk.id, q: r.ex.q, a: r.ex.a, given: r.given, expl: r.ex.expl || '', choix: r.ex.choix || null, ts: Date.now(), redo: 0, type: r.type || ''}); save(); }
+      i2++; ask();
+    });
+  })();
+}
+
+/* ============================================================
+   ÉPREUVE BLANCHE — conditions réelles, correction à la fin
+   ============================================================ */
+const FORMATS = {
+  sesame: {nom: 'SESAME', n: 20, min: 20, neg: 0,    info: 'Pas de point négatif : on répond à tout.'},
+  acces:  {nom: 'ACCÈS',  n: 20, min: 20, neg: 0.25, info: 'Mauvaise réponse : −0,25 point. Ne réponds que si tu es raisonnablement sûr — sinon passe.'}
+};
+function vEpreuve(){
+  const pool = SKILLS.filter(s => st(s.id).n > 0 || st(s.id).mastered);
+  if (pool.length < 3){
+    app().innerHTML = `<section class="card"><h2>⏳ Épreuve blanche</h2>
+      <p>Elle se débloque quand tu as travaillé au moins 3 compétences. Continue tes séances — elle t'attend.</p>
+      <button class="ghost" id="h">← Retour</button></section>`;
+    $('h').addEventListener('click', () => { snd.click(); nav('accueil'); }); return;
+  }
+  app().innerHTML = `<section class="card"><h2>⏳ Épreuve blanche</h2>
+    <p class="muted small">Conditions réelles : chrono global, aucune correction avant la fin, et on ne revient pas en arrière. C'est l'entraînement qui ressemble le plus au jour J.</p>
+    <div class="row" style="margin-top:.8rem">
+      <button class="primary" data-fmt="sesame">Format SESAME</button>
+      <button class="primary" data-fmt="acces">Format ACCÈS</button>
+    </div>
+    <p class="small muted" style="margin-top:.6rem">SESAME : 20 questions en 20 min, sans point négatif.<br>ACCÈS : 20 questions en 20 min, <strong>−0,25 par erreur</strong> — savoir passer fait partie de l'épreuve.</p>
+    ${(S.epreuves || []).length ? '<p class="k" style="margin-top:.9rem">Tes épreuves</p><p>' + S.epreuves.slice(-5).reverse().map(e => `<span class="badge">${new Date(e.date).toLocaleDateString('fr-FR')} · ${e.fmt} · <b>${e.note}</b>/20</span>`).join('') + '</p>' : ''}
+  </section>`;
+  document.querySelectorAll('[data-fmt]').forEach(b => b.addEventListener('click', () => { snd.click(); runEpreuve(b.dataset.fmt); }));
+}
+function runEpreuve(fmt){
+  const F = FORMATS[fmt];
+  const pool = SKILLS.filter(s => st(s.id).n > 0 || st(s.id).mastered);
+  const qs = Array.from({length: F.n}, () => { const sk = R.pick(pool); return {sk, ex: genFor(sk, 2)}; });
+  const rep = new Array(F.n).fill(null);
+  let i = 0; const t0 = Date.now(), limite = F.min * 60000;
+  app().innerHTML = `<section class="card"><div class="row" style="justify-content:space-between">
+      <span class="k" style="margin:0">Épreuve ${F.nom}</span><span class="chrono" id="ep-ch">--:--</span></div>
+    <p class="small muted">${esc(F.info)}</p></section><div id="zone"></div>`;
+  const ch = $('ep-ch');
+  const tic = setInterval(() => {
+    const reste = limite - (Date.now() - t0);
+    if (reste <= 0){ clearInterval(tic); fin(true); return; }
+    const s = Math.ceil(reste / 1000);
+    ch.textContent = String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    ch.classList.toggle('warn', reste < 120000);
+  }, 250);
+
+  function poser(){
+    if (i >= F.n){ clearInterval(tic); fin(false); return; }
+    const {sk, ex} = qs[i];
+    const box = $('zone');
+    box.innerHTML = `<div class="exo-card deal">
+      <div class="exo-top"><span class="tag">${esc(sk.titre)}</span><span class="count">${i + 1} / ${F.n}</span></div>
+      <p class="qtext">${esc(ex.q)}</p><div id="ep-z"></div>
+      <div class="next-row"><button class="ghost" id="ep-skip">Passer</button></div></div>`;
+    snd.deal();
+    const z = $('ep-z');
+    if (ex.choix){
+      const opts = R.shuffle(ex.choix);
+      z.innerHTML = `<div class="opts">${opts.map((c, k) => `<button class="opt" data-c="${esc(c)}"><span class="letter">${'ABCD'[k]}</span><span>${esc(c)}</span></button>`).join('')}</div>`;
+      z.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => { rep[i] = b.dataset.c; snd.click(); i++; poser(); }));
+    } else {
+      z.innerHTML = `<div class="answer-row"><input type="text" inputmode="decimal" autocomplete="off" placeholder="Ta réponse…"><button class="primary" id="ep-v">Valider</button></div>`;
+      const inp = z.querySelector('input');
+      const go = () => { rep[i] = inp.value.trim(); snd.click(); i++; poser(); };
+      $('ep-v').addEventListener('click', go);
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+      inp.focus();
+    }
+    $('ep-skip').addEventListener('click', () => { rep[i] = ''; snd.click(); i++; poser(); });
+  }
+
+  function fin(tempsEcoule){
+    let just = 0, faux = 0, vide = 0;
+    qs.forEach((q, k) => {
+      const r = rep[k];
+      if (r === null || r === '') vide++;
+      else if (isRight(r, q.ex)) just++;
+      else faux++;
+    });
+    const brut = just - faux * F.neg;
+    const note = Math.max(0, Math.round(brut / F.n * 20 * 10) / 10);
+    S.epreuves = S.epreuves || [];
+    S.epreuves.push({date: Date.now(), fmt: F.nom, note, just, faux, vide, n: F.n});
+    if (S.epreuves.length > 40) S.epreuves.shift();
+    qs.forEach((q, k) => {
+      const r = rep[k];
+      if (r && !isRight(r, q.ex))
+        S.erreurs.unshift({sid: q.sk.id, q: q.ex.q, a: q.ex.a, given: r, expl: q.ex.expl || '', choix: q.ex.choix || null, ts: Date.now(), redo: 0, type: ''});
+    });
+    const jd = jToday(); jd.seance = true; save();
+    const conseil = F.neg
+      ? (faux > vide ? 'Tu réponds trop souvent au hasard : chaque erreur t\'a coûté 0,25. Passe davantage.' :
+         vide > just / 2 ? 'Tu passes beaucoup : sur ce format, une réponse dont tu es à moitié sûr reste rentable.' :
+         'Bon équilibre entre réponses et impasses.')
+      : (vide ? 'Sans point négatif, ne laisse jamais une case vide : réponds toujours.' : 'Tu as répondu à tout : c\'est la bonne stratégie sur ce format.');
+    app().innerHTML = `<section class="card fin-card">
+        <p class="k">Épreuve ${F.nom}${tempsEcoule ? ' · temps écoulé' : ''}</p>
+        <div class="score">${note} / 20</div>
+        <p class="msg">${just} juste${just > 1 ? 's' : ''} · ${faux} faux · ${vide} sans réponse</p>
+        <p class="msg">${esc(conseil)}</p>
+        <div class="row" style="justify-content:center"><button class="primary" id="corr">Voir la correction</button><button class="ghost" id="h">Tableau de bord</button></div>
+      </section><div id="corr-z"></div>`;
+    snd.win(note / 20); if (note >= 16) confetti(note >= 19);
+    $('h').addEventListener('click', () => { snd.click(); nav('accueil'); });
+    $('corr').addEventListener('click', () => { snd.click();
+      $('corr-z').innerHTML = qs.map((q, k) => {
+        const r = rep[k], bon = r && isRight(r, q.ex);
+        return `<div class="err ${bon ? '' : 'ko'}"><p class="q">${k + 1}. ${esc(q.ex.q)}</p>
+          <p class="rep">${bon ? '✔ ' + esc(r) : (r ? '✘ <s>' + esc(r) + '</s> · ' : '— sans réponse · ') + 'attendu <b>' + esc(q.ex.a) + '</b>'}</p>
+          ${q.ex.expl ? `<p class="meta">${esc(q.ex.expl)}</p>` : ''}</div>`;
+      }).join('');
+    });
+  }
+  poser();
+}
+
+/* ============================================================
+   SUR PAPIER — rédiger, puis s'auto-évaluer sur critères
+   ============================================================ */
+const PAPIERS = (window.PAPIERS || []).slice().sort((a, b) => a.phase - b.phase);
+function vPapier(){
+  if (!PAPIERS.length){
+    app().innerHTML = '<section class="card"><h2>✍️ Sur papier</h2><p>Aucun exercice disponible.</p></section>'; return;
+  }
+  const fait = S.papier || {};
+  let h = `<section class="card"><h2>✍️ Sur papier</h2>
+    <p class="muted small">Prends une feuille et un stylo. Tu résous <strong>à la main</strong>, comme au bac — puis tu compares avec la rédaction modèle et tu coches ce que tu as réellement fait. C'est le seul entraînement à la rédaction, et c'est elle qu'on note le jour J.</p></section>`;
+  for (let p = 1; p <= 7; p++){
+    const lot = PAPIERS.filter(x => x.phase === p); if (!lot.length) continue;
+    h += `<div class="phase"><div class="phase-head"><h2>Phase ${p} · ${esc(PHASES[p].nom)}</h2></div><div class="skills">` +
+      lot.map(x => { const f = fait[x.id];
+        return `<button class="skill ${f && f.score >= .8 ? 'done' : ''}" data-pap="${x.id}">
+          <span class="num">${x.duree} min</span><span class="t">${esc(x.titre)}</span>
+          <span class="etat">${f ? (f.score >= .8 ? '✅' : Math.round(f.score * 100) + ' %') : '·'}</span></button>`;
+      }).join('') + `</div></div>`;
+  }
+  app().innerHTML = h;
+  document.querySelectorAll('[data-pap]').forEach(b => b.addEventListener('click', () => { snd.click(); vPapierEx(b.dataset.pap); }));
+}
+function vPapierEx(id){
+  const x = PAPIERS.find(e => e.id === id); if (!x) return vPapier();
+  const t0 = Date.now();
+  app().innerHTML = `<section class="card">
+      <p class="k">Phase ${x.phase} · à faire sur feuille · ~${x.duree} min</p>
+      <h2>${esc(x.titre)}</h2>
+      <div class="lecon">${x.enonce}</div>
+      <div class="row" style="margin-top:.9rem">
+        <button class="primary" id="pap-corr">J'ai terminé — voir la correction</button>
+        <button class="ghost" id="pap-back">← Retour</button>
+      </div>
+      <p class="small muted" style="margin-top:.6rem">⏱️ <span id="pap-ch">0 min</span> — prends le temps qu'il faut, mais rédige comme pour un correcteur.</p>
+    </section><div id="pap-z"></div>`;
+  const ch = $('pap-ch');
+  const tic = setInterval(() => { ch.textContent = Math.floor((Date.now() - t0) / 60000) + ' min'; }, 5000);
+  $('pap-back').addEventListener('click', () => { clearInterval(tic); snd.click(); nav('papier'); });
+  $('pap-corr').addEventListener('click', () => {
+    clearInterval(tic); snd.click();
+    $('pap-z').innerHTML = `<section class="card">
+        <p class="k">La rédaction modèle</p>
+        <div class="lecon">${x.corrige}</div>
+      </section>
+      <section class="card">
+        <p class="k">Auto-évaluation — coche ce que tu as VRAIMENT écrit</p>
+        <p class="small muted">Sois honnête : c'est le seul moyen que ça serve à quelque chose.</p>
+        <div class="crit">${x.criteres.map((c, i) => `<label class="crit-l"><input type="checkbox" data-c="${i}"> <span>${esc(c)}</span></label>`).join('')}</div>
+        <button class="primary" id="pap-ok" style="margin-top:.7rem">Valider mon auto-évaluation</button>
+      </section>`;
+    $('pap-z').scrollIntoView({block: 'start'});
+    $('pap-ok').addEventListener('click', () => {
+      const tot = x.criteres.length;
+      const n = [...$('pap-z').querySelectorAll('input[data-c]')].filter(i => i.checked).length;
+      const score = tot ? n / tot : 0;
+      S.papier = S.papier || {};
+      S.papier[x.id] = {score, n, tot, ts: Date.now(), min: Math.round((Date.now() - t0) / 60000)};
+      const jd = jToday(); jd.seance = true; save();
+      snd.win(score);
+      if (score >= .8) confetti(false);
+      $('pap-z').innerHTML = `<section class="card fin-card">
+          <div class="score">${n} / ${tot}</div>
+          <p class="msg">${score >= .8 ? 'Rédaction solide — c\'est exactement ce qu\'attend un correcteur.'
+            : score >= .5 ? 'La méthode est là, la rédaction manque de rigueur. Refais-le dans deux jours en soignant les phrases.'
+            : 'Reprends la leçon, puis refais cet exercice à froid : la rédaction se travaille comme le calcul.'}</p>
+          <div class="row" style="justify-content:center">
+            <button class="primary" id="pap-re">Refaire</button><button class="ghost" id="pap-l">← Liste</button></div>
+        </section>`;
+      $('pap-re').addEventListener('click', () => { snd.click(); vPapierEx(id); });
+      $('pap-l').addEventListener('click', () => { snd.click(); nav('papier'); });
+    });
+  });
 }
 
 /* ---------- passerelle pour l'assistant ---------- */

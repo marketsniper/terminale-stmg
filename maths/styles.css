@@ -248,3 +248,29 @@ button.small{font-size:.82rem; padding:.35rem .7rem}
   #snd-btn{width:2rem; height:2rem; font-size:.9rem}
 }
 @media print{ .nav,#snd-btn,#confetti{display:none} }
+
+
+/* ---- typologie des erreurs ---- */
+.err-q{margin:.8rem 0 .35rem; font-size:.85rem; font-weight:600; color:var(--muted)}
+.err-types{display:flex; gap:.35rem; flex-wrap:wrap}
+.err-type{font-size:.78rem; padding:.3rem .6rem; border-radius:99px; color:var(--muted)}
+.err-type:hover{color:var(--ink)}
+.err-type.sel{background:var(--ko); border-color:var(--ko); color:#fff}
+
+/* ---- auto-évaluation « papier » ---- */
+.crit{display:flex; flex-direction:column; gap:.5rem; margin-top:.6rem}
+.crit-l{display:flex; gap:.6rem; align-items:flex-start; font-size:.92rem; line-height:1.45; cursor:pointer;
+  background:var(--card2); border:1px solid var(--line); border-radius:10px; padding:.55rem .7rem}
+.crit-l:hover{border-color:var(--glacier)}
+.crit-l input{margin-top:.2rem; flex:0 0 auto; width:1.05rem; height:1.05rem; accent-color:var(--ok)}
+.crit-l input:checked + span{color:var(--muted)}
+
+/* ---- courbe de vitesse ---- */
+.spark{width:100%; height:auto; max-height:80px; display:block; margin:.4rem 0}
+
+/* ---- sauvegarde ---- */
+.sv-txt{width:100%; min-height:5rem; margin-top:.5rem; font:inherit; font-size:.72rem; font-family:ui-monospace,Menlo,monospace;
+  padding:.5rem; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px; resize:vertical}
+
+/* ---- correction d'épreuve ---- */
+.err.ko{border-left:3px solid var(--ko)}
