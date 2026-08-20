@@ -227,6 +227,19 @@ table.tbl{border-collapse:collapse; font-size:.88rem; min-width:min(100%, 480px)
 .special{border-style:dashed}
 .hint{margin-top:1.6rem; font-size:.82rem; color:var(--muted); max-width:60ch}
 
+/* ---------- exercices : choix du sous-thème ---------- */
+.chap-pane{grid-column:1 / -1; display:flex; flex-direction:column; gap:.45rem}
+.chap-top{display:flex; align-items:center; gap:.8rem; flex-wrap:wrap; margin-bottom:.4rem}
+.chap-top h3{margin:0; font-size:1.25rem; border-bottom:3px solid var(--acc); padding-bottom:.1rem}
+.chap-theme{margin:.9rem 0 .15rem; font-size:.74rem; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:color-mix(in srgb, var(--acc) 75%, var(--ink))}
+.chaprow{display:flex; align-items:center; gap:.7rem; text-align:left; padding:.6rem .8rem; border-radius:8px; background:var(--card); border:1px solid var(--line); border-left:3px solid var(--acc); box-shadow:var(--shadow)}
+.chaprow:hover{border-color:var(--acc)}
+.chaprow .t{flex:1 1 auto; font-size:.92rem; font-weight:550; line-height:1.25}
+.chaprow .n{flex:0 0 auto; font-size:.76rem; color:var(--muted); font-variant-numeric:tabular-nums}
+.chaprow .mbar{flex:0 0 56px}
+.chaprow.whole{border-style:dashed}
+.chaprow.whole .t{font-weight:650}
+
 /* ---------- exercices : session ---------- */
 .qtop{display:flex; align-items:center; gap:.8rem; margin:1.2rem 0 1rem}
 .qtop .back{font-size:.82rem; padding:.4rem .7rem}
@@ -2238,7 +2251,7 @@ button:active{transform:translateY(1px) scale(.985)}
     <div class="gstat"><b id="g-taux">–</b><span>de réussite</span></div>
   </div>
   <div class="grid" id="matiere-grid"></div>
-  <p class="hint">Chaque session tire 10 questions au hasard, en donnant la priorité à celles que tu n'as jamais vues. Les erreurs vont dans « À revoir » : vide cette pile régulièrement, c'est le meilleur moyen de progresser. Tu peux aussi lancer un quiz ciblé depuis n'importe quelle fiche avec le bouton « M'exercer sur ce chapitre ». Tes statistiques restent sur cet appareil.</p>
+  <p class="hint">Clique sur une matière pour choisir un sous-thème précis (1.1, 1.2…) et t'exercer uniquement dessus, ou lance toute la matière au hasard. Chaque session tire jusqu'à 10 questions, en donnant la priorité à celles que tu n'as jamais vues. Les erreurs vont dans « À revoir » : vide cette pile régulièrement, c'est le meilleur moyen de progresser. Tes statistiques restent sur cet appareil.</p>
 </div>
 
 <div id="quiz" class="hidden">
@@ -2491,8 +2504,19 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
   }
 
   /* ================= exercices : accueil ================= */
+  // méta des fiches (numéro, titre, thème, matière) pour le choix par sous-thème
+  const FICHE_META = {};
+  document.querySelectorAll('section.matiere').forEach(function(sec){
+    let theme = '';
+    sec.querySelectorAll('h3.theme-title, details.fiche').forEach(function(el){
+      if (el.classList.contains('theme-title')){ theme = el.textContent; return; }
+      const num = el.querySelector('.f-num'), title = el.querySelector('.f-title');
+      FICHE_META[el.id] = { num: num ? num.textContent : '', title: title ? title.textContent : '', theme: theme, sec: sec.id };
+    });
+  });
+
   const gridEl = $('matiere-grid');
-  gridEl.addEventListener('click', function(e){ if (e.target.closest && e.target.closest('.mcard')) snd.click(); });
+  gridEl.addEventListener('click', function(e){ if (e.target.closest && e.target.closest('.mcard, .chaprow')) snd.click(); });
   if (!REDUCE && window.matchMedia && matchMedia('(hover:hover) and (pointer:fine)').matches){
     gridEl.addEventListener('pointermove', function(e){
       const card = e.target.closest && e.target.closest('.mcard'); if (!card) return;
@@ -2519,11 +2543,11 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
       const card = document.createElement('button');
       card.className = 'mcard'; card.type = 'button';
       card.style.setProperty('--acc', m.acc);
-      card.innerHTML = '<h3></h3><span class="meta"></span><span class="mbar"><span></span></span><span class="go">S’entraîner →</span>';
+      card.innerHTML = '<h3></h3><span class="meta"></span><span class="mbar"><span></span></span><span class="go">Choisir un sous-thème →</span>';
       card.querySelector('h3').textContent = m.titre;
       card.querySelector('.meta').textContent = m.questions.length + ' questions · ' + seen + ' travaillée' + (seen > 1 ? 's' : '');
       card.querySelector('.mbar span').style.width = (m.questions.length ? 100 * seen / m.questions.length : 0) + '%';
-      card.addEventListener('click', () => startSession(pickQuestions(m.questions, 10), m.titre, null));
+      card.addEventListener('click', () => renderMatiere(m));
       grid.appendChild(card);
     });
 
@@ -2544,6 +2568,59 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
     grid.appendChild(rev);
   }
 
+  // vue « choix du sous-thème » d'une matière : thèmes + fiches (1.1, 1.2…)
+  function renderMatiere(m){
+    const grid = $('matiere-grid');
+    grid.innerHTML = '';
+    const pane = document.createElement('div');
+    pane.className = 'chap-pane';
+    pane.style.setProperty('--acc', m.acc);
+
+    const top = document.createElement('div'); top.className = 'chap-top';
+    const back = document.createElement('button'); back.type = 'button'; back.className = 'ghost';
+    back.textContent = '← Matières';
+    back.addEventListener('click', function(){ snd.click(); renderHome(); });
+    const h = document.createElement('h3'); h.textContent = m.titre;
+    top.appendChild(back); top.appendChild(h);
+    pane.appendChild(top);
+
+    const whole = document.createElement('button'); whole.type = 'button'; whole.className = 'chaprow whole';
+    whole.innerHTML = '<span class="t">🎲 Toute la matière au hasard</span><span class="n"></span>';
+    whole.querySelector('.n').textContent = m.questions.length + ' questions';
+    whole.addEventListener('click', function(){ startSession(pickQuestions(m.questions, 10), m.titre, null, m); });
+    pane.appendChild(whole);
+
+    const byChap = {};
+    m.questions.forEach(function(q){ (byChap[q.chap] = byChap[q.chap] || []).push(q); });
+
+    let lastTheme = null;
+    fiches.forEach(function(f){
+      const meta = FICHE_META[f.id];
+      if (!meta || meta.sec !== m.matiere) return;
+      const qs = byChap[f.id] || [];
+      if (!qs.length) return;
+      if (meta.theme && meta.theme !== lastTheme){
+        lastTheme = meta.theme;
+        const t = document.createElement('p'); t.className = 'chap-theme'; t.textContent = meta.theme;
+        pane.appendChild(t);
+      }
+      const seen = qs.filter(function(q){ return stats[q.qid] && stats[q.qid].vu; }).length;
+      const row = document.createElement('button'); row.type = 'button'; row.className = 'chaprow';
+      row.innerHTML = '<span class="f-num"></span><span class="t"></span><span class="n"></span><span class="mbar"><span></span></span>';
+      row.querySelector('.f-num').textContent = meta.num;
+      row.querySelector('.t').textContent = meta.title;
+      row.querySelector('.n').textContent = qs.length + ' q · ' + seen + ' vue' + (seen > 1 ? 's' : '');
+      row.querySelector('.mbar span').style.width = (100 * seen / qs.length) + '%';
+      row.addEventListener('click', function(){
+        startSession(pickQuestions(qs, 10), meta.num + ' · ' + meta.title, f.id, m);
+      });
+      pane.appendChild(row);
+    });
+
+    grid.appendChild(pane);
+    window.scrollTo(0, 0);
+  }
+
   function pickQuestions(pool, n){
     const unseen = pool.filter(q => !stats[q.qid] || !stats[q.qid].vu);
     const seen = pool.filter(q => stats[q.qid] && stats[q.qid].vu);
@@ -2552,9 +2629,9 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
 
   /* ================= exercices : session ================= */
   let session = null;
-  function startSession(questions, label, fromFiche){
+  function startSession(questions, label, fromFiche, fromMat){
     if (!questions.length) return;
-    session = { list: questions, i: 0, bons: 0, rates: [], label: label, fromFiche: fromFiche };
+    session = { list: questions, i: 0, bons: 0, rates: [], label: label, fromFiche: fromFiche, fromMat: fromMat || null };
     showPanel(vQuiz);
     renderQuestion();
   }
@@ -2574,7 +2651,7 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
     const q = session.list[session.i];
     const card = $('q-card');
     document.documentElement.style.setProperty('--acc', q.mat.acc);
-    $('q-where').textContent = session.label.length > 48 ? q.mat.titre : session.label;
+    $('q-where').textContent = session.label.length > 48 ? session.label.slice(0, 47) + '…' : session.label;
     $('q-count').textContent = (session.i + 1) + ' / ' + session.list.length;
     $('q-fill').style.width = (100 * session.i / session.list.length) + '%';
     card.innerHTML = '';
@@ -2698,12 +2775,13 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
 
   $('btn-quit').addEventListener('click', function(){
     snd.click();
-    if (session && session.fromFiche){ setModeButtons(false); showPanel(vFiches); }
+    if (session && session.fromMat){ renderMatiere(session.fromMat); showPanel(vQuizHome); }
+    else if (session && session.fromFiche){ setModeButtons(false); showPanel(vFiches); }
     else { renderHome(); showPanel(vQuizHome); }
   });
   $('btn-home').addEventListener('click', function(){ snd.click(); renderHome(); showPanel(vQuizHome); });
   $('btn-back-fiches').addEventListener('click', function(){ snd.click(); setModeButtons(false); showPanel(vFiches); });
-  $('btn-retry').addEventListener('click', function(){ snd.click(); startSession(shuffle(session.rates.slice()), 'Mes erreurs', session.fromFiche); });
+  $('btn-retry').addEventListener('click', function(){ snd.click(); startSession(shuffle(session.rates.slice()), 'Mes erreurs', session.fromFiche, session.fromMat); });
 })();
 </script>
 
