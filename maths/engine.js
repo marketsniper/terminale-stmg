@@ -31,8 +31,166 @@ const K = 'mzs-state';
 function defState(){ return { skills:{}, erreurs:[], journal:{}, cm:{fam:{}, best:null}, tests:[], son:true, debut:Date.now() }; }
 let S = defState();
 try { const raw = localStorage.getItem(K); if (raw) S = Object.assign(defState(), JSON.parse(raw)); } catch(e){}
-function save(){ try { localStorage.setItem(K, JSON.stringify(S)); } catch(e){} }
+function save(){ try { localStorage.setItem(K, JSON.stringify(S)); } catch(e){} try { planifierSync(); } catch(e){} }
 function st(id){ return S.skills[id] || (S.skills[id] = {hist:[], n:0, ok:0, mastered:false, fragile:false, due:0, interval:0, lu:false}); }
+
+/* ============================================================
+   PERSISTANCE — trois niveaux pour ne rien perdre
+   1. stockage persistant demandé au navigateur (anti-nettoyage auto)
+   2. copie miroir en IndexedDB (survit à certains effacements)
+   3. sauvegarde automatique dans un Gist GitHub secret (survit à tout)
+   ============================================================ */
+const K_TOKEN = 'mzs-gh-token', K_GIST = 'mzs-gh-gist', K_SYNC = 'mzs-sync-le';
+const GIST_FICHIER = 'maths-de-zero-au-sommet.json';
+const GIST_MARQUE = 'Sauvegarde · Maths De zéro au sommet';
+
+/* --- 1. stockage persistant --- */
+let persistOK = null;
+async function demanderPersistance(){
+  try {
+    if (!navigator.storage || !navigator.storage.persist) return null;
+    persistOK = await navigator.storage.persisted();
+    if (!persistOK) persistOK = await navigator.storage.persist();
+    return persistOK;
+  } catch(e){ return null; }
+}
+
+/* --- 2. miroir IndexedDB --- */
+/* IndexedDB peut ne jamais répondre (base verrouillée, navigation privée) : on ne l'attend jamais indéfiniment. */
+function avecDelai(p, ms, defaut){
+  return Promise.race([p, new Promise(r => setTimeout(() => r(defaut), ms))]);
+}
+function idb(){
+  return new Promise((res, rej) => {
+    const r = indexedDB.open('mzs', 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains('kv')) r.result.createObjectStore('kv'); };
+    r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+  });
+}
+async function idbEcrire(v){
+  let db = null;
+  try { db = await idb();
+    await new Promise((res, rej) => { const tx = db.transaction('kv', 'readwrite');
+      tx.objectStore('kv').put(v, 'etat'); tx.oncomplete = res; tx.onerror = () => rej(tx.error); });
+  } catch(e){} finally { if (db) try { db.close(); } catch(e){} }
+}
+async function idbLire(){
+  let db = null;
+  try { db = await idb();
+    return await new Promise((res, rej) => { const tx = db.transaction('kv', 'readonly');
+      const q = tx.objectStore('kv').get('etat'); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  } catch(e){ return null; } finally { if (db) try { db.close(); } catch(e){} }
+}
+
+/* --- 3. Gist GitHub --- */
+const ghToken = () => { try { return localStorage.getItem(K_TOKEN) || ''; } catch(e){ return ''; } };
+const gistId  = () => { try { return localStorage.getItem(K_GIST) || ''; } catch(e){ return ''; } };
+function ghSet(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+
+async function gh(url, opt){
+  const r = await fetch('https://api.github.com' + url, Object.assign({
+    headers: {'authorization': 'Bearer ' + ghToken(), 'accept': 'application/vnd.github+json', 'content-type': 'application/json'}
+  }, opt || {}));
+  if (!r.ok){
+    let m = ''; try { m = (await r.json()).message || ''; } catch(e){}
+    throw new Error(r.status === 401 ? 'Jeton refusé — vérifie-le.'
+      : r.status === 403 ? "Le jeton n'a pas la permission « gist »."
+      : r.status === 404 ? 'Sauvegarde introuvable.'
+      : 'GitHub ' + r.status + (m ? ' — ' + m : ''));
+  }
+  return r.json();
+}
+async function trouverGist(){
+  if (gistId()) return gistId();
+  const l = await gh('/gists?per_page=100');
+  const g = l.find(x => x.description === GIST_MARQUE || (x.files && x.files[GIST_FICHIER]));
+  if (g){ ghSet(K_GIST, g.id); return g.id; }
+  return '';
+}
+async function nuageEnvoyer(){
+  if (!ghToken()) return null;
+  const corps = {description: GIST_MARQUE, files: {}};
+  corps.files[GIST_FICHIER] = {content: exportEtat()};
+  let id = await trouverGist();
+  if (id){
+    try { await gh('/gists/' + id, {method: 'PATCH', body: JSON.stringify(corps)}); }
+    catch(e){ if (!/introuvable/.test(e.message)) throw e; ghSet(K_GIST, ''); id = ''; }
+  }
+  if (!id){
+    corps.public = false;
+    const g = await gh('/gists', {method: 'POST', body: JSON.stringify(corps)});
+    ghSet(K_GIST, g.id);
+  }
+  ghSet(K_SYNC, String(Date.now()));
+  return true;
+}
+async function nuageRecuperer(){
+  if (!ghToken()) return null;
+  const id = await trouverGist();
+  if (!id) return null;
+  const g = await gh('/gists/' + id);
+  const f = g.files && g.files[GIST_FICHIER];
+  if (!f) return null;
+  const txt = f.truncated && f.raw_url ? await (await fetch(f.raw_url)).text() : f.content;
+  try { return JSON.parse(txt); } catch(e){ return null; }
+}
+
+/* --- déclenchement automatique, sans y penser --- */
+let syncTimer = null, syncEnCours = false, dernierEchec = '';
+function planifierSync(){
+  avecDelai(idbEcrire(exportEtat()), 5000, null);
+  if (!ghToken()) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(lancerSync, 20000);   // 20 s après la dernière modification
+}
+async function lancerSync(){
+  if (syncEnCours || !ghToken() || navigator.onLine === false) return;
+  syncEnCours = true;
+  try { await nuageEnvoyer(); dernierEchec = ''; }
+  catch(e){ dernierEchec = e.message || String(e); }
+  finally { syncEnCours = false; majPastille(); }
+}
+function majPastille(){
+  const el = document.getElementById('sync-etat');
+  if (el) el.innerHTML = etatSyncHTML();
+}
+function depuis(ts){
+  if (!ts) return 'jamais';
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return "à l'instant";
+  if (m < 60) return 'il y a ' + m + ' min';
+  const h = Math.round(m / 60);
+  if (h < 24) return 'il y a ' + h + ' h';
+  return 'il y a ' + Math.round(h / 24) + ' j';
+}
+/* Rappel doux sur l'accueil tant que la progression n'est pas à l'abri. */
+function bandeauSauvegarde(){
+  const travail = masteredCount() > 0 || Object.values(S.journal || {}).reduce((s, j) => s + ((j && j.a) || 0), 0) >= 20;
+  if (!travail) return '';
+  if (!ghToken()) return '<div class="coach-msg"><p class="qui">💾 Mets ta progression à l\'abri</p>' +
+    '<p>Tout ce que tu as fait n\'existe que sur cet appareil. En 2 minutes, l\'app peut se sauvegarder toute seule après chaque séance.</p>' +
+    '<div class="row" style="margin-top:.5rem"><button class="primary" id="go-sauve">Activer la sauvegarde automatique</button></div></div>';
+  if (dernierEchec) return '<div class="coach-msg"><p class="qui">⚠️ Sauvegarde en ligne bloquée</p><p>' + esc(dernierEchec) +
+    '</p><div class="row" style="margin-top:.5rem"><button class="ghost" id="go-sauve">Vérifier</button></div></div>';
+  return '';
+}
+function etatSyncHTML(){
+  const le = +lire0(K_SYNC);
+  if (!ghToken()) return '<p class="small muted">☁️ Sauvegarde automatique <strong>non configurée</strong> — ta progression n\'existe que sur cet appareil.</p>';
+  if (dernierEchec) return '<p class="small" style="color:var(--ko)">⚠️ Dernière sauvegarde en ligne échouée : ' + esc(dernierEchec) + '</p>';
+  return '<p class="small" style="color:var(--ok)">☁️ Sauvegarde automatique active — dernière : <strong>' + depuis(le) + '</strong>.</p>';
+}
+function lire0(k){ try { return localStorage.getItem(k) || ''; } catch(e){ return ''; } }
+
+/* --- récupération au démarrage si l'appareil a tout effacé --- */
+function estVide(e){ return !e || !e.skills || Object.keys(e.skills).length === 0; }
+async function recupererSiVide(){
+  if (!estVide(S)) return;
+  const local = await avecDelai(idbLire(), 3000, null);
+  if (local){ try { const o = JSON.parse(local); if (!estVide(o.etat || o)){ S = Object.assign(defState(), o.etat || o); save(); return 'miroir'; } } catch(e){} }
+  try { const d = await nuageRecuperer(); if (d && !estVide(d.etat || d)){ S = Object.assign(defState(), d.etat || d); save(); return 'nuage'; } } catch(e){}
+  return null;
+}
 
 /* ---------- sons ---------- */
 let actx = null;
@@ -343,6 +501,7 @@ function vAccueil(){
       <div class="stat"><b>J−${joursAvant(DATE_BAC)}</b><span>bac (≈ juin 2027)</span></div>
     </div>
   </section>
+  ${bandeauSauvegarde()}
   ${msg ? `<div class="coach-msg"><p class="qui">🤖 Ton coach</p><p>${msg.t}</p></div>` : ''}
   <section class="card">
     <h2>La séance du jour</h2>
@@ -357,6 +516,7 @@ function vAccueil(){
     </div>
     ${j.seance ? '<p class="small" style="color:var(--ok);margin:.6rem 0 0">✔ Séance du jour terminée — la série continue !</p>' : ''}
   </section>`;
+  if ($('go-sauve')) $('go-sauve').addEventListener('click', () => { snd.click(); nav('coach'); });
   $('go-seance').addEventListener('click', () => { snd.click(); vSeance(); });
   $('go-cm').addEventListener('click', () => { snd.click(); vCalculMental(); });
   $('go-tech').addEventListener('click', () => { snd.click(); nav('techniques'); });
@@ -787,13 +947,26 @@ function vCoach(){
   <section class="card"><h2>🗓️ Débrief de la semaine</h2>
     <p class="muted small">Je transmets tes statistiques au Prof : il te fait un bilan et te fixe trois objectifs.</p>
     <button class="primary" id="debrief" style="margin-top:.6rem">Demander mon débrief</button></section>
-  <section class="card"><h2>💾 Sauvegarde</h2>
-    <p class="muted small">Ta progression n'existe que dans ce navigateur : si tu effaces tes données ou changes de téléphone, elle est perdue. Copie ce texte de temps en temps et garde-le dans tes notes.</p>
-    <div class="row" style="margin-top:.6rem">
-      <button class="primary" id="sv-copier">Copier ma sauvegarde</button>
-      <button class="ghost" id="sv-restaurer">Restaurer</button>
-    </div>
-    <div id="sv-zone"></div></section>`;
+  <section class="card"><h2>💾 Ta progression est-elle à l'abri ?</h2>
+    <div id="sync-etat">${etatSyncHTML()}</div>
+    <p class="small muted">${persistOK === true ? '🔒 Stockage protégé : ton téléphone ne fera pas le ménage tout seul.' : persistOK === false ? '⚠️ Stockage non protégé par le navigateur — la sauvegarde en ligne est vivement conseillée.' : ''}</p>
+    ${ghToken() ? `<div class="row" style="margin-top:.6rem">
+        <button class="primary" id="sv-now">Sauvegarder maintenant</button>
+        <button class="ghost" id="sv-pull">Récupérer depuis GitHub</button>
+        <button class="ghost" id="sv-off">Désactiver</button>
+      </div>`
+      : `<p class="small">Avec ton compte GitHub (celui qui héberge déjà l'app), l'app peut se sauvegarder <strong>toute seule</strong> après chaque séance, dans un fichier privé. Tu ne touches plus à rien, et tu retrouves tout sur n'importe quel appareil.</p>
+      <div class="assist-cfg" style="margin-top:.5rem">
+        <input type="password" id="sv-tok" placeholder="ghp_…" autocomplete="off" spellcheck="false">
+        <button class="primary" id="sv-on">Activer la sauvegarde automatique</button>
+      </div>
+      <p class="small muted">Jeton à créer sur <strong>github.com/settings/tokens</strong> → « Generate new token (classic) » → coche <strong>uniquement</strong> la case <code>gist</code>. Il reste sur cet appareil et ne sert qu'à écrire ta sauvegarde.</p>`}
+    <details style="margin-top:.8rem"><summary class="small muted" style="cursor:pointer">Sauvegarde manuelle (copier / coller)</summary>
+      <div class="row" style="margin-top:.6rem">
+        <button class="ghost small" id="sv-copier">Copier ma sauvegarde</button>
+        <button class="ghost small" id="sv-restaurer">Restaurer depuis un texte</button>
+      </div>
+      <div id="sv-zone"></div></details></section>`;
   document.querySelectorAll('[data-skill]').forEach(b => b.addEventListener('click', () => { snd.click(); vSkill(b.dataset.skill); }));
   $('debrief').addEventListener('click', () => {
     snd.click();
@@ -809,6 +982,34 @@ function vCoach(){
       + '. Sois direct et concret.';
     const fab = $('assist-fab'); if (fab && $('assist-panel').classList.contains('hidden')) fab.click();
     setTimeout(() => { const i = $('assist-in'); if (i){ i.value = q; $('assist-send').click(); } }, 250);
+  });
+  const msg = (h, c) => { $('sv-zone').innerHTML = '<p class="small" style="color:var(--' + (c || 'ok') + ')">' + h + '</p>'; };
+  if ($('sv-on')) $('sv-on').addEventListener('click', async () => {
+    snd.click(); const tok = $('sv-tok').value.trim();
+    if (!tok) return;
+    ghSet(K_TOKEN, tok);
+    try { await nuageEnvoyer(); dernierEchec = ''; snd.win(1); nav('coach'); }
+    catch(e){ ghSet(K_TOKEN, ''); dernierEchec = ''; alert('Activation impossible : ' + e.message); }
+  });
+  if ($('sv-now')) $('sv-now').addEventListener('click', async () => {
+    snd.click(); $('sync-etat').innerHTML = '<p class="small muted">Envoi en cours…</p>';
+    try { await nuageEnvoyer(); dernierEchec = ''; } catch(e){ dernierEchec = e.message; }
+    majPastille();
+  });
+  if ($('sv-pull')) $('sv-pull').addEventListener('click', async () => {
+    snd.click();
+    try {
+      const d = await nuageRecuperer();
+      if (!d) return alert('Aucune sauvegarde trouvée sur ton compte.');
+      const e = d.etat || d;
+      if (!confirm('Remplacer la progression de cet appareil par la sauvegarde en ligne (' + Object.values(e.skills || {}).filter(x => x.mastered).length + ' compétences maîtrisées) ?')) return;
+      S = Object.assign(defState(), e); save(); snd.win(1); nav('coach');
+    } catch(e){ alert('Récupération impossible : ' + e.message); }
+  });
+  if ($('sv-off')) $('sv-off').addEventListener('click', () => {
+    snd.click();
+    if (!confirm('Désactiver la sauvegarde automatique ? Ta sauvegarde déjà en ligne est conservée.')) return;
+    ghSet(K_TOKEN, ''); nav('coach');
   });
   $('sv-copier').addEventListener('click', async () => {
     snd.click(); const txt = exportEtat();
@@ -1132,3 +1333,17 @@ function initSnd(){
 document.querySelectorAll('.nav button').forEach(b => b.addEventListener('click', () => { snd.click(); nav(b.dataset.v); }));
 initSnd();
 nav('accueil');
+
+/* --- filet de sécurité au démarrage et à la fermeture --- */
+demanderPersistance().then(() => { if (currentView === 'coach') nav('coach'); });
+recupererSiVide().then(src => {
+  if (!src) return;
+  nav('accueil');
+  const b = document.createElement('div');
+  b.className = 'coach-msg';
+  b.innerHTML = '<p class="qui">💾 Progression restaurée</p><p>Les données de cet appareil avaient disparu : je les ai récupérées depuis ' +
+    (src === 'nuage' ? 'ta sauvegarde GitHub' : 'la copie de secours locale') + '. Tout est revenu.</p>';
+  app().prepend(b);
+});
+addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') lancerSync(); });
+addEventListener('pagehide', () => lancerSync());

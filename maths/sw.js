@@ -1,4 +1,4 @@
-const CACHE = 'mzs-v6';
+const CACHE = 'mzs-v7';
 const ASSETS = ['./', './index.html', './styles.css', './engine.js', './techniques.js', './assistant.js',
   './papier/papier-a.js', './papier/papier-b.js', './papier/papier-c.js', './papier/papier-d.js',
   './skills/skills-p1.js', './skills/skills-p2.js', './skills/skills-p3.js',
