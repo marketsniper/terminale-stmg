@@ -1,0 +1,1174 @@
+/* ==========================================================================
+   2-composants.css · Maths : De zéro au sommet
+   Catalogue de composants (DESIGN-SPEC §6.4 à §6.14 et §6.31).
+   Consomme les tokens de css/1-socle.css, ne les redéfinit jamais.
+   Aucune @keyframes ici : elles vivent dans css/3-vues.css.
+   ========================================================================== */
+
+
+/* ==========================================================================
+   §6.4 · Boutons
+   ========================================================================== */
+
+/* Socle commun à toutes les familles de boutons. */
+.btn,
+.btn-primary,
+.primary,
+.ghost,
+.btn-secondaire,
+.btn-discret,
+.btn-icon,
+.btn-icone{
+  position: relative;
+  margin: 0;
+  border: 0;
+  font-family: var(--font-text);
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    box-shadow       var(--dur-1) var(--ease-out),
+    color            var(--dur-1) var(--ease-out),
+    transform        80ms         var(--ease-out),
+    opacity          var(--dur-1) var(--ease-out);
+}
+
+/* Pressé : commun aux boutons et aux options (convention §6). */
+.btn:active,
+.btn-primary:active,
+.primary:active,
+.ghost:active,
+.btn-secondaire:active,
+.btn-discret:active,
+.btn-icon:active,
+.btn-icone:active,
+.opt:active,
+.err-type:active,
+.quickkeys button:active{ transform: translateY(1px); }
+
+/* Désactivé : jamais d'ombre, jamais de curseur trompeur. */
+.btn[disabled],
+.btn-primary[disabled],
+.primary[disabled],
+.ghost[disabled],
+.btn-secondaire[disabled],
+.btn-discret[disabled],
+.btn-icon[disabled],
+.btn-icone[disabled]{
+  opacity: .5;
+  box-shadow: none;
+  cursor: default;
+  transform: none;
+}
+
+/* --- Primaire : un seul par écran ---------------------------------------- */
+.btn-primary,
+.primary{
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 56px;
+  width: 100%;
+  padding: 0 var(--s-2) 0 var(--s-5);
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: 1.0625rem;
+  line-height: 1.2;
+  text-align: left;
+  box-shadow: 0 0 0 1px var(--accent-line);
+}
+/* NUIT : le bord or disparaît (le fond est déjà détaché du sombre). */
+:root[data-theme="dark"] .btn-primary,
+:root[data-theme="dark"] .primary{ box-shadow: none; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .btn-primary,
+  :root:not([data-theme="light"]) .primary{ box-shadow: none; }
+}
+
+/* Le libellé fond quand le rôle change (Valider → Continuer → Réessayer). */
+.btn-primary > span:first-child,
+.primary > span:first-child{ transition: opacity var(--dur-1) var(--ease-out); }
+
+/* Métadonnée discrète (« 25 min »). */
+.btn-primary .meta,
+.primary .meta{
+  font-family: var(--font-mono);
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  opacity: .75;
+}
+
+/* Pastille circulaire de l'icône. */
+.btn-primary .ic-wrap,
+.primary .ic-wrap{
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-ink) 12%, transparent);
+  transition: transform var(--dur-1) var(--ease-out);
+}
+
+@media (hover:hover){
+  .btn-primary:hover:not([disabled]),
+  .primary:hover:not([disabled]){
+    background: color-mix(in srgb, var(--accent) 92%, #fff);
+    box-shadow: 0 0 0 1px var(--accent-line), var(--shadow-gold);
+    transform: translateY(-1px);
+  }
+  .btn-primary:hover:not([disabled]) .ic-wrap,
+  .primary:hover:not([disabled]) .ic-wrap{ transform: translateX(2px); }
+}
+
+/* Chargement : seule rotation linéaire tolérée de l'app. */
+.btn-primary[aria-busy="true"] .ic-wrap .ic,
+.primary[aria-busy="true"] .ic-wrap .ic{ animation: spin 900ms linear infinite; }
+
+/* Tailles : pleine largeur sur mobile, largeur auto au-dessus de 900 px. */
+@media (min-width:900px){
+  .btn-primary,
+  .primary{ min-height: 48px; width: auto; justify-self: start; }
+}
+.btn-primary.sm,
+.primary.sm{ min-height: 44px; width: auto; }
+
+/* --- Secondaire ---------------------------------------------------------- */
+.btn,
+.ghost,
+.btn-secondaire{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-5);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.2;
+  box-shadow: var(--card-ring);
+}
+.btn > .ic,
+.ghost > .ic,
+.btn-secondaire > .ic{ flex: none; }
+
+@media (hover:hover){
+  .btn:hover:not([disabled]),
+  .ghost:hover:not([disabled]),
+  .btn-secondaire:hover:not([disabled]){ background: var(--surface-3); }
+}
+
+.btn.lg{ min-height: 52px; }
+.btn.sm,
+button.small{
+  min-height: 36px;
+  padding: 0 var(--s-3);
+  font-size: .875rem;
+}
+
+/* --- Tertiaire ----------------------------------------------------------- */
+.btn.btn-ghost,
+.btn-discret{
+  background: transparent;
+  color: var(--ink-2);
+  font-weight: 500;
+  box-shadow: none;
+}
+@media (hover:hover){
+  .btn.btn-ghost:hover:not([disabled]),
+  .btn-discret:hover:not([disabled]){ background: var(--surface-2); }
+}
+
+/* --- Danger : uniquement dans la feuille de confirmation ------------------ */
+.btn.btn-danger{
+  background: var(--ko-bg);
+  color: var(--ko-text);
+  font-weight: 600;
+  box-shadow: 0 0 0 1px var(--ko);
+}
+@media (hover:hover){
+  .btn.btn-danger:hover:not([disabled]){
+    background: color-mix(in srgb, var(--ko-bg) 88%, var(--ko));
+  }
+}
+
+/* --- Glacier : action de révision ---------------------------------------- */
+.btn.btn-glacier{
+  background: var(--glacier-deep);
+  color: var(--glacier-ink);
+  box-shadow: none;
+}
+@media (hover:hover){
+  .btn.btn-glacier:hover:not([disabled]){
+    background: color-mix(in srgb, var(--glacier-deep) 90%, #fff);
+  }
+}
+
+/* --- Bouton icône -------------------------------------------------------- */
+.btn-icon,
+.btn-icone{
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+@media (hover:hover){
+  .btn-icon:hover:not([disabled]),
+  .btn-icone:hover:not([disabled]){ background: var(--surface-2); color: var(--ink); }
+}
+.btn-icon[aria-pressed="true"],
+.btn-icone[aria-pressed="true"]{ color: var(--ink); }
+
+
+/* ==========================================================================
+   §6.5 · Carte à double bord
+   Coque : filet --line + ombre teintée. Cœur : liseré interne --hairline-in.
+   Les deux sont portés par --card-ring, donc les rayons restent concentriques
+   sans pseudo-élément supplémentaire.
+   ========================================================================== */
+
+.card{
+  position: relative;
+  background: var(--surface-1);
+  border-radius: var(--r-3);
+  padding: var(--card-pad);
+  box-shadow: var(--card-ring), var(--shadow-1);
+  /* rayon utile aux blocs internes : concentrique avec la coque */
+  --r-inner: calc(var(--r-3) - 6px);
+}
+.card > h2{ margin: 0 0 var(--s-4); }
+.card > :last-child{ margin-bottom: 0; }
+
+.card-raised{ box-shadow: var(--card-ring), var(--shadow-2); }
+.card-muted{ background: var(--surface-2); box-shadow: var(--card-ring); }
+.card-accent{
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent-line);
+  box-shadow: var(--card-ring);
+  color: var(--ink);
+}
+.card-accent .muted,
+.card-accent .small{ color: var(--ink-2); }
+
+/* Carte cliquable. */
+.card-link{
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition:
+    box-shadow var(--dur-1) var(--ease-out),
+    transform  var(--dur-1) var(--ease-out);
+}
+@media (hover:hover){
+  .card-link:hover{ box-shadow: var(--card-ring), var(--shadow-2); transform: translateY(-1px); }
+}
+.card-link:active{ transform: translateY(1px); }
+
+
+/* ==========================================================================
+   §6.6 · Tuile statistique et ligne de chiffres
+   ========================================================================== */
+
+.figures{
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--s-2) 0;
+}
+.figure{
+  flex: 1 1 40%;
+  min-width: 0;
+  padding: 0 var(--s-4);
+  border-left: 1px solid var(--line);
+}
+.figure:first-child{ border-left: 0; padding-left: 0; }
+.figure > b{
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1;
+  letter-spacing: -.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.figure > .overline,
+.figure > .k{ display: block; margin-top: var(--s-2); }
+
+/* Fin de séance : les chiffres passent en Fraunces. */
+.figures.display .figure > b{
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-variation-settings: "opsz" 72;
+  letter-spacing: -.01em;
+}
+@media (min-width:360px){ .figure{ flex: 1 1 0; } }
+
+/* Tuiles héritées : réglages et correction d'épreuve uniquement. */
+.stats{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+.stat{
+  background: var(--surface-2);
+  border-radius: var(--r-2);
+  padding: var(--s-3) var(--s-4);
+}
+.stat b{
+  display: block;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.stat span{ display: block; font-size: .875rem; color: var(--muted); }
+
+
+/* ==========================================================================
+   §6.7 · Anneau de progression (SVG)
+   ========================================================================== */
+
+.ring{ display: block; transform: rotate(-90deg); flex: none; }
+.ring circle{
+  fill: none;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.ring .track{ stroke: var(--surface-3); }
+.ring .val{
+  stroke: var(--accent-line);
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--p, 0));
+  transition: stroke-dashoffset var(--dur-5) var(--ease-out-expo);
+}
+.ring .ring-txt{
+  transform: rotate(90deg);
+  transform-origin: center;
+  fill: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  text-anchor: middle;
+  dominant-baseline: central;
+}
+
+/* Variantes de couleur. */
+.ring.ok .val{ stroke: var(--ok); }
+.ring.glacier .val{ stroke: var(--glacier); }
+.ring.warn .val{ stroke: var(--warn); }
+.ring.full .val{ stroke: var(--ok); }
+.ring.over .val.gold{ stroke: var(--ok); }
+
+/* À 100 % : la coche remplace le chiffre. */
+.ring .ring-check{ display: none; }
+.ring.full .ring-txt{ display: none; }
+.ring.full .ring-check{
+  display: block;
+  transform: rotate(90deg);
+  transform-origin: center;
+  color: var(--ok-text);
+}
+
+/* Triple anneau (accueil et coach). */
+.ring.triple{ inline-size: 120px; block-size: 120px; }
+.ring .val.gold{ stroke: var(--accent-line); transition-delay: 0ms; }
+.ring .val.glacier{ stroke: var(--glacier); transition-delay: 120ms; }
+.ring .val.ok{ stroke: var(--ok); transition-delay: 240ms; }
+.ring .val.vide{ opacity: .4; }
+
+
+/* ==========================================================================
+   §6.8 · Anneau du jour (en-tête)
+   ========================================================================== */
+
+.ring-day{
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: 44px;
+  block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  view-transition-name: ring-day;
+}
+.ring-day > .ring{ grid-area: 1 / 1; }
+.ring-day > .num{
+  grid-area: 1 / 1;
+  font-size: .6875rem;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+body[data-ctx="parcours"] .ring-day{ display: none; }
+
+
+/* ==========================================================================
+   §6.9 · Ligne de crête et hero de l'ascension
+   ========================================================================== */
+
+.crete{
+  display: block;
+  width: 100%;
+  height: 24px;
+  line-height: 0;
+  view-transition-name: crete;
+}
+.crete-svg{ display: block; width: 100%; height: 24px; }
+.crete-line{ fill: none; stroke: var(--line-strong); stroke-width: 1.25; }
+.crete-fill{ fill: var(--tint, var(--tint-3)); opacity: .16; }
+#crete-clip-rect{ transition: width var(--dur-5) var(--ease-out-expo); }
+.crete-dot{
+  fill: var(--accent-line);
+  transition: cx var(--dur-5) var(--ease-out-expo), cy var(--dur-5) var(--ease-out-expo);
+}
+/* Dernière minute d'une épreuve blanche. */
+.crete.alarm .crete-line{ stroke: var(--ko); }
+.crete.alarm .crete-dot{ fill: var(--ko); }
+
+/* --- Hero ---------------------------------------------------------------- */
+.hero{
+  position: relative;
+  background: var(--sky);
+  border-radius: 0 0 var(--r-4) var(--r-4);
+  padding: var(--s-5) var(--gutter) var(--s-6);
+  margin: calc(-1 * var(--s-5)) calc(-1 * var(--gutter)) 0;
+}
+.hero > .overline,
+.hero > .k{ margin: 0 0 var(--s-2); }
+.alt-label{
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: .12em;
+  color: var(--ink);
+}
+.alt-label .num-val{ font-variant-numeric: tabular-nums lining-nums; }
+.alt-label .unit{
+  font-family: var(--font-text);
+  font-weight: 500;
+  font-size: .32em;
+  letter-spacing: .02em;
+  color: var(--muted);
+}
+.hero > .small{ margin: var(--s-2) 0 0; }
+
+.montagne{ margin-top: var(--s-4); }
+.montagne svg{ display: block; width: 100%; height: auto; max-width: 520px; margin-inline: auto; }
+
+.mt-back{ fill: color-mix(in srgb, var(--glacier) 12%, transparent); }
+.mt-mid{ fill: var(--surface-2); }
+.mt-front{ fill: var(--surface-1); }
+.mt-back, .mt-mid, .mt-front{ stroke: var(--line-strong); stroke-width: 1.25; }
+
+.mt-trail{
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+.mt-trail-done{
+  fill: none;
+  stroke: var(--accent-line);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: var(--pos, 0) 100;
+  transition: stroke-dasharray var(--dur-5) var(--ease-out-expo);
+}
+
+.camp circle{ fill: var(--surface-1); stroke: var(--tint, var(--tint-3)); stroke-width: 2; }
+.camp.done circle{ fill: var(--ok); stroke: var(--ok); }
+.camp text{ font: 500 .6875rem var(--font-text); fill: var(--muted); }
+.camp.sommet text,
+.camp:last-child text{ fill: var(--ink); }
+
+.climber .dot{ fill: var(--accent-line); }
+.climber .halo{
+  fill: var(--accent);
+  opacity: .25;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: halo 2s var(--ease-out) infinite alternate;
+  animation-play-state: var(--halo-state, running);
+}
+#mt-climber{ transition: transform var(--dur-5) var(--ease-out-expo); }
+
+.flag line{ stroke: var(--ink); stroke-width: 1.5; }
+.flag path{ fill: var(--accent); }
+
+
+/* ==========================================================================
+   §6.10 · Barre de progression et lignes de barres
+   ========================================================================== */
+
+.pbar{
+  height: 6px;
+  background: var(--surface-3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.pbar i{
+  display: block;
+  height: 100%;
+  width: calc(var(--p, 0) * 1%);
+  background: var(--accent-line);
+  border-radius: 3px;
+  transition: width var(--dur-3) var(--ease-out-expo);
+}
+.pbar.ok i{ background: var(--ok); }
+.phase.locked .pbar i{ background: var(--muted); }
+.pbar.total{ height: 4px; width: 100%; }
+
+.bars{ display: flex; flex-direction: column; gap: var(--s-3); }
+.bar-row{
+  display: grid;
+  grid-template-columns: minmax(6rem, 11rem) 1fr 3.2rem;
+  align-items: center;
+  gap: var(--s-3);
+}
+.bar-row > .lab{ font-size: .875rem; line-height: 1.45; color: var(--ink-2); min-width: 0; }
+.bar-row > .val{
+  justify-self: end;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: .8125rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+
+/* ==========================================================================
+   §6.11 · Puce, pilule, tag, étiquette, médaillon
+   ========================================================================== */
+
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 28px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  box-shadow: 0 0 0 1px var(--line);
+  color: var(--ink-2);
+  font-size: .875rem;
+  line-height: 1.45;
+}
+.pill > .ic{ inline-size: 16px; block-size: 16px; flex: none; }
+
+.tag{
+  display: inline-block;
+  font: 600 .6875rem var(--font-text);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--glacier-text);
+  background: var(--glacier-soft);
+  padding: .3em .6em;
+  border-radius: var(--r-1);
+}
+.tag.mix{ color: var(--glacier-text); }
+
+/* Sur-titre or (le .k neutre est défini dans le socle). */
+.k-gold{ color: var(--accent-text); }
+
+.op-medal{
+  display: grid;
+  place-items: center;
+  inline-size: 36px;
+  block-size: 36px;
+  border-radius: var(--r-2);
+  background: var(--surface-3);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.125rem;
+  line-height: 1;
+  font-variation-settings: "opsz" 24;
+  font-variant-numeric: tabular-nums;
+}
+.op-medal.lg{ inline-size: 48px; block-size: 48px; font-size: 1.375rem; }
+
+.chip{
+  --dot: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 24px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-weight: 500;
+  font-size: .8125rem;
+  line-height: 1.2;
+  letter-spacing: .01em;
+}
+.chip::before{
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--dot);
+  flex: none;
+}
+.chip[data-tone="ok"]{ --dot: var(--ok); }
+.chip[data-tone="ko"]{ --dot: var(--ko); }
+.chip[data-tone="warn"]{ --dot: var(--warn); }
+.chip[data-tone="glacier"]{ --dot: var(--glacier); }
+.chip[data-tone="muted"]{ --dot: var(--muted); }
+.chip[data-tone="gold"]{ --dot: var(--accent-line); }
+
+/* Résultats datés (tests, épreuves). */
+.badges{
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.badge{
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 36px;
+  padding: 0 var(--s-3);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  box-shadow: var(--card-ring);
+  font-size: .875rem;
+  color: var(--ink);
+}
+
+
+/* ==========================================================================
+   §6.12 · Carte question
+   ========================================================================== */
+
+.exo-card{
+  position: relative;
+  z-index: var(--z-raised);
+  max-width: 640px;
+  min-height: 12.5rem;
+  margin-inline: auto;
+  padding: var(--card-pad);
+  border-radius: var(--r-3);
+  background: var(--surface-1);
+  box-shadow: var(--card-ring), var(--shadow-2);
+  outline: 1.5px solid transparent;
+  outline-offset: -1.5px;
+  transition: outline-color var(--dur-1) var(--ease-out);
+  animation: q-in var(--dur-3) var(--ease-out-expo) both;
+}
+.exo-card[data-state="ok"]{ outline: 1.5px solid var(--ok); outline-offset: -1.5px; }
+.exo-card[data-state="ko"]{ outline: 1.5px solid var(--ko); outline-offset: -1.5px; }
+
+/* --- En-tête ------------------------------------------------------------- */
+.exo-top,
+.q-head{
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s-3);
+  color: var(--muted);
+}
+.q-head > .overline,
+.exo-top > .overline{ flex-basis: 100%; margin: 0; }
+.lvl{ font-weight: 500; font-size: .8125rem; line-height: 1.2; color: var(--muted); }
+.chrono{ margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.count{ margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.chrono ~ .count{ margin-left: 0; }
+.chrono.warn{ color: var(--warn-text); font-weight: 600; }
+.chrono.late{ color: var(--ko-text); font-weight: 600; }
+.chrono.fige{ color: var(--ok-text); }
+
+/* --- Crampons (10 dernières réponses) ------------------------------------ */
+.serie-bar,
+.crampons{
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: var(--s-3);
+}
+.serie-bar i,
+.crampons i{
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  box-shadow: 0 0 0 1px var(--line);
+  transition: background-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+}
+.serie-bar i.ok,
+.crampons i.ok{ background: var(--ok); box-shadow: none; }
+.serie-bar i.ko,
+.crampons i.ko{ background: var(--ko); box-shadow: none; }
+.serie-bar i.cur,
+.crampons i.cur{
+  background: var(--accent-line);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+.serie-bar i.mix,
+.crampons i.mix{ box-shadow: 0 0 0 2px var(--glacier); }
+.serie-bar i.aide,
+.crampons i.aide{ background: var(--surface-3); box-shadow: 0 0 0 2px var(--accent-line); }
+
+/* --- Énoncé -------------------------------------------------------------- */
+.qtext{
+  margin: 0 0 var(--s-4);
+  white-space: pre-line;
+  min-height: calc(3 * 1.45em);
+  color: var(--ink);
+}
+.q-list{
+  margin: var(--s-2) 0 0;
+  padding-left: 1.25em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+/* --- Indices ------------------------------------------------------------- */
+.hint-line{
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  margin: 0 0 var(--s-3);
+  color: var(--ink-2);
+  background: var(--accent-soft);
+  border-left: 2px solid var(--accent-line);
+  padding: var(--s-2) var(--s-3);
+  border-radius: 0 var(--r-1) var(--r-1) 0;
+  font-size: .875rem;
+  line-height: 1.45;
+}
+.hint-line > .ic{ flex: none; color: var(--accent-text); margin-top: .1em; }
+.q-hints{ display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-3); }
+.q-hints .hint-line{ margin: 0; }
+.goal{ margin: 0 0 var(--s-3); }
+
+/* --- Zone de réponse : saisie -------------------------------------------- */
+.q-zone{ display: flex; flex-direction: column; gap: var(--s-3); }
+.answer-row{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--s-3);
+  align-items: stretch;
+  margin: 0;
+}
+.answer-row:has(.q-hint:not([hidden])){ grid-template-columns: auto 1fr auto; }
+.answer-row input{
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 var(--s-4);
+  font: 500 1.375rem/1.2 var(--font-mono);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: var(--r-2);
+  box-shadow: var(--field-ring);
+  transition: box-shadow var(--dur-1) var(--ease-out);
+}
+.answer-row input::placeholder{ color: var(--muted); font-weight: 400; }
+.answer-row input:focus{ box-shadow: var(--focus-ring); outline: none; }
+.answer-row input:disabled{ opacity: .7; }
+.answer-row .btn-primary,
+.answer-row .primary{ min-height: 56px; width: auto; }
+.answer-row .q-hint{ min-height: 56px; padding: 0 var(--s-3); }
+
+/* --- Touches rapides (tactile seulement) --------------------------------- */
+.quickkeys{ display: none; gap: var(--s-2); margin-top: var(--s-3); }
+@media (pointer:coarse){ .quickkeys{ display: flex; } }
+.exo-card[data-mode="qcm"] .quickkeys{ display: none; }
+.quickkeys button{
+  flex: 1;
+  min-height: 44px;
+  padding: 0;
+  font: 500 1.125rem var(--font-mono);
+  color: var(--ink-2);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: var(--r-2);
+  box-shadow: var(--card-ring);
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease-out), transform 80ms var(--ease-out);
+}
+
+/* --- Zone de réponse : QCM ----------------------------------------------- */
+.opts{ display: grid; gap: var(--s-2); }
+@media (min-width:900px){ .opts[data-cols="2"]{ grid-template-columns: 1fr 1fr; } }
+.opt{
+  display: grid;
+  grid-template-columns: 2rem 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 56px;
+  padding: var(--s-3) var(--s-4);
+  text-align: left;
+  font: 500 1.0625rem/1.35 var(--font-text);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: var(--r-2);
+  box-shadow: var(--card-ring);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    box-shadow       var(--dur-1) var(--ease-out),
+    color            var(--dur-1) var(--ease-out),
+    opacity          var(--dur-1) var(--ease-out),
+    transform        80ms         var(--ease-out);
+}
+.letter{ font: 500 .8125rem var(--font-mono); color: var(--muted); }
+@media (hover:hover){ .opt:hover:not(:disabled){ background: var(--surface-3); } }
+.opt .ic{ justify-self: end; }
+.opt > kbd{ justify-self: end; display: none; }
+@media (min-width:900px) and (pointer:fine){ .opt > kbd{ display: inline-flex; } }
+.opt.good{ background: var(--ok-bg); color: var(--ok-text); box-shadow: 0 0 0 1px var(--ok); }
+.opt.good .letter{ color: var(--ok-text); }
+.opt.bad{ background: var(--ko-bg); color: var(--ko-text); box-shadow: 0 0 0 1px var(--ko); }
+.opt.bad .letter{ color: var(--ko-text); }
+.opt.dim{ opacity: .5; }
+.opt:disabled{ cursor: default; }
+
+/* --- Retour : explication, verdict, suites -------------------------------- */
+.q-fb{ display: flex; flex-direction: column; }
+
+.explain{
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur-2) var(--ease-out);
+}
+.exo-card:is([data-state="ok"], [data-state="ko"]) .explain{ grid-template-rows: 1fr; }
+.explain > div{
+  overflow: hidden;
+  white-space: pre-line;
+  color: var(--ink-2);
+  background: var(--glacier-soft);
+  border-left: 3px solid var(--glacier);
+  border-radius: 0 var(--r-2) var(--r-2) 0;
+  padding: 0 var(--s-4);
+  transition: padding var(--dur-2) var(--ease-out);
+}
+.exo-card:is([data-state="ok"], [data-state="ko"]) .explain > div{ padding: var(--s-3) var(--s-4); }
+
+.verdict{
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: var(--s-4) 0 var(--s-2);
+  font-weight: 600;
+}
+.verdict.ok{ color: var(--ok-text); }
+.verdict.ko{ color: var(--ko-text); }
+.verdict > .ic{
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.verdict > .ic circle,
+.verdict > .ic path{
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trace var(--dur-3) var(--ease-out-expo) forwards;
+}
+.verdict > .ic path{ animation-delay: 120ms; }
+.verdict .answer{ margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
+.verdict .given{ flex-basis: 100%; }
+
+.q-time{ margin: 0 0 var(--s-2); color: var(--muted); }
+.q-time.ok{ color: var(--ok-text); }
+.q-aide{ margin: 0 0 var(--s-2); }
+
+.recall{
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin: 0 0 var(--s-2);
+  color: var(--muted);
+}
+.recall > .ic{ inline-size: 16px; block-size: 16px; flex: none; }
+
+/* Typologie d'erreur. */
+.err-q{ margin: var(--s-3) 0 var(--s-2); }
+.err-types{ display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.err-type{
+  --dot: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-4);
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  box-shadow: var(--card-ring);
+  font-weight: 500;
+  font-size: .8125rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    box-shadow       var(--dur-1) var(--ease-out),
+    color            var(--dur-1) var(--ease-out),
+    transform        80ms         var(--ease-out);
+}
+.err-type::before{
+  content: "";
+  inline-size: 8px;
+  block-size: 8px;
+  border-radius: 50%;
+  background: var(--dot);
+  flex: none;
+}
+.err-type[data-tone="ok"]{ --dot: var(--ok); }
+.err-type[data-tone="ko"]{ --dot: var(--ko); }
+.err-type[data-tone="warn"]{ --dot: var(--warn); }
+.err-type[data-tone="glacier"]{ --dot: var(--glacier); }
+.err-type[data-tone="muted"]{ --dot: var(--muted); }
+.err-type[data-tone="gold"]{ --dot: var(--accent-line); }
+.err-type.sel{ background: var(--surface-3); color: var(--ink); box-shadow: 0 0 0 1.5px var(--ink); }
+
+.q-prof{ display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+
+.next-row{
+  margin-top: var(--s-4);
+  display: flex;
+  gap: var(--s-3);
+  justify-content: flex-end;
+  align-items: center;
+}
+.next-row .btn-primary,
+.next-row .primary{ width: auto; }
+
+/* Gain d'altitude flottant. */
+.gain{
+  position: absolute;
+  right: var(--card-pad);
+  top: var(--card-pad);
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: gain 400ms var(--ease-in) forwards;
+}
+
+
+/* ==========================================================================
+   §6.13 · Stepper de séance (« corde »)
+   ========================================================================== */
+
+.steps{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  position: relative;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.steps::before{
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 12%;
+  right: 12%;
+  height: 2px;
+  background: var(--line-strong);
+}
+.step{
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: var(--s-2);
+  padding: 0 var(--s-1);
+  text-align: center;
+  min-width: 0;
+}
+/* Segment fait : du nœud précédent à celui-ci. */
+.step.done::after,
+.step.cur::after{
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--accent-line);
+  transform-origin: left;
+  transform: scaleX(1);
+  transition: transform var(--dur-4) var(--ease-out-expo);
+}
+.step:first-child::after{ content: none; }
+
+.step .node{
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  inline-size: 12px;
+  block-size: 12px;
+  border-radius: 50%;
+  background: var(--surface-1);
+  box-shadow: 0 0 0 2px var(--line-strong);
+  transition: background-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+.step .node > .ic{ display: none; }
+.step.done .node{ background: var(--ok); box-shadow: none; color: var(--ok-ink); }
+.step.done .node > .ic{ display: block; inline-size: 8px; block-size: 8px; }
+.step.cur .node{
+  background: var(--accent-line);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.step-t{ font-weight: 500; font-size: .8125rem; line-height: 1.2; color: var(--muted); }
+.step.cur .step-t{ color: var(--ink); font-weight: 600; }
+.step-m{ font-size: .6875rem; line-height: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+@media (max-width:479px){
+  .step-m{ display: none; }
+  .step.cur .step-m{ display: block; }
+}
+
+.steps + .pbar.total{ margin-top: var(--s-4); }
+
+
+/* ==========================================================================
+   §6.14 · Écran de transition d'étape
+   ========================================================================== */
+
+.step-screen{
+  max-width: 420px;
+  margin-inline: auto;
+  display: grid;
+  justify-items: center;
+  gap: var(--s-3);
+  text-align: center;
+}
+.step-screen > .ic{ color: var(--ok-text); fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.step-screen > .ic circle,
+.step-screen > .ic path{
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: trace var(--dur-4) var(--ease-out-expo) forwards;
+}
+.step-screen > .ic path{ animation-delay: 160ms; }
+.step-screen > h2{ margin: 0; }
+.step-screen > p{ margin: 0; }
+.step-screen .recall{ justify-content: center; }
+
+/* Bandeau de rappel qui glisse au-dessus de la carte. */
+.rev-band{
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 40px;
+  padding: 0 var(--s-4);
+  border-radius: var(--r-2);
+  background: var(--glacier-soft);
+  color: var(--glacier-text);
+  font-weight: 600;
+  font-size: .875rem;
+  max-width: 640px;
+  margin-inline: auto;
+  transition: transform 160ms var(--ease-out-expo), opacity 160ms var(--ease-out);
+}
+
+
+/* ==========================================================================
+   §6.31 · Touches rapides, kbd, palette de commandes
+   ========================================================================== */
+
+kbd{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-inline-size: 20px;
+  padding: .15em .4em;
+  border-radius: var(--r-1);
+  background: var(--surface-3);
+  color: var(--muted);
+  font: 500 .8125rem/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.sheet.palette .input,
+.sheet.palette input[type="text"],
+.sheet.palette input[type="search"]{
+  width: 100%;
+  min-height: 52px;
+  padding: 0 var(--s-4) 0 var(--s-7);
+  font: 400 1rem var(--font-text);
+  color: var(--ink);
+  background: var(--surface-2);
+  border: 0;
+  border-radius: var(--r-2);
+  box-shadow: var(--field-ring);
+}
+.sheet.palette .input:focus,
+.sheet.palette input:focus{ box-shadow: var(--focus-ring); outline: none; }
+
+.pal-list{
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: var(--s-3) 0 0;
+  padding: 0;
+  list-style: none;
+  max-height: 44vh;
+  overflow-y: auto;
+}
+.pal-item{
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  border: 0;
+  border-radius: var(--r-2);
+  background: transparent;
+  color: var(--ink);
+  font: 400 1rem var(--font-text);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease-out);
+}
+.pal-item > .ic{ color: var(--muted); }
+.pal-item[aria-selected="true"],
+.pal-item:hover,
+.pal-item:focus-visible{ background: var(--surface-2); }
+.pal-item .pal-grp{ color: var(--muted); font-size: .8125rem; }

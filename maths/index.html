@@ -5,56 +5,119 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Maths · De zéro au sommet</title>
 <meta name="description" content="Programme complet de remise à niveau en mathématiques : de la 6e à la terminale STMG et aux concours SESAME/ACCÈS, avec coach adaptatif, exercices infinis et suivi de progression.">
-<meta name="theme-color" content="#EEF2F8" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1320" media="(prefers-color-scheme: dark)">
+<meta id="meta-theme" name="theme-color" content="#F5F2EB">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Maths">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="stylesheet" href="styles.css">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>try{var t=localStorage.getItem('mzs-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.getElementById('meta-theme').content='#0C1122';var m=localStorage.getItem('mzs-motion');if(m==='reduit')document.documentElement.dataset.motion=m;}catch(e){}</script>
+<link rel="preload" href="fonts/Fraunces.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/InstrumentSans.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="css/1-socle.css">
+<link rel="stylesheet" href="css/2-composants.css">
+<link rel="stylesheet" href="css/3-vues.css">
+<script>window.SKILLS = []; window.PAPIERS = [];</script>
+<script defer src="techniques.js"></script>
+<script defer src="papier/papier-a.js"></script>
+<script defer src="papier/papier-b.js"></script>
+<script defer src="papier/papier-c.js"></script>
+<script defer src="papier/papier-d.js"></script>
+<script defer src="skills/skills-p1.js"></script>
+<script defer src="skills/skills-p2.js"></script>
+<script defer src="skills/skills-p3.js"></script>
+<script defer src="skills/skills-p4.js"></script>
+<script defer src="skills/skills-p4b.js"></script>
+<script defer src="skills/skills-p5.js"></script>
+<script defer src="skills/skills-p6.js"></script>
+<script defer src="skills/skills-p7.js"></script>
+<script defer src="core/base.js"></script>
+<script defer src="core/etat.js"></script>
+<script defer src="core/theme.js"></script>
+<script defer src="core/sons.js"></script>
+<script defer src="core/pedagogie.js"></script>
+<script defer src="core/ui.js"></script>
+<script defer src="core/routeur.js"></script>
+<script defer src="core/question.js"></script>
+<script defer src="vues/accueil.js"></script>
+<script defer src="vues/programme.js"></script>
+<script defer src="vues/seance.js"></script>
+<script defer src="vues/calcul-mental.js"></script>
+<script defer src="vues/test.js"></script>
+<script defer src="vues/erreurs.js"></script>
+<script defer src="vues/coach.js"></script>
+<script defer src="vues/micro-ds.js"></script>
+<script defer src="vues/epreuve.js"></script>
+<script defer src="vues/papier.js"></script>
+<script defer src="vues/reglages.js"></script>
+<script defer src="vues/onboarding.js"></script>
+<script defer src="app.js"></script>
+<script defer src="assistant.js"></script>
 </head>
-<body>
-<div class="page">
+<body data-ctx="home">
 
-<header class="top">
-  <span class="logo">De zéro au sommet</span>
-  <h1>Mathématiques</h1>
-  <button id="snd-btn" type="button" aria-label="Activer ou couper les sons" title="Sons">🔊</button>
+<a class="skip" href="#app">Aller au contenu</a>
+
+<header class="head" id="head">
+  <div class="head-row">
+    <button class="btn-icon head-back" id="btn-back" type="button" aria-label="Retour" hidden><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg></button>
+    <button class="btn-icon head-quit" id="btn-quit" type="button" aria-label="Quitter" hidden><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
+    <a class="brand" href="#" id="brand" data-v="accueil">De zéro au sommet</a>
+    <span class="head-title" id="head-title" hidden></span>
+    <nav class="topnav" aria-label="Navigation principale">
+      <a href="#" data-v="accueil" aria-current="page">Aujourd'hui<kbd>1</kbd></a>
+      <a href="#" data-v="programme">Sentier<kbd>2</kbd></a>
+      <a href="#" data-v="erreurs">Cahier<kbd>3</kbd></a>
+      <a href="#" data-v="coach">Coach<kbd>4</kbd></a>
+    </nav>
+    <div class="head-actions">
+      <span class="head-count num" id="head-count" hidden></span>
+      <span class="reseau" id="reseau" hidden><svg class="ic ic-20" aria-hidden="true" focusable="false"><use href="#i-wifi-slash"/></svg><span>Hors ligne</span></span>
+      <div class="ring-day" id="ring-day" role="img" aria-label="Objectif du jour : 0 sur 25"></div>
+      <button class="btn-icon" id="btn-pause" type="button" aria-label="Pause" hidden><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-pause"/></svg></button>
+      <button class="btn-icon cloud" id="cloud" type="button" aria-label="Sauvegarde locale seulement"><svg class="ic ic-20" aria-hidden="true" focusable="false"><use href="#i-cloud"/></svg></button>
+      <button class="btn-icon" id="btn-theme" type="button" aria-label="Changer de thème"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-sun"/></svg></button>
+      <button class="btn-icon" id="btn-sound" type="button" aria-label="Sons" aria-pressed="false"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-speaker-high"/></svg></button>
+      <button class="btn-icon" id="btn-prof-top" type="button" aria-label="Le Prof" aria-controls="assist-panel" aria-expanded="false"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-graduation-cap"/></svg></button>
+      <button class="btn-icon" id="btn-settings" type="button" aria-label="Réglages"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-gear-six"/></svg></button>
+    </div>
+  </div>
+  <div class="crete" id="crete" aria-hidden="true"></div>
 </header>
 
-<nav class="nav" aria-label="Navigation">
-  <button data-v="accueil" class="active" type="button">🏔️ Aujourd'hui</button>
-  <button data-v="programme" type="button">🗺️ Programme</button>
-  <button data-v="papier" type="button">✍️ Papier</button>
-  <button data-v="techniques" type="button">⚡ Techniques</button>
-  <button data-v="erreurs" type="button">📕 Erreurs</button>
-  <button data-v="coach" type="button">🤖 Coach</button>
-  <button data-v="regles" type="button">📜 Les 5 règles</button>
+<main id="app" data-density="lecture" tabindex="-1">
+  <div class="skeleton" id="skeleton" aria-hidden="true"><div class="sk sk-line w-60"></div><div class="sk sk-line"></div><div class="sk sk-block"></div><div class="sk sk-block"></div></div>
+  <div class="empty" id="demarrage-lent" hidden><h2>L'application met du temps à démarrer.</h2><button class="btn" type="button" id="btn-recharger">Recharger</button></div>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Navigation">
+  <a href="#" data-v="accueil" aria-current="page"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-mountains"/></svg><span>Aujourd'hui</span></a>
+  <a href="#" data-v="programme"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-path"/></svg><span>Sentier</span></a>
+  <a href="#" data-v="erreurs"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-book-bookmark"/></svg><span>Cahier</span></a>
+  <a href="#" data-v="coach"><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-compass"/></svg><span>Coach</span></a>
 </nav>
 
-<main id="app" aria-live="polite"></main>
+<button class="fab-prof" id="assist-fab" type="button" aria-label="Le Prof" aria-controls="assist-panel" aria-expanded="false" hidden>
+  <svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-graduation-cap"/></svg>
+</button>
 
-</div>
-<script>window.SKILLS = []; window.PAPIERS = [];</script>
-<script src="techniques.js"></script>
-<script src="papier/papier-a.js"></script>
-<script src="papier/papier-b.js"></script>
-<script src="papier/papier-c.js"></script>
-<script src="papier/papier-d.js"></script>
-<script src="skills/skills-p1.js"></script>
-<script src="skills/skills-p2.js"></script>
-<script src="skills/skills-p3.js"></script>
-<script src="skills/skills-p4.js"></script>
-<script src="skills/skills-p4b.js"></script>
-<script src="skills/skills-p5.js"></script>
-<script src="skills/skills-p6.js"></script>
-<script src="skills/skills-p7.js"></script>
-<script src="engine.js"></script>
-<script src="assistant.js"></script>
+<div class="toasts" id="toasts"></div>
+<div id="statut" class="sr-only" role="status" aria-live="polite"></div>
+<div class="sheets" id="sheets"></div>
+<div class="fullscreens" id="fullscreens"></div>
+<canvas id="confetti" hidden></canvas>
+
 <script>
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+document.getElementById('btn-recharger').addEventListener('click', function(){ location.reload(); });
+setTimeout(function(){ var s = document.getElementById('skeleton');
+  if (s && s.parentNode){ s.hidden = true; document.getElementById('demarrage-lent').hidden = false; } }, 4000);
+if ('serviceWorker' in navigator) addEventListener('load', function(){
+  navigator.serviceWorker.register('./sw.js').then(function(reg){
+    if (typeof surveillerMaj === 'function') surveillerMaj(reg);
+  }).catch(function(){});
+});
 </script>
 </body>
 </html>

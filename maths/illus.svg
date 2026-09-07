@@ -1,0 +1,181 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+<!--
+  illus.svg · 6 illustrations d'expedition (DESIGN-SPEC §4.3)
+  viewBox commun : 0 0 360 220. Dessin au trait, stroke sur currentColor (la classe
+  .illus pose color depuis le jeton line-strong), epaisseur 1.25.
+  Deux aplats au maximum : le jeton glacier a 12 % pour les volumes lointains,
+  le jeton accent pour l'unique point d'attention de chaque scene.
+  Aucune couleur codee en dur, aucun degrade.
+-->
+
+<!-- ============================================================
+     il-massif · accueil : un massif a deux plans, un sentier qui monte
+     ============================================================ -->
+<symbol id="il-massif" viewBox="0 0 360 220">
+  <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- plan arriere : masse glacier -->
+    <path fill="var(--glacier)" fill-opacity=".12"
+          d="M0,166 L40,124 L64,146 L102,86 L132,116 L172,58 L204,96 L242,44 L274,80 L308,50 L336,74 L360,58 L360,196 L0,196 Z"/>
+    <!-- neiges du plan arriere -->
+    <path d="M160,72 L172,58 L184,74 L176,70 L170,76 L165,70 Z"/>
+    <path d="M231,58 L242,44 L254,60 L246,56 L240,62 L235,56 Z"/>
+    <path d="M298,62 L308,50 L318,63 L311,60 L306,65 L302,60 Z"/>
+    <!-- plan avant : arete plus proche, sans aplat -->
+    <path d="M0,196 L34,172 L58,184 L96,148 L124,170 L158,136 L188,162 L222,128 L252,152 L286,124 L316,146 L344,132 L360,140"/>
+    <!-- sentier : la seule ligne or de la scene -->
+    <path stroke="var(--accent)" stroke-width="1.75"
+          d="M24,192 C58,182 44,166 76,158 S104,136 88,126 S142,110 134,98 S190,80 182,70 S240,60 234,50 S292,46 316,36"/>
+    <circle cx="316" cy="36" r="3.5" fill="var(--accent)" stroke="none"/>
+    <!-- ligne de sol -->
+    <path d="M0,196 L360,196"/>
+    <path d="M28,204 L84,204 M110,204 L146,204 M186,204 L246,204" opacity=".55"/>
+  </g>
+</symbol>
+
+<!-- ============================================================
+     il-camp · celebration de camp : une tente et son drapeau plante
+     ============================================================ -->
+<symbol id="il-camp" viewBox="0 0 360 220">
+  <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- massif lointain, en retrait -->
+    <path fill="var(--glacier)" fill-opacity=".12"
+          d="M0,112 L44,74 L72,96 L112,50 L148,86 L186,46 L222,84 L262,52 L300,82 L336,60 L360,76 L360,150 L0,150 Z"/>
+    <path d="M0,150 L360,150" opacity=".5"/>
+    <!-- tente -->
+    <path d="M112,178 L156,96 L200,178"/>
+    <path d="M156,96 L156,178"/>
+    <path d="M156,100 C168,128 166,154 178,178"/>
+    <path d="M112,178 L200,178"/>
+    <!-- haubans et piquets -->
+    <path d="M156,96 L92,182 M156,96 L220,182"/>
+    <path d="M92,178 L92,186 M220,178 L220,186"/>
+    <!-- mat et drapeau : l'unique or -->
+    <path d="M262,182 L262,100"/>
+    <path fill="var(--accent)" stroke="none" d="M262,100 L298,110 L262,122 Z"/>
+    <path d="M262,100 L298,110 L262,122 Z"/>
+    <!-- foyer eteint, quelques pierres -->
+    <path d="M74,180 a6,4 0 1,0 12,0 a6,4 0 1,0 -12,0"/>
+    <path d="M292,182 a5,3.5 0 1,0 10,0 a5,3.5 0 1,0 -10,0"/>
+    <!-- sol -->
+    <path d="M0,188 L360,188"/>
+    <path d="M30,196 L96,196 M132,196 L172,196 M226,196 L286,196" opacity=".55"/>
+  </g>
+</symbol>
+
+<!-- ============================================================
+     il-sommet · l'arete sommitale et le drapeau plante au point haut
+     ============================================================ -->
+<symbol id="il-sommet" viewBox="0 0 360 220">
+  <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- versant, masse glacier -->
+    <path fill="var(--glacier)" fill-opacity=".12"
+          d="M0,200 L58,178 L96,156 L134,144 L168,116 L206,92 L240,64 L268,44 L292,60 L318,102 L340,148 L360,196 L360,206 L0,206 Z"/>
+    <!-- arete faitiere -->
+    <path d="M0,200 L58,178 L96,156 L134,144 L168,116 L206,92 L240,64 L268,44 L292,60 L318,102 L340,148 L360,196"/>
+    <!-- corniche de neige, quelques hachures -->
+    <path d="M212,96 L204,106 M228,84 L219,95 M244,72 L235,83 M260,58 L251,70" opacity=".7"/>
+    <!-- cordee : deux points relies, en retrait sur l'arete -->
+    <path d="M150,132 L182,110" stroke-dasharray="3 4"/>
+    <circle cx="150" cy="132" r="4"/>
+    <circle cx="182" cy="110" r="4"/>
+    <!-- mat et drapeau sommital : l'unique or -->
+    <path d="M268,44 L268,4"/>
+    <path fill="var(--accent)" stroke="none" d="M268,6 L302,16 L268,26 Z"/>
+    <path d="M268,6 L302,16 L268,26 Z"/>
+    <!-- vent -->
+    <path d="M306,36 L336,36 M298,48 L322,48" opacity=".55"/>
+  </g>
+</symbol>
+
+<!-- ============================================================
+     il-bivouac · serie pardonnee : une nuit sous la tente, la montagne dort
+     ============================================================ -->
+<symbol id="il-bivouac" viewBox="0 0 360 220">
+  <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- silhouette nocturne -->
+    <path fill="var(--glacier)" fill-opacity=".12"
+          d="M0,140 L46,96 L78,120 L118,66 L154,102 L196,58 L232,94 L272,62 L308,96 L340,78 L360,94 L360,154 L0,154 Z"/>
+    <path d="M0,154 L360,154" opacity=".5"/>
+    <!-- etoiles -->
+    <path d="M56,42 L56,54 M50,48 L62,48" opacity=".8"/>
+    <path d="M300,34 L300,44 M295,39 L305,39" opacity=".8"/>
+    <path d="M228,26 L228,34 M224,30 L232,30" opacity=".6"/>
+    <circle cx="122" cy="36" r="1.5" opacity=".7"/>
+    <circle cx="176" cy="58" r="1.5" opacity=".5"/>
+    <circle cx="264" cy="62" r="1.5" opacity=".5"/>
+    <!-- croissant de lune, au trait -->
+    <path d="M328,58 a20,20 0 1,1 -18,-25 a16,16 0 1,0 18,25 Z" opacity=".8"/>
+    <!-- tente basse, veillee allumee : l'unique or -->
+    <path d="M92,186 L142,124 L192,186"/>
+    <path d="M142,124 L142,186"/>
+    <path fill="var(--accent)" stroke="none" d="M142,144 L170,186 L142,186 Z"/>
+    <path d="M142,144 L170,186 L142,186 Z"/>
+    <path d="M92,186 L192,186"/>
+    <path d="M142,124 L74,190 M142,124 L210,190"/>
+    <!-- sol -->
+    <path d="M0,192 L360,192"/>
+    <path d="M34,200 L92,200 M214,200 L272,200" opacity=".55"/>
+  </g>
+</symbol>
+
+<!-- ============================================================
+     il-vide · etat vide : le sac a dos pose, le piolet planté a cote
+     ============================================================ -->
+<symbol id="il-vide" viewBox="0 0 360 220">
+  <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- corps du sac -->
+    <path d="M132,190 L132,96 a48,44 0 0,1 96,0 L228,190 a10,10 0 0,1 -10,10 L142,200 a10,10 0 0,1 -10,-10 Z"/>
+    <!-- rabat superieur -->
+    <path d="M134,110 a46,30 0 0,0 92,0"/>
+    <path d="M138,132 L222,132"/>
+    <!-- poche frontale -->
+    <path d="M152,150 L208,150 a8,8 0 0,1 8,8 L216,186 a6,6 0 0,1 -6,6 L150,192 a6,6 0 0,1 -6,-6 L144,158 a8,8 0 0,1 8,-8 Z"/>
+    <!-- boucle : l'unique or -->
+    <path fill="var(--accent)" stroke="none" d="M170,120 L190,120 L190,132 L170,132 Z"/>
+    <path d="M170,120 L190,120 L190,132 L170,132 Z"/>
+    <path d="M180,110 L180,120"/>
+    <!-- bretelles et sangles laterales -->
+    <path d="M146,102 C120,116 118,150 126,178"/>
+    <path d="M214,102 C240,116 242,150 234,178"/>
+    <path d="M144,164 L152,164 M208,164 L216,164"/>
+    <!-- piolet appuye -->
+    <path d="M268,200 L292,108"/>
+    <path d="M292,108 a12,12 0 0,1 -18,-4"/>
+    <path d="M292,108 L304,116"/>
+    <path d="M268,200 L264,196 M268,200 L272,196"/>
+    <!-- sol -->
+    <path d="M96,200 L296,200"/>
+    <path d="M60,208 L120,208 M254,208 L310,208" opacity=".55"/>
+  </g>
+</symbol>
+
+<!-- ============================================================
+     il-carnet · onboarding 1 : le carnet d'expedition ouvert, un crayon dessus
+     ============================================================ -->
+<symbol id="il-carnet" viewBox="0 0 360 220">
+  <g fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+    <!-- pages, deux volets autour de la reliure -->
+    <path fill="var(--glacier)" fill-opacity=".12"
+          d="M180,64 C152,48 116,44 68,50 L68,178 C116,172 152,176 180,192 Z"/>
+    <path d="M180,64 C152,48 116,44 68,50 L68,178 C116,172 152,176 180,192 Z"/>
+    <path fill="var(--glacier)" fill-opacity=".12"
+          d="M180,64 C208,48 244,44 292,50 L292,178 C244,172 208,176 180,192 Z"/>
+    <path d="M180,64 C208,48 244,44 292,50 L292,178 C244,172 208,176 180,192 Z"/>
+    <!-- reliure -->
+    <path d="M180,64 L180,192"/>
+    <path d="M172,72 L188,72 M172,96 L188,96 M172,120 L188,120 M172,144 L188,144 M172,168 L188,168" opacity=".6"/>
+    <!-- lignes ecrites, page de gauche -->
+    <path d="M92,80 L158,84 M92,100 L158,104 M92,120 L140,123 M92,140 L158,143 M92,160 L128,162" opacity=".75"/>
+    <!-- croquis de massif, page de droite -->
+    <path d="M200,140 L222,110 L236,126 L256,92 L272,116 L282,104"/>
+    <path d="M200,150 L282,150" opacity=".7"/>
+    <path d="M206,166 L262,166" opacity=".5"/>
+    <!-- crayon pose en diagonale : l'unique or -->
+    <path fill="var(--accent)" stroke="none" d="M232,206 L242,196 L306,60 L294,54 Z"/>
+    <path d="M232,206 L242,196 L306,60 L294,54 Z"/>
+    <path d="M236,201 L300,66"/>
+    <path d="M296,74 L308,80"/>
+  </g>
+</symbol>
+
+</svg>

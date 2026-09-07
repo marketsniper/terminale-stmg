@@ -1,0 +1,1783 @@
+/* =============================================================================
+   3-vues.css · Maths, de zero au sommet
+   Direction 3 « Expedition editoriale ». DESIGN-SPEC §6.15 a §6.30, §6.32 a §6.35,
+   les classes propres aux ecrans du §7, puis tout le mouvement du §8.
+
+   Ce fichier consomme les jetons definis dans css/1-socle.css et ne restyle
+   aucun selecteur du socle ni de css/2-composants.css (§6.1 a §6.14).
+   Regle *-text respectee : on ecrit avec --ok-text / --ko-text / --warn-text /
+   --accent-text / --glacier-text, jamais avec le jeton nu.
+   ============================================================================= */
+
+
+/* =============================================================================
+   §6.15 · Carte de fin et celebration
+   ============================================================================= */
+
+.fin-card{
+  text-align:center;
+  padding:var(--s-6) var(--gutter);
+  background:var(--sky);
+  min-height:100dvh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:var(--s-4);
+  border-radius:0;
+}
+
+/* Les variantes plein ecran debordent la gouttiere de main#app. */
+.fin-card[data-kind="seance"],
+.fin-card[data-kind="camp"]{
+  margin:calc(-1 * var(--s-5)) calc(-1 * var(--gutter));
+}
+
+/* Variantes compactes : sprint, test, DS, epreuve, papier, 5 minutes, bilan. */
+.fin-card[data-kind="serie"],
+.fin-card[data-kind="lock"]{
+  min-height:0;
+  margin:0;
+  background:var(--surface-1);
+  border-radius:var(--r-3);
+  padding:var(--s-6) var(--card-pad);
+  box-shadow:var(--card-ring), var(--shadow-2);
+  max-width:560px;
+  margin-inline:auto;
+  width:100%;
+}
+
+.fin-card > .overline{ margin:0 }
+.fin-card > h2{ margin:0 }
+.fin-card .msg{ margin:0; color:var(--ink-2); max-width:46ch; margin-inline:auto }
+.fin-card .score{ margin:0; color:var(--ink-2); font-size:.9375rem }
+
+/* Profil d'altitude de la seance : le trait se dessine en 900 ms. */
+.fin-card .profile{
+  width:100%;
+  max-width:420px;
+  margin-inline:auto;
+  height:auto;
+  aspect-ratio:360 / 80;
+  display:block;
+}
+.profile .area{ fill:var(--accent); opacity:.1 }
+.profile .line{
+  fill:none;
+  stroke:var(--accent-line);
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:1;
+  stroke-dashoffset:1;
+  animation:trace var(--dur-5) var(--ease-out-expo) forwards;
+}
+
+/* Les chiffres se posent l'un apres l'autre. */
+.fin-card .figures{ justify-content:center; margin-inline:auto }
+.fin-card .figure{
+  animation:rise var(--dur-2) var(--ease-out) both;
+  animation-delay:calc(var(--i, 0) * 120ms);
+}
+
+/* Detail des etapes de la seance. */
+.fin-lines{
+  list-style:none;
+  padding:0;
+  margin:0;
+  text-align:left;
+  max-width:420px;
+  margin-inline:auto;
+  width:100%;
+}
+.fin-lines li{
+  display:grid;
+  grid-template-columns:20px 1fr auto auto;
+  gap:var(--s-3);
+  align-items:center;
+  min-height:40px;
+  border-bottom:1px solid var(--line);
+  color:var(--ink-2);
+}
+.fin-lines li:last-child{ border-bottom:0 }
+.fin-lines .ic{ color:var(--muted) }
+.fin-lines b{ color:var(--ink) }
+.fin-lines .recall{ color:var(--muted) }
+
+.fin-card .record{
+  margin:0;
+  display:inline-flex;
+  align-items:center;
+  gap:var(--s-2);
+  justify-content:center;
+  color:var(--accent-text);
+  font-weight:600;
+  margin-inline:auto;
+  animation:slide-left var(--dur-3) var(--ease-out-expo) both;
+}
+
+.fin-card .next-row{
+  margin-top:var(--s-2);
+  display:flex;
+  justify-content:center;
+  width:100%;
+  max-width:420px;
+  margin-inline:auto;
+}
+.fin-card .next-row .btn-primary{ animation:rise var(--dur-2) var(--ease-out) both; animation-delay:1000ms }
+.fin-card .row{ justify-content:center; max-width:420px; margin-inline:auto }
+
+/* Camp atteint : dialogue plein ecran, teinte de phase en fond. */
+dialog.fin-card{
+  position:fixed;
+  inset:0;
+  width:100%;
+  max-width:none;
+  max-height:none;
+  margin:0;
+  border:0;
+  z-index:var(--z-celebration);
+  color:var(--ink);
+}
+dialog.fin-card::backdrop{ background:var(--bg) }
+.fin-card[data-kind="camp"]{
+  background:
+    radial-gradient(120% 70% at 50% 12%, color-mix(in srgb, var(--tint, var(--accent)) 30%, transparent) 0%, transparent 70%),
+    var(--sky);
+}
+.fin-card[data-kind="camp"] .montagne{ max-width:420px; margin-inline:auto }
+.fin-card[data-kind="camp"] .montagne svg{ animation:monte var(--dur-4) var(--ease-out-expo) both }
+.fin-card[data-kind="camp"] .flag{ animation:plant 480ms var(--ease-spring) both; transform-box:fill-box; transform-origin:bottom left }
+
+/* Verrouillage a 90 % : encart dans la carte question, jamais plein ecran. */
+.fin-card[data-kind="lock"]{ text-align:left; gap:var(--s-3); padding:var(--s-5) var(--card-pad) }
+.fin-card[data-kind="lock"] .ring{ margin:0 }
+.fin-card[data-kind="lock"] h2{ margin:0 }
+.fin-card[data-kind="lock"] .gain{
+  position:static;
+  color:var(--accent-text);
+  font-weight:600;
+  animation:none;
+  opacity:1;
+}
+.lock-ic{ position:relative; display:inline-grid; place-items:center }
+.lock-ic .ic{ grid-area:1 / 1; transition:opacity var(--dur-3) var(--ease-out) }
+.lock-ic .ic-open{ opacity:1 }
+.lock-ic .ic-shut{ opacity:0 }
+.fin-card[data-kind="lock"][data-locked] .lock-ic .ic-open{ opacity:0 }
+.fin-card[data-kind="lock"][data-locked] .lock-ic .ic-shut{ opacity:1 }
+
+
+/* =============================================================================
+   §6.16 · Liste des competences (le programme en corde)
+   ============================================================================= */
+
+.phase{ margin:0; content-visibility:auto; contain-intrinsic-size:0 600px }
+
+.phase-head{
+  display:flex;
+  align-items:center;
+  gap:var(--s-3);
+  position:sticky;
+  top:calc(var(--head-h) + 24px);
+  background:var(--bg);
+  z-index:var(--z-sticky);
+  padding:var(--s-2) 0;
+  cursor:pointer;
+}
+.phase-head::-webkit-details-marker{ display:none }
+.phase-head h2{ margin:0; font-size:1.25rem; flex:1; min-width:0 }
+.phase-head .etat{
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums lining-nums;
+  font-size:.8125rem;
+  color:var(--muted);
+}
+.phase-head .ring{ flex:none }
+.phase-head .caret{ transition:transform 160ms var(--ease-out); color:var(--muted) }
+details.phase[open] > .phase-head .caret{ transform:rotate(90deg) }
+.phase.locked h2{ color:var(--muted) }
+.phase > .pbar{ margin:var(--s-2) 0 var(--s-3) }
+.phase-note{ color:var(--muted); margin:var(--s-2) 0 0 }
+
+/* La corde : un trait vertical derriere les noeuds. */
+.skills{ position:relative; display:flex; flex-direction:column; gap:0 }
+.rope-line{ position:absolute; left:0; top:0; width:24px; height:100%; pointer-events:none }
+.rope-line line{ stroke:var(--line-strong); stroke-width:2 }
+.phase.done .rope-line line{ stroke:var(--ok) }
+.phase.locked .rope-line line{ stroke-dasharray:2 6 }
+
+.skill{
+  display:grid;
+  grid-template-columns:24px auto 1fr auto;
+  align-items:center;
+  gap:var(--s-3);
+  min-height:56px;
+  padding:var(--s-2) var(--s-3) var(--s-2) 0;
+  background:transparent;
+  border:0;
+  border-radius:var(--r-2);
+  text-align:left;
+  width:100%;
+  color:var(--ink);
+  font:inherit;
+  cursor:pointer;
+  position:relative;
+}
+.skill .num{ font-size:.75rem; color:var(--muted) }
+.skill .t{ font-family:var(--font-text); font-weight:600; font-size:.9375rem; min-width:0 }
+.skill .etat{ display:inline-flex; align-items:center; gap:var(--s-2); color:var(--muted) }
+.skill .sub{ grid-column:3 / -1; margin:0 }
+
+/* Noeuds de corde. */
+.skill .node{
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  background:var(--surface-1);
+  box-shadow:0 0 0 2px var(--line-strong);
+  justify-self:center;
+  transition:background var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+}
+.skill.done .node{ background:var(--ok); box-shadow:none }
+.skill.fragile .node{ background:var(--ok); box-shadow:0 0 0 2px var(--warn) }
+.skill.frontier .node{ background:var(--accent-line); box-shadow:0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent) }
+.skill.provisoire .node{ background:var(--accent-soft); box-shadow:0 0 0 2px var(--accent-line) }
+.skill.locked .node{ background:transparent; box-shadow:0 0 0 2px var(--line); border:1px dashed var(--line-strong) }
+.skill.paper .node{ border-radius:3px }
+
+/* Etats de ligne. */
+.skill.done .t{ color:var(--ink-2) }
+.skill.done .etat{ color:var(--ok-text) }
+.skill.fragile .etat{ color:var(--warn-text) }
+.skill.frontier{ background:var(--accent-soft) }
+.skill.frontier .etat{ color:var(--accent-text) }
+.skill.locked{ opacity:.85; cursor:default }
+.skill.locked .t{ color:var(--muted) }
+.skill.consolide .etat{ color:var(--ok-text) }
+
+/* Crampons miniatures dans la colonne d'etat. */
+.serie-bar.mini i,
+.crampons.mini i{ width:6px; height:6px }
+.serie-bar.mini,
+.crampons.mini{ gap:3px }
+
+@media (hover:hover){
+  .skill:not(.locked):hover{ background:var(--surface-2) }
+  .skill.frontier:hover{ background:color-mix(in srgb, var(--accent-soft) 80%, var(--surface-2)) }
+}
+.skill:not(.locked):active{ transform:translateY(1px) }
+
+
+/* =============================================================================
+   §6.17 · Chips de typologie d'erreur (variante filtre du Cahier)
+   Le composant de base vit en §6.12 : ici, seuls l'etat presse et le compteur.
+   ============================================================================= */
+
+.err-type[aria-pressed="true"]{
+  background:var(--surface-3);
+  color:var(--ink);
+  box-shadow:0 0 0 1.5px var(--ink);
+}
+.err-type .num{ color:var(--muted); margin-left:var(--s-2) }
+.err-type[aria-pressed="true"] .num{ color:var(--ink) }
+.err-types.filtre{ gap:var(--s-2); margin:0 0 var(--s-3) }
+
+
+/* =============================================================================
+   §6.18 · Page lecon (typographie longue)
+   Contrat de contenu : 52 lecons, 25 methodes, 22 corriges deja rediges.
+   ============================================================================= */
+
+.lecon{
+  max-width:var(--measure);
+  margin-inline:auto;
+  font-size:1.125rem;
+  line-height:1.6;
+  color:var(--ink-2);
+}
+.lecon p{ margin:0 0 1.25em }
+.lecon strong,
+.lecon b,
+.lecon mark,
+.lecon h2,
+.lecon h3{ color:var(--ink) }
+.lecon h2{ margin:2.5em 0 .75em }
+.lecon h3{ margin:1.75em 0 .5em }
+.lecon > :first-child{ margin-top:0 }
+.lecon > :last-child{ margin-bottom:0 }
+
+.lecon-head{ margin-bottom:var(--s-5) }
+.lecon-head .overline{ margin:0 0 var(--s-2) }
+.lecon-head h1{ margin:0 0 var(--s-3) }
+.lecon-head .body-l{ margin:0 0 var(--s-3) }
+.lecon-state{ display:flex; align-items:center; gap:var(--s-2); margin:0; flex-wrap:wrap }
+
+p.lede,
+.lecon .lede{ font-size:1.125rem; font-weight:500; color:var(--ink) }
+
+/* Suite d'etapes : un filet a gauche, pas d'encart. */
+.etapes{
+  position:relative;
+  padding:var(--s-3) 0 var(--s-3) var(--s-5);
+  margin:1.25em 0;
+  border-left:2px solid var(--line-strong);
+  background:transparent;
+  border-radius:0;
+}
+.etapes p{ margin:.35em 0 }
+.etapes p:has(> strong:first-child){ color:var(--ink) }
+.etapes p:not(:has(strong, mark, em)){ font-variant-numeric:tabular-nums lining-nums; padding-left:1.5rem }
+
+/* Formules : Fraunces, jamais de monospace. */
+.formule{
+  font:400 1.125rem/1.5 var(--font-display);
+  font-variation-settings:"opsz" 20;
+  font-variant-numeric:tabular-nums lining-nums;
+  word-spacing:.15em;
+  color:var(--ink);
+  background:var(--surface-2);
+  border-left:3px solid var(--glacier);
+  border-radius:0 var(--r-2) var(--r-2) 0;
+  padding:var(--s-3) var(--s-4);
+  margin:1.25em 0;
+  overflow-x:auto;
+}
+.formule p{ margin:0 }
+
+/* Encarts : a retenir, astuce, piege. */
+.box{
+  border-radius:var(--r-2);
+  padding:var(--s-3) var(--s-4);
+  margin:1.25em 0;
+  border:0;
+}
+.box p{ margin:.25em 0 }
+.box > :first-child{ margin-top:0 }
+.box > :last-child{ margin-bottom:0 }
+.box-t{
+  display:flex;
+  align-items:center;
+  gap:var(--s-2);
+  margin:0 0 .35em;
+  font-family:var(--font-text);
+  font-weight:600;
+  font-size:.75rem;
+  line-height:1;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+}
+.box-t::before{
+  content:"";
+  width:16px;
+  height:16px;
+  flex:none;
+  background:currentColor;
+  -webkit-mask:var(--box-ic) center / contain no-repeat;
+  mask:var(--box-ic) center / contain no-repeat;
+}
+.box.retenir{ background:var(--accent-soft); border-left:3px solid var(--accent-line) }
+.box.retenir .box-t{ color:var(--accent-text); --box-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M239.18,97.26A16.38,16.38,0,0,0,224.92,86l-59-4.76L143.14,26.15a16.36,16.36,0,0,0-30.27,0L90.11,81.23,31.08,86a16.46,16.46,0,0,0-9.37,28.86l45,38.83L53,211.75a16.38,16.38,0,0,0,24.5,17.82L128,198.49l50.53,31.08A16.4,16.4,0,0,0,203,211.75l-13.76-58.07,45-38.83A16.43,16.43,0,0,0,239.18,97.26Zm-15.34,5.47-48.7,42a8,8,0,0,0-2.56,7.91l14.88,62.8a.37.37,0,0,1-.17.48c-.18.14-.23.11-.38,0l-54.72-33.65a8,8,0,0,0-8.38,0L69.09,215.94c-.15.09-.19.12-.38,0a.37.37,0,0,1-.17-.48l14.88-62.8a8,8,0,0,0-2.56-7.91l-48.7-42c-.12-.1-.23-.19-.13-.5s.18-.27.33-.29l63.92-5.16A8,8,0,0,0,103,91.86l24.62-59.61c.08-.17.11-.25.35-.25s.27.08.35.25L153,91.86a8,8,0,0,0,6.75,4.92l63.92,5.16c.15,0,.24,0,.33.29S224,102.63,223.84,102.73Z'/%3E%3C/svg%3E") }
+.box.astuce{ background:transparent; box-shadow:inset 0 0 0 1px var(--glacier); border-left:3px solid var(--glacier) }
+.box.astuce .box-t{ color:var(--glacier-text); --box-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M176,232a8,8,0,0,1-8,8H88a8,8,0,0,1,0-16h80A8,8,0,0,1,176,232Zm40-128a87.55,87.55,0,0,1-33.64,69.21A16.24,16.24,0,0,0,176,186v6a16,16,0,0,1-16,16H96a16,16,0,0,1-16-16v-6a16,16,0,0,0-6.23-12.66A87.59,87.59,0,0,1,40,104.49C39.74,56.83,78.26,17.14,125.88,16A88,88,0,0,1,216,104Zm-16,0a72,72,0,0,0-73.74-72c-39,.92-70.47,33.39-70.26,72.39a71.65,71.65,0,0,0,27.64,56.3A32,32,0,0,1,96,186v6h64v-6a32.15,32.15,0,0,1,12.47-25.35A71.65,71.65,0,0,0,200,104Zm-16.11-9.34a57.6,57.6,0,0,0-46.56-46.55,8,8,0,0,0-2.66,15.78c16.57,2.79,30.63,16.85,33.44,33.45A8,8,0,0,0,176,104a9,9,0,0,0,1.35-.11A8,8,0,0,0,183.89,94.66Z'/%3E%3C/svg%3E") }
+.box.piege{ background:var(--ko-bg); border-left:3px solid var(--ko) }
+.box.piege .box-t{ color:var(--ko-text); --box-ic:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM222.93,203.8a8.5,8.5,0,0,1-7.48,4.2H40.55a8.5,8.5,0,0,1-7.48-4.2,7.59,7.59,0,0,1,0-7.72L120.52,44.21a8.75,8.75,0,0,1,15,0l87.45,151.87A7.59,7.59,0,0,1,222.93,203.8ZM120,144V104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,180Z'/%3E%3C/svg%3E") }
+/* Repli si le masque SVG externe n'est pas resolu : une puce carree suffit. */
+@supports not ((-webkit-mask-image:none) or (mask-image:none)){
+  .box-t::before{ -webkit-mask:none; mask:none; width:8px; height:8px; border-radius:2px }
+}
+
+/* Tableaux : ils defilent, ils ne cassent jamais la colonne de lecture. */
+.tblwrap{ overflow-x:auto; margin:1.25em 0; -webkit-overflow-scrolling:touch }
+.tbl,
+.lecon table{
+  border-collapse:collapse;
+  font-size:.9375rem;
+  min-width:100%;
+  margin:1.25em 0;
+  /* Sans .tblwrap, le tableau defile dans sa propre boite. */
+  display:block;
+  overflow-x:auto;
+  max-width:100%;
+}
+.tblwrap .tbl,
+.tblwrap table{ display:table; overflow:visible; margin:0 }
+.tbl th,
+.tbl td,
+.lecon table th,
+.lecon table td{
+  border:0;
+  border-bottom:1px solid var(--line);
+  padding:.5rem .75rem;
+  text-align:left;
+  font-variant-numeric:tabular-nums lining-nums;
+  vertical-align:top;
+}
+.tbl thead th,
+.lecon table thead th{
+  font:600 .75rem var(--font-text);
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  background:transparent;
+  white-space:nowrap;
+}
+.tbl tbody th,
+.lecon table tbody th{ font-weight:600; color:var(--ink) }
+.tbl tr:last-child td,
+.lecon table tr:last-child td{ border-bottom:0 }
+
+.lecon ol,
+.lecon ul{ padding-left:1.25em; margin:0 0 1.25em }
+.lecon li{ margin:.25em 0 }
+.lecon mark{
+  background:var(--hl);
+  color:var(--ink);
+  padding:.05em .25em;
+  border-radius:3px;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+}
+.lecon details{ border-top:1px solid var(--line); border-bottom:1px solid var(--line); margin:1.25em 0 }
+.lecon details + details{ border-top:0; margin-top:-1.25em }
+.lecon summary{
+  min-height:52px;
+  display:flex;
+  align-items:center;
+  gap:var(--s-2);
+  cursor:pointer;
+  font-weight:600;
+  color:var(--ink);
+  list-style:none;
+}
+.lecon summary::-webkit-details-marker{ display:none }
+.lecon summary .ic{ transition:transform 160ms var(--ease-out); color:var(--muted) }
+.lecon details[open] > summary .ic{ transform:rotate(90deg) }
+
+/* Appel a l'action colle en bas, revele apres 40 % de defilement. */
+.lecon-cta{
+  position:sticky;
+  bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px);
+  padding:var(--s-3) 0;
+  background:linear-gradient(transparent, var(--bg) 40%);
+  display:flex;
+  gap:var(--s-3);
+  align-items:center;
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity var(--dur-3) var(--ease-out-expo), transform var(--dur-3) var(--ease-out-expo);
+  pointer-events:none;
+}
+.lecon-cta[data-shown]{ opacity:1; transform:none; pointer-events:auto }
+.lecon-cta .btn-primary{ flex:1 }
+
+/* Lecon deja lue : le corps se replie sur son chapeau. */
+.lecon-body[data-collapsed] > :not(.lede){ display:none }
+
+
+/* =============================================================================
+   §6.19 · Entree du cahier d'erreurs
+   ============================================================================= */
+
+.err{
+  padding:var(--s-4) 0;
+  border-bottom:1px solid var(--line);
+  margin:0;
+  display:grid;
+  gap:var(--s-2);
+}
+.err .q{ font-weight:600; color:var(--ink); white-space:pre-line; margin:0 }
+.err .rep{ display:flex; gap:var(--s-3); align-items:baseline; margin:0 }
+.err .rep s{ color:var(--ko-text); text-decoration-thickness:1px }
+.err .rep b{ color:var(--ok-text) }
+.err .meta{ display:flex; flex-wrap:wrap; gap:var(--s-3); align-items:center; margin:0 }
+.err .due{ color:var(--muted) }
+.err .row{ margin-top:var(--s-1) }
+.err.ko{ border-left:3px solid var(--ko); padding-left:var(--s-3) }
+.err[data-due="today"]{ border-left:3px solid var(--accent-line); padding-left:var(--s-3) }
+.err[data-done] .q,
+.err[data-done] .rep{ color:var(--muted) }
+
+/* Sortie du cahier : la ligne se replie. */
+.err[data-fold]{
+  display:grid;
+  grid-template-rows:0fr;
+  padding-block:0;
+  border-bottom-color:transparent;
+  transition:grid-template-rows var(--dur-3) var(--ease-out-expo),
+             padding-block var(--dur-3) var(--ease-out-expo),
+             opacity var(--dur-2) var(--ease-in);
+  opacity:0;
+}
+.err[data-fold] > *{ overflow:hidden }
+
+/* Groupes par jour, et le pied « Reparees ». */
+.err-group{ margin:0 0 var(--s-2) }
+.err-repares .err{ opacity:.6 }
+
+
+/* =============================================================================
+   §6.20 · Graphiques du coach
+   ============================================================================= */
+
+/* Barres de phase : composant de 2-composants.css (.bars, .bar-row, .lab, .val). */
+
+/* Sparkline vitesse. */
+/* Les graphiques portent leurs etiquettes dans le SVG : au-dela de 520 px la mise
+   a l'echelle grossirait le texte, on plafonne donc la largeur de trace. */
+.spark{ width:100%; max-width:520px; height:auto; aspect-ratio:360 / 80; display:block; overflow:visible }
+.spark .band{ fill:var(--ok); opacity:.1 }
+.spark .avg{ fill:none; stroke:var(--accent-line); stroke-width:2; stroke-linecap:round; stroke-linejoin:round }
+.spark .pt{ fill:var(--muted) }
+.spark text,
+.spark .ax{
+  font-family:var(--font-mono);
+  font-size:.6875rem;
+  fill:var(--muted);
+  font-variant-numeric:tabular-nums lining-nums;
+}
+
+/* Heatmap d'assiduite : 12 semaines. */
+.heatmap{
+  display:grid;
+  grid-template-columns:repeat(12, 14px);
+  grid-auto-rows:14px;
+  gap:3px;
+  --lvl0:var(--surface-3);
+  --lvl1:color-mix(in srgb, var(--accent) 30%, var(--surface-3));
+  --lvl2:color-mix(in srgb, var(--accent) 55%, var(--surface-3));
+  --lvl3:color-mix(in srgb, var(--accent) 80%, var(--surface-3));
+  --lvl4:var(--accent-line);
+}
+.hm{
+  width:100%;
+  height:100%;
+  border-radius:3px;
+  border:0;
+  padding:0;
+  background:var(--lvl0);
+  position:relative;
+  cursor:pointer;
+}
+.hm[data-lvl="1"]{ background:var(--lvl1) }
+.hm[data-lvl="2"]{ background:var(--lvl2) }
+.hm[data-lvl="3"]{ background:var(--lvl3) }
+.hm[data-lvl="4"]{ background:var(--lvl4) }
+.hm[data-bivouac]::after{
+  content:"";
+  position:absolute;
+  right:2px;
+  bottom:2px;
+  width:3px;
+  height:3px;
+  border-radius:50%;
+  background:var(--glacier);
+}
+.hm[data-test]{ box-shadow:0 0 0 1px var(--glacier) }
+.hm[data-today]{ box-shadow:0 0 0 1.5px var(--ink) }
+.hm[data-today][data-lvl="4"]{ animation:pop-in var(--dur-4) var(--ease-spring) both }
+.heatmap-legende{ display:flex; align-items:center; gap:var(--s-2); margin-top:var(--s-2) }
+.heatmap-legende i{ width:12px; height:12px; border-radius:3px; background:var(--lvl0); display:block }
+.heatmap-legende i[data-lvl="1"]{ background:var(--lvl1) }
+.heatmap-legende i[data-lvl="2"]{ background:var(--lvl2) }
+.heatmap-legende i[data-lvl="3"]{ background:var(--lvl3) }
+.heatmap-legende i[data-lvl="4"]{ background:var(--lvl4) }
+
+/* Info-bulle d'une case. */
+.tip{
+  position:absolute;
+  z-index:var(--z-raised);
+  background:var(--surface-1);
+  color:var(--ink);
+  box-shadow:var(--card-ring), var(--shadow-2);
+  border-radius:var(--r-2);
+  padding:var(--s-2) var(--s-3);
+  font-size:.875rem;
+  white-space:nowrap;
+  pointer-events:none;
+}
+
+/* Courbe d'altitude sur 90 jours. */
+.altline{ width:100%; max-width:520px; height:auto; aspect-ratio:360 / 160; display:block; overflow:visible }
+.altline .camp-line{ stroke:var(--line); stroke-width:1 }
+.altline .area{ fill:var(--accent); opacity:.1 }
+.altline .line{
+  fill:none;
+  stroke:var(--accent-line);
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+  stroke-dasharray:1;
+  stroke-dashoffset:1;
+  animation:trace var(--dur-5) var(--ease-out-expo) forwards;
+}
+.altline .cible{ fill:none; stroke:var(--muted); stroke-width:1.25; stroke-dasharray:3 4 }
+.altline .pt{ fill:var(--accent-line) }
+.altline text{
+  font-family:var(--font-mono);
+  font-size:.6875rem;
+  fill:var(--muted);
+  font-variant-numeric:tabular-nums lining-nums;
+}
+.altline text.cur{ fill:var(--ink) }
+
+/* Profil d'erreurs : pentagone. */
+.radar{ width:160px; height:160px; display:block; margin-inline:auto; overflow:visible }
+.radar .grid{ fill:none; stroke:var(--line); stroke-width:1 }
+.radar .axis{ stroke:var(--line); stroke-width:1 }
+.radar .area{ fill:var(--ko); fill-opacity:.2; stroke:var(--ko); stroke-width:1.5; stroke-linejoin:round }
+.radar .pt{ fill:var(--ko) }
+.radar text{
+  font-family:var(--font-text);
+  font-weight:500;
+  font-size:.8125rem;
+  fill:var(--muted);
+}
+
+/* Triple anneau : les trois pistes du jour. */
+.ring.triple .val.gold{ stroke:var(--accent-line) }
+.ring.triple .val.glacier{ stroke:var(--glacier); transition-delay:120ms }
+.ring.triple .val.ok{ stroke:var(--ok); transition-delay:240ms }
+.ring.triple .val.vide{ opacity:.4 }
+.ring.over .val.gold{ stroke:var(--ok) }
+.ring-legende{ display:flex; flex-direction:column; gap:var(--s-1); margin:0; padding:0; list-style:none }
+.ring-legende li{ display:flex; align-items:center; gap:var(--s-2); color:var(--ink-2); font-size:.875rem }
+.ring-legende i{ width:8px; height:8px; border-radius:50%; background:var(--accent-line); flex:none }
+.ring-legende li[data-t="rev"] i{ background:var(--glacier) }
+.ring-legende li[data-t="cm"] i{ background:var(--ok) }
+.ring-centre{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 72;
+  font-size:2rem;
+  line-height:1;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums lining-nums;
+}
+
+
+/* =============================================================================
+   §6.21 · Badges dates et medaillons de succes
+   ============================================================================= */
+
+/* .badges et .badge : composants (§6.21, resultats dates). Ici, les medaillons. */
+
+.medals{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(88px, 1fr));
+  gap:var(--s-3);
+  padding:0;
+  margin:0;
+  list-style:none;
+  text-align:center;
+}
+.medals li{ display:flex; flex-direction:column; align-items:center; gap:var(--s-2) }
+.medal{
+  width:64px;
+  height:64px;
+  margin-inline:auto;
+  border-radius:50%;
+  background:var(--surface-2);
+  box-shadow:0 0 0 2px var(--accent-line);
+  border:0;
+  display:grid;
+  perspective:600px;
+  cursor:pointer;
+  padding:0;
+}
+.medal .ic{ width:28px; height:28px; color:var(--accent-text) }
+.medal-face,
+.medal-back{
+  grid-area:1 / 1;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  backface-visibility:hidden;
+  -webkit-backface-visibility:hidden;
+  transition:transform 400ms var(--ease-out-expo);
+}
+.medal-back{ transform:rotateY(180deg); color:var(--ink-2); font-size:.75rem; padding:0 6px; line-height:1.2 }
+.medal[aria-pressed="true"] > *{ transform:rotateY(180deg) }
+.medal[aria-pressed="true"] .medal-back{ transform:rotateY(360deg) }
+.medal[data-state="off"]{ box-shadow:0 0 0 2px var(--line-strong); border:1px dashed var(--line-strong) }
+.medal[data-state="off"] .ic{ color:var(--muted); opacity:.4 }
+.medal[data-new]{ animation:pop-in var(--dur-4) var(--ease-spring) both }
+.medal-t{
+  font-family:var(--font-text);
+  font-weight:500;
+  font-size:.8125rem;
+  line-height:1.2;
+  letter-spacing:.01em;
+  color:var(--ink-2);
+}
+.medal-cond{ color:var(--muted) }
+
+
+/* =============================================================================
+   §6.22 · Feuille modale et dialogue
+   ============================================================================= */
+
+.sheet{
+  position:fixed;
+  inset:auto 0 0 0;
+  margin:0;
+  width:100%;
+  max-width:none;
+  max-height:min(85svh, 640px);
+  border:0;
+  border-radius:var(--r-4) var(--r-4) 0 0;
+  background:var(--surface-1);
+  color:var(--ink);
+  padding:var(--s-3) var(--gutter) calc(var(--s-5) + env(safe-area-inset-bottom));
+  box-shadow:var(--shadow-3);
+  z-index:var(--z-sheet);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+.sheet::backdrop{ background:color-mix(in srgb, var(--bg) 60%, transparent) }
+.sheet[open]{ display:flex; flex-direction:column; gap:var(--s-3) }
+.sheet h2{ margin:0 }
+.sheet p{ margin:0 }
+.sheet-grip{
+  width:36px;
+  height:4px;
+  border-radius:2px;
+  background:var(--surface-3);
+  margin:0 auto var(--s-2);
+  flex:none;
+}
+.sheet-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:var(--s-3);
+  margin-top:var(--s-5);
+}
+.sheet-actions > *{ width:100% }
+
+/* Ouverture et fermeture (§8 #14). */
+.sheet[open]{ animation:sheet-in 260ms var(--ease-out-expo) both }
+@starting-style{ .sheet[open]{ transform:translateY(24px); opacity:0 } }
+.sheet[data-closing]{ animation:sheet-out 140ms var(--ease-in) both }
+
+/* Variantes. */
+.sheet.pause .btn-primary{ width:100% }
+.install-steps{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--s-3) }
+.install-steps li{ display:grid; grid-template-columns:28px 1fr; gap:var(--s-3); align-items:center; color:var(--ink-2) }
+.install-steps .ic{ width:28px; height:28px; color:var(--accent-text) }
+.sheet-objectif label{ min-height:56px }
+.sheet-import .figures{ margin:var(--s-3) 0 }
+.sheet-aide .aide-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-2) var(--s-5) }
+.sheet-aide .aide-grid > div{ display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); min-height:36px; font-size:.9375rem }
+
+/* Palette et feuille d'aide : .pal-list et .pal-item viennent de 2-composants.css. */
+.pal-input{ width:100% }
+.pal-res{ list-style:none; margin:var(--s-2) 0 0; padding:0; display:flex; flex-direction:column; overflow-y:auto }
+.kbd-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:var(--s-1) }
+.kbd-list li{ display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); min-height:36px; font-size:.9375rem }
+
+/* Carte partageable : l'apercu. */
+.carte-preview{
+  max-width:280px;
+  margin-inline:auto;
+  border-radius:var(--r-3);
+  overflow:hidden;
+  box-shadow:var(--shadow-3);
+}
+.carte-preview img{ display:block; width:100% }
+@media (hover:hover){
+  .carte-preview{ perspective:800px; transition:transform var(--dur-3) var(--ease-out-expo) }
+  .carte-preview:hover{ transform:rotateY(4deg) }
+}
+
+
+/* =============================================================================
+   §6.23 · Toast
+   ============================================================================= */
+
+.toasts{
+  position:fixed;
+  top:calc(env(safe-area-inset-top) + 12px);
+  left:50%;
+  transform:translateX(-50%);
+  z-index:var(--z-toast);
+  width:min(420px, calc(100% - 32px));
+  display:flex;
+  flex-direction:column;
+  gap:var(--s-2);
+  pointer-events:none;
+}
+.toast{
+  display:flex;
+  align-items:center;
+  gap:var(--s-3);
+  min-height:44px;
+  padding:var(--s-2) var(--s-4);
+  border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface-1) 85%, transparent);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  box-shadow:var(--card-ring), var(--shadow-3);
+  font-size:.9375rem;
+  color:var(--ink);
+  pointer-events:auto;
+  animation:toast-in var(--dur-3) var(--ease-out-expo) both;
+}
+.toast span{ flex:1; min-width:0 }
+.toast .ic{ flex:none; color:var(--muted) }
+.toast[data-tone="gold"] .ic{ color:var(--accent-text) }
+.toast[data-tone="ok"] .ic{ color:var(--ok-text) }
+.toast[data-tone="ko"] .ic{ color:var(--ko-text) }
+.toast[data-tone="glacier"] .ic{ color:var(--glacier-text) }
+.toast[data-closing]{ animation:toast-out 140ms var(--ease-in) both }
+.toast .btn{ flex:none }
+
+
+/* =============================================================================
+   §6.24 · Interrupteur, champ, segment
+   ============================================================================= */
+
+.field{ display:flex; flex-direction:column; gap:var(--s-2) }
+.field > .label{ color:var(--muted) }
+.input,
+.sv-txt,
+.lecon textarea,
+.field textarea{
+  min-height:52px;
+  padding:0 var(--s-4);
+  font:inherit;
+  font-size:1.0625rem;
+  color:var(--ink);
+  background:var(--surface-2);
+  border:0;
+  border-radius:var(--r-2);
+  box-shadow:var(--field-ring);
+  width:100%;
+}
+.input:focus,
+.sv-txt:focus,
+.field textarea:focus{ box-shadow:var(--focus-ring); outline:none }
+.input[aria-invalid="true"],
+.sv-txt[aria-invalid="true"]{ box-shadow:0 0 0 2px var(--ko) }
+.field-err{ color:var(--ko-text) }
+.input:disabled,
+.sv-txt:disabled{ opacity:.6 }
+.sv-txt{
+  font-family:var(--font-mono);
+  font-size:1rem;
+  min-height:5rem;
+  resize:vertical;
+  padding:var(--s-3) var(--s-4);
+  line-height:1.5;
+}
+
+.switch{
+  display:flex;
+  align-items:center;
+  gap:var(--s-3);
+  min-height:44px;
+  cursor:pointer;
+}
+.switch input{
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
+}
+.switch .track{
+  width:48px;
+  height:28px;
+  border-radius:14px;
+  background:var(--surface-3);
+  box-shadow:inset 0 0 0 1px var(--line-strong);
+  transition:background var(--dur-1) var(--ease-out);
+  flex:none;
+  display:block;
+}
+.switch .thumb{
+  width:22px;
+  height:22px;
+  margin:3px;
+  border-radius:50%;
+  background:var(--surface-1);
+  box-shadow:var(--shadow-1);
+  transition:transform var(--dur-2) var(--ease-out);
+  display:block;
+}
+.switch input:checked + .track{ background:var(--accent-line) }
+.switch input:checked + .track .thumb{ transform:translateX(20px) }
+.switch input:focus-visible + .track{ box-shadow:var(--focus-ring) }
+.switch input:disabled + .track{ opacity:.6 }
+.switch-t{ color:var(--ink); min-width:0 }
+
+.segment{
+  display:grid;
+  grid-auto-flow:column;
+  grid-auto-columns:1fr;
+  gap:4px;
+  padding:4px;
+  background:var(--surface-2);
+  border-radius:var(--r-pill);
+}
+.segment label{ display:block; min-width:0 }
+.segment input{
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
+}
+.segment label span{
+  display:grid;
+  place-items:center;
+  min-height:44px;
+  border-radius:var(--r-pill);
+  color:var(--muted);
+  font-weight:500;
+  text-align:center;
+  padding:0 var(--s-2);
+  line-height:1.2;
+  cursor:pointer;
+}
+.segment label span b{ font-size:.8125rem; color:inherit; font-weight:500 }
+.segment input:checked + span{
+  background:var(--surface-1);
+  color:var(--ink);
+  box-shadow:var(--card-ring), var(--shadow-1);
+}
+.segment input:focus-visible + span{ box-shadow:var(--focus-ring) }
+/* Segment revele : « Suivre le theme de l'appareil » decoche. */
+.segment-reveal{
+  display:grid;
+  grid-template-rows:0fr;
+  transition:grid-template-rows 200ms var(--ease-out);
+}
+.segment-reveal > *{ overflow:hidden }
+.segment-reveal[data-open]{ grid-template-rows:1fr }
+
+/* Auto-evaluation d'un exercice papier. */
+.crit{ display:flex; flex-direction:column; gap:var(--s-2) }
+.crit-l{
+  display:flex;
+  align-items:center;
+  gap:var(--s-3);
+  min-height:52px;
+  padding:0 var(--s-4);
+  background:var(--surface-2);
+  border-radius:var(--r-2);
+  color:var(--ink);
+  cursor:pointer;
+}
+.crit-l input{ width:22px; height:22px; accent-color:var(--ok-text); flex:none }
+.crit-l:has(input:checked){ color:var(--muted) }
+
+
+/* =============================================================================
+   §6.25 · Etat vide
+   ============================================================================= */
+
+.empty{ text-align:center; padding:var(--s-7) var(--s-4); max-width:420px; margin-inline:auto }
+.empty .illus{ width:200px; height:auto; aspect-ratio:360 / 220; color:var(--line-strong); margin:0 auto var(--s-4); display:block }
+.empty .ic-40{ width:40px; height:40px; color:var(--muted); margin:0 auto var(--s-4); display:block }
+.empty h2{ margin:0 0 var(--s-3) }
+.empty p{ margin:0 0 var(--s-5); color:var(--ink-2) }
+.empty .btn,
+.empty .btn-primary{ margin-inline:auto }
+
+/* Toute illustration du sprite illus.svg partage cette base. */
+.illus{ width:200px; height:auto; aspect-ratio:360 / 220; color:var(--line-strong); display:block }
+.illus.lg{ width:280px }
+
+
+/* =============================================================================
+   §6.26 · Squelette de chargement
+   ============================================================================= */
+
+.skeleton{ display:flex; flex-direction:column; gap:var(--s-2) }
+.sk{
+  background:linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%);
+  background-size:200% 100%;
+  border-radius:var(--r-1);
+  animation:sk 1.4s var(--ease-out) infinite;
+}
+.sk-line{ height:1em; margin:.5em 0 }
+.sk-block{ height:120px; border-radius:var(--r-3) }
+.w-60{ width:60% }
+
+
+/* =============================================================================
+   §6.27 · Bandeau du coach
+   ============================================================================= */
+
+.coach-msg{
+  margin:0;
+  padding:var(--s-2) 0 var(--s-2) var(--s-4);
+  border-left:2px solid var(--accent-line);
+  font:400 1.125rem/1.45 var(--font-display);
+  font-variation-settings:"opsz" 20;
+  color:var(--ink-2);
+  background:transparent;
+  border-radius:0;
+}
+.coach-msg p{ margin:0 }
+.coach-msg + .coach-msg{ margin-top:var(--s-3) }
+.coach-msg .qui{ display:none }
+.coach-msg.ko{ border-left:2px solid var(--ko) }
+
+
+/* =============================================================================
+   §6.28 · Panneau du Prof (classes assist-* conservees)
+   ============================================================================= */
+
+.fab-prof{
+  position:fixed;
+  left:16px;
+  bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px);
+  width:52px;
+  height:52px;
+  border-radius:50%;
+  background:var(--surface-1);
+  color:var(--accent-text);
+  box-shadow:var(--card-ring), var(--shadow-2);
+  z-index:var(--z-fab);
+  border:0;
+  display:none;
+  place-items:center;
+  cursor:pointer;
+}
+body[data-ctx="parcours"] .fab-prof,
+body[data-ctx="lecon"] .fab-prof{ display:grid }
+body[data-ctx="parcours"] .fab-prof{ bottom:calc(24px + env(safe-area-inset-bottom)) }
+
+.sheet-prof{ height:min(85svh, 640px); max-height:min(85svh, 640px) }
+.sheet-prof[open]{ display:flex; flex-direction:column }
+.assist-head{
+  display:flex;
+  align-items:center;
+  gap:var(--s-2);
+  padding:var(--s-2) 0 var(--s-3);
+  border-bottom:1px solid var(--line);
+  flex:none;
+}
+.assist-t{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 24;
+  font-size:1.25rem;
+  line-height:1.2;
+  color:var(--ink);
+}
+.assist-icon{ margin-left:auto }
+.assist-ctx{ margin:var(--s-3) 0 0; flex:none }
+
+.assist-body{
+  flex:1;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:var(--s-3) 0;
+  display:flex;
+  flex-direction:column;
+  gap:var(--s-2);
+}
+.assist-msg{
+  max-width:88%;
+  padding:var(--s-2) var(--s-3);
+  border-radius:var(--r-2);
+  font-size:.9375rem;
+  line-height:1.5;
+}
+.assist-msg.moi{
+  align-self:flex-end;
+  background:var(--glacier-deep);
+  color:var(--glacier-ink);
+  border-bottom-right-radius:4px;
+}
+.assist-msg.bot{
+  align-self:flex-start;
+  background:var(--surface-2);
+  color:var(--ink);
+  box-shadow:var(--card-ring);
+  border-bottom-left-radius:4px;
+}
+.assist-msg p{ margin:0 0 .6em }
+.assist-msg > :last-child{ margin-bottom:0 }
+.assist-msg a{ color:var(--glacier-text); text-decoration:underline }
+.assist-msg .etapes{ margin:.6em 0; font-size:1em }
+.assist-msg .formule{ margin:.6em 0; font-size:1rem }
+.assist-msg .box{ margin:.6em 0 }
+.assist-pre,
+.assist-msg code{
+  font-family:var(--font-mono);
+  font-size:.875rem;
+  background:var(--surface-3);
+  border-radius:var(--r-1);
+  padding:.1em .35em;
+}
+.assist-pre{ display:block; padding:var(--s-2) var(--s-3); overflow-x:auto; white-space:pre }
+.assist-hit{ border-left:2px solid var(--glacier); padding-left:var(--s-3) }
+.assist-hit-t{ font-weight:600; margin:0 0 .15rem; color:var(--ink) }
+.assist-think{ color:var(--muted); font-style:italic }
+.assist-think::after{ content:"\25AE"; margin-left:2px; animation:caret 1s steps(2, jump-none) infinite }
+.assist-err{ color:var(--ko-text) }
+
+.assist-foot{ border-top:1px solid var(--line); padding:var(--s-3) 0 0; flex:none }
+.assist-chips{
+  display:flex;
+  gap:var(--s-2);
+  overflow-x:auto;
+  scrollbar-width:none;
+  padding-bottom:var(--s-2);
+}
+.assist-chips::-webkit-scrollbar{ display:none }
+.assist-chip{ flex:none; white-space:nowrap }
+.sheet-prof .assist-chip{ min-height:44px }
+.assist-row{ display:grid; grid-template-columns:1fr auto; gap:var(--s-2); align-items:end }
+.assist-row textarea{
+  min-height:44px;
+  max-height:110px;
+  font-size:1.0625rem;
+  resize:none;
+  padding:var(--s-2) var(--s-3);
+  line-height:1.4;
+  font-family:var(--font-text);
+  color:var(--ink);
+  background:var(--surface-2);
+  border:0;
+  border-radius:var(--r-2);
+  box-shadow:var(--field-ring);
+  width:100%;
+}
+.assist-row textarea:focus{ box-shadow:var(--focus-ring); outline:none }
+.assist-row .btn-primary{ width:44px; min-height:44px; padding:0; place-items:center }
+
+/* Le chip de moteur du panneau reprend le gabarit de .chip (§6.11). */
+.assist-mode{ flex:none }
+
+
+/* =============================================================================
+   §6.29 · Rappels du jour (file cochable)
+   ============================================================================= */
+
+.todo{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column }
+.todo-l{
+  display:grid;
+  grid-template-columns:28px 1fr auto;
+  gap:var(--s-3);
+  align-items:center;
+  min-height:44px;
+}
+.todo-chk{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  box-shadow:0 0 0 2px var(--line-strong);
+  background:transparent;
+  border:0;
+  color:transparent;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  padding:0;
+}
+.todo-chk .ic{ width:16px; height:16px }
+.todo-chk.done{
+  background:var(--ok);
+  color:var(--ok-ink);
+  box-shadow:none;
+  animation:pop var(--dur-3) var(--ease-out);
+}
+.todo-t{ color:var(--ink); min-width:0 }
+.todo-l .num{ color:var(--muted) }
+.todo-sub{ grid-column:2 / -1; color:var(--muted); margin:0 }
+.todo-l[data-fold]{
+  display:grid;
+  grid-template-rows:0fr;
+  min-height:0;
+  transition:grid-template-rows var(--dur-3) var(--ease-out-expo), opacity var(--dur-2) var(--ease-in);
+  opacity:0;
+}
+.todo-l[data-fold] > *{ overflow:hidden }
+.todo-plus{ color:var(--glacier-text); font-size:.875rem }
+
+/* Compteur du titre qui roule. */
+.roll{ display:inline-block; overflow:hidden; vertical-align:bottom }
+.roll[data-rolling] > *{ animation:roll 200ms var(--ease-out) both }
+
+/* Histogramme des 7 prochains jours de rappels. */
+.histo7{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:4px;
+  height:40px;
+  align-items:end;
+}
+.histo7 i{
+  display:block;
+  background:var(--glacier-soft);
+  border-radius:3px 3px 0 0;
+  height:calc(var(--n, 0) / 8 * 100%);
+  min-height:2px;
+  transition:height var(--dur-3) var(--ease-out-expo);
+}
+.histo7 i[data-today]{ background:var(--glacier) }
+.histo7-jours{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  gap:4px;
+  margin:var(--s-1) 0 0;
+  padding:0;
+  list-style:none;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:.6875rem;
+  color:var(--muted);
+}
+
+
+/* =============================================================================
+   §6.30 · Onboarding
+   ============================================================================= */
+
+.onb{
+  position:fixed;
+  inset:0;
+  z-index:var(--z-celebration);
+  background:var(--sky);
+  display:grid;
+  grid-template-rows:auto 1fr auto;
+  gap:var(--s-4);
+  padding:calc(env(safe-area-inset-top) + var(--s-4)) var(--gutter) calc(env(safe-area-inset-bottom) + var(--s-5));
+  overflow:hidden;
+}
+.onb-dots{
+  display:flex;
+  gap:6px;
+  justify-content:center;
+  list-style:none;
+  margin:0;
+  padding:0;
+  grid-row:1;
+}
+.onb-dots li{
+  width:6px;
+  height:6px;
+  border-radius:3px;
+  background:var(--line-strong);
+  transition:width var(--dur-3) var(--ease-out-expo), background var(--dur-2) var(--ease-out);
+}
+.onb-dots li.on{ width:20px; background:var(--accent-line) }
+.onb-skip{ position:absolute; top:calc(env(safe-area-inset-top) + var(--s-2)); right:var(--gutter) }
+.onb-track{
+  display:flex;
+  overflow-x:auto;
+  scroll-snap-type:x mandatory;
+  scrollbar-width:none;
+  grid-row:2;
+  min-height:0;
+}
+.onb-track::-webkit-scrollbar{ display:none }
+.onb-p{
+  flex:0 0 100%;
+  scroll-snap-align:center;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:var(--s-4);
+  text-align:center;
+  padding:0 var(--s-2);
+  overflow-y:auto;
+}
+.onb-p h2{ margin:0 }
+.onb-p p{ margin:0 }
+.onb-p .illus,
+.onb-p .montagne{ margin-inline:auto }
+.onb-actions{ grid-row:3; display:flex; flex-direction:column; gap:var(--s-3) }
+.onb-actions .btn-primary{ width:100% }
+.onb-plan{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--s-2); text-align:left }
+.onb-plan li{ display:grid; grid-template-columns:20px 1fr; gap:var(--s-3); align-items:center; color:var(--ink-2) }
+.onb-plan .ic{ color:var(--muted) }
+.onb-form{ display:flex; flex-direction:column; gap:var(--s-4); text-align:left; max-width:420px; margin-inline:auto; width:100% }
+.onb-choix{ display:flex; flex-direction:column; gap:var(--s-3); max-width:420px; margin-inline:auto; width:100% }
+.onb-choix .card-link{ min-height:72px; text-align:left }
+.serie-bar.lg i,
+.crampons.lg i{ width:20px; height:20px }
+.serie-bar.lg,
+.crampons.lg{ gap:var(--s-2); justify-content:center }
+
+
+/* =============================================================================
+   §6.33 · Bandeau et curseur du mode presentation
+   ============================================================================= */
+
+.presentation-bar{
+  position:fixed;
+  top:0;
+  left:0;
+  right:0;
+  height:32px;
+  z-index:calc(var(--z-toast) + 1);
+  display:flex;
+  align-items:center;
+  gap:var(--s-3);
+  padding:0 var(--s-4);
+  background:var(--accent);
+  color:var(--accent-ink);
+  font:600 .8125rem var(--font-text);
+}
+.presentation-bar span{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap }
+.presentation-bar .btn,
+.presentation-bar .btn-icon{ min-height:28px; color:var(--accent-ink) }
+html[data-presentation] .head{ top:32px }
+.scenarios{
+  margin:40px 16px auto auto;
+  padding:var(--s-2);
+  border:0;
+  border-radius:var(--r-3);
+  background:var(--surface-1);
+  box-shadow:var(--card-ring), var(--shadow-3);
+  color:var(--ink);
+}
+.scenarios .pal-item{ min-width:220px }
+.tap-ring{
+  position:fixed;
+  width:44px;
+  height:44px;
+  margin:-22px 0 0 -22px;
+  border-radius:50%;
+  background:color-mix(in srgb, var(--accent) 40%, transparent);
+  pointer-events:none;
+  z-index:calc(var(--z-toast) + 2);
+  animation:tap 400ms var(--ease-out) forwards;
+}
+
+
+/* =============================================================================
+   §6.34 · Navigateur et bandeau d'epreuve
+   ============================================================================= */
+
+.chrono-bar{
+  position:sticky;
+  top:calc(var(--head-h) + 24px);
+  z-index:var(--z-sticky);
+  display:grid;
+  grid-template-columns:auto auto 1fr auto;
+  align-items:center;
+  gap:var(--s-3);
+  padding:var(--s-2) 0;
+  background:var(--bg);
+}
+.chrono-bar .pbar.total{ grid-column:1 / -1 }
+.chrono-bar .chip.rythme{ justify-self:start }
+.chrono-bar .num-l{ transition:color var(--dur-1) var(--ease-out) }
+.chrono-bar.alarm .num-l{ color:var(--ko-text) }
+.crete.alarm .crete-line{ stroke:var(--ko) }
+.crete.alarm .crete-dot{ fill:var(--ko) }
+
+.q-nav{
+  display:grid;
+  grid-template-columns:repeat(10, 1fr);
+  gap:4px;
+  list-style:none;
+  padding:0;
+  margin:0;
+}
+.q-nav-cell{
+  width:100%;
+  min-height:36px;
+  border:0;
+  border-radius:var(--r-1);
+  background:var(--surface-2);
+  color:var(--muted);
+  font:500 .8125rem var(--font-mono);
+  font-variant-numeric:tabular-nums lining-nums;
+  box-shadow:var(--card-ring);
+  cursor:pointer;
+  padding:0;
+}
+.q-nav-cell[data-state="done"]{ background:var(--surface-3); color:var(--ink) }
+.q-nav-cell[data-state="skipped"]{ color:var(--warn-text); box-shadow:0 0 0 1px var(--warn) }
+.q-nav-cell[data-state="marked"]{ color:var(--glacier-text); box-shadow:0 0 0 1px var(--glacier) }
+.q-nav-cell[data-state="current"]{ background:var(--accent); color:var(--accent-ink); box-shadow:0 0 0 1px var(--accent-line) }
+
+
+/* =============================================================================
+   §6.35 · Cartes d'accueil secondaires
+   ============================================================================= */
+
+.install-card h2,
+.week-card .overline{ margin:0 0 var(--s-2) }
+.install-card p{ margin:0 0 var(--s-4); color:var(--ink-2) }
+.install-card .row,
+.week-card .row{ margin-top:var(--s-3) }
+.week-card .figures{ margin:var(--s-2) 0 }
+.week-card .small{ color:var(--ink-2) }
+.card-link.methode{ text-decoration:none }
+.lien-methode{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--s-2);
+  min-height:44px;
+  color:var(--glacier-text);
+}
+
+
+/* =============================================================================
+   §7 · Classes propres aux ecrans (accueil, sentier, coach, reglages, methode)
+   ============================================================================= */
+
+/* 7.1 · carte du jour */
+.day-card{ display:grid; grid-template-columns:auto 1fr; gap:var(--s-4); align-items:center }
+.day-card .ring-bloc{ display:flex; flex-direction:column; align-items:center; gap:var(--s-1) }
+.day-card .ring-bloc .overline{ margin:0 }
+.day-card .jour{ display:flex; flex-direction:column; gap:var(--s-2); min-width:0 }
+.week{ display:flex; gap:var(--s-2); align-items:center; margin:0; padding:0; list-style:none }
+.week i{
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  background:var(--surface-3);
+  display:grid;
+  place-items:center;
+  flex:none;
+}
+.week i.done{ background:var(--accent-line) }
+.week i.tent{ background:transparent; color:var(--muted); width:14px; height:14px }
+.week i.tent .ic{ width:12px; height:12px }
+.week i.today{ box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); position:relative }
+.week i.today:not(.done)::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  border-radius:50%;
+  box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  animation:pouls 2s var(--ease-out) infinite alternate;
+}
+.week i.done.today{ animation:pop-in var(--dur-4) var(--ease-spring) both }
+.week-jours{
+  display:flex;
+  gap:var(--s-2);
+  margin:var(--s-1) 0 0;
+  padding:0;
+  list-style:none;
+  font-family:var(--font-mono);
+  font-size:.6875rem;
+  color:var(--muted);
+}
+.week-jours li{ width:12px; text-align:center }
+.streak{ display:inline-flex; align-items:center; gap:var(--s-2); color:var(--ink-2); font-weight:600 }
+.streak .ic{ color:var(--accent-text) }
+.tents{ display:inline-flex; gap:4px; align-items:center; color:var(--accent-text) }
+.tents .ic{ width:12px; height:12px }
+.tents .ic.vide{ color:var(--line-strong) }
+
+/* 7.2 · grille des techniques */
+.tech-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:var(--s-3) }
+.tech-grid .card{ display:flex; flex-direction:column; gap:var(--s-2); text-align:left }
+.tech-grid .card .small{ color:var(--muted) }
+
+/* 7.3 · sommaire collant de la lecon (desktop) */
+.toc{ display:none }
+.toc ul{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:var(--s-1) }
+.toc a{ display:block; padding:var(--s-1) 0; color:var(--muted); text-decoration:none; font-size:.875rem }
+.toc a:hover,
+.toc a[aria-current]{ color:var(--ink) }
+
+/* 7.4 · le bandeau .rev-band est un composant : ici, seule son entree. */
+.rev-band{ animation:band-in 160ms var(--ease-out) both }
+
+/* 7.9 · sections du coach */
+.coach-sec{ display:flex; flex-direction:column; gap:var(--s-3) }
+.coach-sec > .overline{ margin:0 }
+
+/* 7.16 · lignes de reglages */
+.set-row{
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:var(--s-4);
+  min-height:56px;
+  border-bottom:1px solid var(--line);
+}
+.set-row:last-child{ border-bottom:0 }
+.set-row .label{ color:var(--ink) }
+.set-row .small{ color:var(--muted); display:block }
+.set-row .segment{ min-width:min(280px, 60vw) }
+.set-sec{ display:flex; flex-direction:column; gap:var(--s-1) }
+.set-sec > h2{ margin:0 0 var(--s-2); display:flex; align-items:center; gap:var(--s-3) }
+.view-reglages{ max-width:640px; margin-inline:auto; width:100% }
+
+/* 7.21 · frise des rappels espaces */
+.frise{ width:100%; max-width:520px; height:auto; aspect-ratio:360 / 64; display:block; overflow:visible }
+.frise .rail{ fill:none; stroke:var(--line-strong); stroke-width:1.25 }
+.frise .pt{ fill:var(--glacier) }
+.frise .pt.cur{ fill:var(--accent-line) }
+.frise text{
+  font-family:var(--font-mono);
+  font-size:.6875rem;
+  fill:var(--muted);
+  font-variant-numeric:tabular-nums lining-nums;
+}
+
+
+/* =============================================================================
+   §6.32 · Filet de securite : aucune classe existante sans style
+   Les lignes du tableau §6.32 traitees ailleurs ne sont pas repetees ici.
+   ============================================================================= */
+
+.hidden{ display:none !important }
+.grow{ flex:1 1 auto }               /* supprimee du balisage : neutralisee sans nuire */
+.page{ display:contents }            /* supprimee du gabarit : ne cree plus de boite */
+.top,
+.logo,
+.nav,
+.assist-cfg,
+.assist-msg.cfg{ display:none }
+.exo-card.deal,
+.exo-card.shake{ animation:none }
+.assist-src{ margin-top:var(--s-2) }
+
+
+/* Conteneurs de dialogues et utilitaires attendus par core/ui.js et index.html. */
+.sheets,
+.fullscreens{ display:contents }
+.sheet-body{ flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain; display:flex; flex-direction:column; gap:var(--s-3) }
+.ink-2{ color:var(--ink-2) }
+.out{ animation-direction:normal }
+.toast.out{ animation:toast-out 140ms var(--ease-in) both }
+.sheet.out{ animation:sheet-out 140ms var(--ease-in) both }
+.pulse{ animation:pouls 2s var(--ease-out) infinite alternate }
+
+
+/* =============================================================================
+   §8 · Mouvement : les keyframes nommes
+   Seuls transform, opacity, stroke-dashoffset, stroke-dasharray, les couleurs
+   et les tailles de piste explicitement prevues par le contrat sont animes.
+   ============================================================================= */
+
+@keyframes q-in{ from{ opacity:0; transform:translateY(12px) } }
+@keyframes trace{ to{ stroke-dashoffset:0 } }
+@keyframes gain{ to{ opacity:0; transform:translateY(-8px) } }
+@keyframes rise{ from{ opacity:0; transform:translateY(8px) } }
+@keyframes pop{ 50%{ transform:scale(1.15) } }
+@keyframes pop-in{ from{ transform:scale(.6); opacity:0 } }
+@keyframes halo{ to{ transform:scale(1.35); opacity:.08 } }
+@keyframes sk{ from{ background-position:200% 0 } to{ background-position:-200% 0 } }
+@keyframes vt-in{ from{ opacity:0; transform:translateY(8px) } }
+@keyframes vt-out{ to{ opacity:0 } }
+@keyframes sunrise{
+  from{ clip-path:circle(0 at var(--tx, 50%) var(--ty, 0)) }
+  to{ clip-path:circle(150% at var(--tx, 50%) var(--ty, 0)) }
+}
+@keyframes plant{ from{ transform:translateY(-18px) rotate(-14deg) } }
+@keyframes monte{ from{ transform:translateY(24px); opacity:0 } }
+@keyframes toast-in{ from{ opacity:0; transform:translateY(-16px) } }
+@keyframes toast-out{ to{ opacity:0; transform:translateY(-8px) } }
+@keyframes sheet-in{ from{ opacity:0; transform:translateY(24px) } }
+@keyframes sheet-out{ to{ opacity:0; transform:translateY(24px) } }
+@keyframes roll{ from{ transform:translateY(100%); opacity:0 } }
+@keyframes flip{ from{ transform:rotateY(90deg) } }
+@keyframes tap{ from{ transform:scale(.6); opacity:1 } to{ transform:scale(1.2); opacity:0 } }
+@keyframes slide-left{ from{ opacity:0; transform:translateX(16px) } }
+@keyframes band-in{ from{ opacity:0; transform:translateY(-8px) } }
+@keyframes pouls{ to{ transform:scale(1.28); opacity:.2 } }
+@keyframes caret{ 50%{ opacity:0 } }
+
+/* Transitions de vue (§8 #5). */
+@media (prefers-reduced-motion: no-preference){
+  ::view-transition-old(root){ animation:vt-out var(--dur-1) var(--ease-in) both }
+  ::view-transition-new(root){ animation:vt-in var(--dur-3) var(--ease-out-expo) both }
+  html.sunrise::view-transition-old(root){ animation:none }
+  html.sunrise::view-transition-new(root){ animation:sunrise 400ms var(--ease-out-expo) both }
+}
+@media (pointer:coarse){
+  html.sunrise::view-transition-new(root){ animation:vt-in var(--dur-3) var(--ease-out-expo) both }
+}
+
+/* Classes d'animation posees par le JS. */
+.anim-pop{ animation:pop var(--dur-3) var(--ease-out) }
+.anim-pop-in{ animation:pop-in var(--dur-4) var(--ease-spring) both }
+.anim-rise{ animation:rise var(--dur-2) var(--ease-out) both }
+.anim-trace{ stroke-dasharray:1; stroke-dashoffset:1; animation:trace var(--dur-3) var(--ease-out-expo) forwards }
+.anim-flip{ animation:flip 320ms var(--ease-out-expo) both; animation-delay:calc(var(--i, 0) * 80ms) }
+.snow{ position:fixed; inset:0; pointer-events:none; z-index:var(--z-confetti) }
+
+
+/* =============================================================================
+   Mouvement reduit : preference systeme et reglage « Animations reduites »
+   Meme source, deux ecritures (une media query ne se combine pas a un selecteur).
+   ============================================================================= */
+
+@media (prefers-reduced-motion: reduce){
+  *,::before,::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:80ms !important;
+    scroll-behavior:auto !important;
+  }
+  .allow-motion{ transition-duration:300ms !important }
+  .halo,.snow,#confetti,.gain{ display:none !important }
+  .fin-card .figure,
+  .fin-card .record,
+  .fin-card .next-row .btn-primary{ animation-delay:0ms !important }
+  .profile .line,
+  .altline .line{ stroke-dashoffset:0 }
+  .sk{ background-position:0 0; background-image:none; background-color:var(--surface-2) }
+  .assist-think::after{ animation:none }
+  ::view-transition-old(root),
+  ::view-transition-new(root){ animation:none !important }
+}
+
+html[data-motion="reduit"] *,
+html[data-motion="reduit"] ::before,
+html[data-motion="reduit"] ::after{
+  animation-duration:.01ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:80ms !important;
+  scroll-behavior:auto !important;
+}
+html[data-motion="reduit"] .allow-motion{ transition-duration:300ms !important }
+html[data-motion="reduit"] :is(.halo,.snow,#confetti,.gain){ display:none !important }
+html[data-motion="reduit"] :is(.fin-card .figure, .fin-card .record, .fin-card .next-row .btn-primary){ animation-delay:0ms !important }
+html[data-motion="reduit"] :is(.profile .line, .altline .line){ stroke-dashoffset:0 }
+html[data-motion="reduit"] .sk{ background-position:0 0; background-image:none; background-color:var(--surface-2) }
+html[data-motion="reduit"] .assist-think::after{ animation:none }
+
+
+/* =============================================================================
+   Requetes de media des vues : 720 px, 900 px, 1080 px
+   ============================================================================= */
+
+@media (min-width:720px){
+  .fin-card{ padding:var(--s-7) var(--gutter) }
+  .fin-card .profile{ max-width:480px }
+  .medals{ grid-template-columns:repeat(auto-fill, minmax(96px, 1fr)) }
+  .onb-form,
+  .onb-choix{ max-width:480px }
+  .empty{ padding:var(--s-8) var(--s-4) }
+  .sheet-aide .aide-grid{ grid-template-columns:1fr 1fr }
+  .day-card{ grid-template-columns:auto 1fr auto }
+}
+
+@media (min-width:900px){
+  /* Feuilles : le mobile devient un dialogue centre. */
+  .sheet{
+    inset:0;
+    margin:auto;
+    width:480px;
+    max-width:calc(100% - 48px);
+    max-height:min(80vh, 680px);
+    border-radius:var(--r-4);
+    padding:var(--s-5);
+  }
+  .sheet[open]{ animation:sheet-in-desk 260ms var(--ease-out-expo) both }
+  .sheet[data-closing]{ animation:sheet-out-desk 140ms var(--ease-in) both }
+  .sheet-grip{ display:none }
+
+  /* Le Prof devient un panneau lateral opaque, non modal. */
+  .sheet-prof{
+    position:fixed;
+    inset:auto 24px 24px auto;
+    top:calc(var(--head-h) + 16px);
+    right:24px;
+    bottom:24px;
+    left:auto;
+    width:400px;
+    height:auto;
+    max-height:none;
+    margin:0;
+    border-radius:var(--r-3);
+    background:var(--surface-1);
+    box-shadow:var(--card-ring), var(--shadow-3);
+    padding:var(--s-4);
+  }
+  .sheet-prof::backdrop{ background:transparent }
+  .fab-prof{ display:none !important }
+
+  /* Lecon : le CTA n'est plus au-dessus de la barre d'onglets. */
+  .lecon-cta{ bottom:24px }
+  .toc{
+    display:block;
+    position:sticky;
+    top:calc(var(--head-h) + 32px);
+    align-self:start;
+  }
+  .lecon-grid{ display:grid; grid-template-columns:200px minmax(0, 1fr); gap:var(--s-6) }
+
+  /* Coach : bento 6 colonnes, chaque bloc declare sa portee. */
+  .view-coach{
+    display:grid;
+    grid-template-columns:repeat(6, 1fr);
+    gap:var(--s-block) var(--s-5);
+    align-items:start;
+  }
+  .view-coach > *{ grid-column:span 6 }
+  .view-coach > [data-bento="3"]{ grid-column:span 3 }
+  .view-coach > [data-bento="4"]{ grid-column:span 4 }
+  .view-coach > [data-bento="2"]{ grid-column:span 2 }
+
+  /* Epreuve : le navigateur passe a gauche de la carte. */
+  .q-nav{ grid-template-columns:repeat(5, 1fr) }
+  .epreuve-grid{ display:grid; grid-template-columns:repeat(12, 1fr); gap:var(--s-5); align-items:start }
+  .epreuve-grid > .q-nav{ grid-column:span 3 }
+  .epreuve-grid > .exo-card{ grid-column:span 9 }
+
+  /* Onboarding et fins de parcours respirent. */
+  .onb-p{ max-width:560px; margin-inline:auto }
+  .fin-card[data-kind="serie"]{ max-width:640px }
+  .heatmap{ grid-template-columns:repeat(12, 16px); grid-auto-rows:16px }
+  .tech-grid{ grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)) }
+  .set-row .segment{ min-width:320px }
+}
+
+@media (min-width:1080px){
+  .radar{ width:200px; height:200px }
+  .medals{ grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)) }
+  .fin-card .profile{ max-width:560px }
+  .lecon-grid{ grid-template-columns:220px minmax(0, 1fr) }
+}
+
+@keyframes sheet-in-desk{ from{ opacity:0; transform:translateY(8px) } }
+@keyframes sheet-out-desk{ to{ opacity:0; transform:translateY(8px) } }
+
+
+/* =============================================================================
+   Impression : la lecon, l'enonce et le corrige, rien d'autre
+   ============================================================================= */
+
+@media print{
+  :root{ --bg:#FFFFFF; --surface-1:#FFFFFF; --surface-2:#FFFFFF; --surface-3:#FFFFFF }
+  .head,
+  .tabbar,
+  .topnav,
+  .fab-prof,
+  .toasts,
+  .presentation-bar,
+  .scenarios,
+  .lecon-cta,
+  .quickkeys,
+  .onb,
+  .sheet,
+  #confetti,
+  .snow,
+  .skeleton{ display:none !important }
+  body{ background:#FFFFFF }
+  main#app{ max-width:none; padding:0 }
+  .lecon{ max-width:none; font-size:11pt; line-height:1.45; color:#000 }
+  .lecon h2,
+  .lecon h3,
+  .lecon strong{ color:#000 }
+  .box,
+  .formule,
+  .etapes,
+  .tblwrap,
+  .tbl,
+  .fin-lines li{ break-inside:avoid; page-break-inside:avoid }
+  .box{ box-shadow:none; border:1px solid #000 }
+  .formule{ background:transparent; border-left:2px solid #000 }
+  .tbl th,
+  .tbl td{ border-bottom:1px solid #999 }
+  .tblwrap,
+  .tbl{ overflow:visible }
+  a{ color:#000; text-decoration:underline }
+}

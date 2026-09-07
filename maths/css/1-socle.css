@@ -1,0 +1,1001 @@
+/* =====================================================================
+   1-socle.css · « Maths · De zéro au sommet »
+   ---------------------------------------------------------------------
+   SOCLE. Première feuille chargée après fonts.css, avant 2-composants.css
+   et 3-vues.css. Elle ne contient que ce qui est commun à toute l'app :
+
+     1. les tokens des deux thèmes (DESIGN-SPEC §2.1 à §2.4) ;
+     2. le reset et les styles de base ;
+     3. l'échelle typographique complète (§3.3) ;
+     4. la coque de page, l'en-tête, la crête, l'anneau du jour,
+        la barre d'onglets et le rail desktop (§5.2, §5.3, §5.4, §6.1) ;
+     5. les utilitaires et les icônes ;
+     6. les media queries du socle (720, 900, mouvement réduit,
+        transparence réduite, impression).
+
+   Rien d'autre : les composants (§6.4 et suivants) et les vues (§7)
+   vivent dans 2-composants.css et 3-vues.css.
+
+   Tokens définis : 98 variables CSS distinctes, toutes portées par :root
+   (surfaces, encre, or, glacier, états, teintes de phase, ombres, alias
+   hérités, rayons, espacements, z-index, motion, polices, composants),
+   dont 44 redéfinies à l'identique par les deux blocs du thème Nuit.
+
+   Deux blocs Nuit strictement identiques (choix manuel puis suivi
+   système) : leur diff doit être vide, ils sont générés depuis la même
+   source. Ils sont encadrés par les repères NUIT et /NUIT.
+
+   Note d'intégration : cette feuille vit dans css/, les images de la
+   racine sont donc référencées en ../ (grain.png, cursor-40.svg).
+   ===================================================================== */
+
+
+/* =====================================================================
+   1. TOKENS
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   1.1 Thème clair « Aube » : valeurs par défaut, portées par :root
+   --------------------------------------------------------------------- */
+:root{
+  color-scheme: light;
+
+  /* ---- surfaces ---- */
+  --bg:#F5F2EB;            /* neige cassée, chaude ; jamais blanc pur */
+  --surface-1:#FFFDF8;     /* cartes, panneaux, feuilles */
+  --surface-2:#EDE9E0;     /* champs, options QCM, encarts, ligne survolée */
+  --surface-3:#E3DED3;     /* pistes d'anneau, crampons vides, kbd, segments inactifs */
+
+  /* ---- encre ---- */
+  --ink:#141A2C;           /* texte principal (le bleu nuit devient l'encre) */
+  --ink-2:#3B4356;         /* texte secondaire, corps des leçons */
+  --muted:#545E75;         /* méta, légendes, placeholders */
+  --line:color-mix(in srgb, var(--ink) 10%, transparent);
+  --line-strong:color-mix(in srgb, var(--ink) 20%, transparent);
+  --hairline-in:rgba(255,255,255,.70);   /* liseré interne clair des cartes */
+
+  /* ---- or : action, progression, sommet ---- */
+  --accent:#E4B242;        /* remplissage uniquement */
+  --accent-ink:#201900;    /* texte et icônes posés sur l'or */
+  --accent-text:#7A5A00;   /* or écrit (overline, altitude en petit, liens d'action) */
+  --accent-line:#9F7008;   /* or tracé : anneaux, crampon courant, point de crête, bord du bouton */
+  --accent-soft:#FAF0D7;   /* fond « À retenir », halo de frontière */
+
+  /* ---- glacier : liens, révision, formules, tags ---- */
+  --glacier:#2F62C4;
+  --glacier-text:#2F62C4;
+  --glacier-deep:#2F62C4;  /* bulles « moi » du Prof, bouton secondaire plein */
+  --glacier-ink:#FFFFFF;   /* texte sur --glacier-deep */
+  --glacier-soft:#E8EDF7;
+
+  /* ---- états ---- */
+  --ok:#16704A;      --ok-text:#16704A;      --ok-bg:#DFF1E6;   --ok-ink:#FFFFFF;
+  --ko:#B3352B;      --ko-text:#B3352B;      --ko-bg:#F9E4E0;   /* corail sombre, pas rouge pompier */
+  --warn:#8F5300;    --warn-text:#8F5300;    --warn-bg:#FBEBCF;
+  --snow:#FFFDF8;                                                /* neige des illustrations */
+  --hl:#FBE7B2;                                                  /* fond de <mark> */
+  --sky:linear-gradient(180deg, #FBE9C9 0%, var(--bg) 42%);      /* ciel : lueur d'aube */
+
+  /* ---- teintes de phase (décoratives : crête, médaillon de camp, corde) ---- */
+  --tint-1:#3E7C5A; --tint-2:#3F8280; --tint-3:#6E7490; --tint-4:#2F62C4;
+  --tint-5:#4A79CF; --tint-6:#3D6BBF; --tint-7:#9F7008;
+
+  /* ---- ombres (teintées bleu nuit, jamais noires) ---- */
+  --shadow-1:0 1px 0 #FFFFFF inset, 0 2px 8px -4px rgba(20,26,44,.14);
+  --shadow-2:0 1px 0 #FFFFFF inset, 0 12px 32px -16px rgba(20,26,44,.22), 0 2px 6px -2px rgba(20,26,44,.08);
+  --shadow-3:0 24px 64px -24px rgba(20,26,44,.32), 0 8px 20px -8px rgba(20,26,44,.14);
+  --shadow-gold:0 8px 24px -12px rgba(122,90,0,.35);
+
+  /* ---- alias hérités (ne pas utiliser dans du code neuf) ---- */
+  --card:var(--surface-1); --card2:var(--surface-2);
+  --gold:var(--accent); --gold-ink:var(--accent-ink); --gold-text:var(--accent-text);
+  --shadow:var(--shadow-1);
+
+  /* ---- rayons ---- */
+  --r-1:6px;      /* chips, kbd, tags, cellules de heatmap (3px pour celles-ci) */
+  --r-2:12px;     /* champs, options QCM, lignes de liste, encarts de leçon */
+  --r-3:18px;     /* cartes */
+  --r-4:28px;     /* feuilles, dialogues, hero, plein écran */
+  --r-pill:999px; /* boutons, tags pilule, barre d'onglets */
+
+  /* ---- espacements (échelle 4/8) ---- */
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px; --s-5:24px; --s-6:32px; --s-7:48px; --s-8:64px; --s-9:96px;
+  --s-block:32px;     /* entre deux blocs d'écran (16px en data-density="outil") */
+  --card-pad:20px;    /* padding des cartes (24px ≥ 900px ; 16px en outil) */
+  --gutter:16px;      /* marge de page (24px ≥ 720px) */
+  --measure:68ch;     /* colonne de lecture */
+  --page-max:1080px;
+  --head-h:56px;
+  --nav-h:64px;
+
+  /* ---- z-index ---- */
+  --z-base:0; --z-raised:5; --z-sticky:10; --z-head:15; --z-nav:20; --z-fab:30;
+  --z-sheet:40; --z-dialog:50; --z-toast:60; --z-celebration:70; --z-confetti:80;
+
+  /* ---- motion ---- */
+  --ease-out:cubic-bezier(.2,0,0,1);          /* 120-180 ms · états, survol, verdict, toast */
+  --ease-out-expo:cubic-bezier(.22,1,.36,1);  /* 240-900 ms · ce qui se trace ou glisse */
+  --ease-in:cubic-bezier(.4,0,1,1);           /* 100-140 ms · ce qui disparaît */
+  --ease-spring:cubic-bezier(.34,1.56,.64,1); /* 420-520 ms · célébrations uniquement */
+  --dur-1:120ms; --dur-2:180ms; --dur-3:240ms; --dur-4:480ms; --dur-5:900ms;
+
+  /* ---- polices ---- */
+  --font-display:"Fraunces","Iowan Old Style",Charter,Georgia,serif;
+  --font-text:"Instrument Sans","IS Math","Helvetica Neue",ui-sans-serif,system-ui,sans-serif;
+  --font-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+
+  /* ---- composants (calculés, jamais redéfinis par thème) ---- */
+  --card-ring:0 0 0 1px var(--line), inset 0 1px 0 var(--hairline-in);
+  --field-ring:0 0 0 1px var(--line-strong);
+  --focus-ring:0 0 0 2px var(--glacier);
+  --grain:none;
+}
+
+/* ---------------------------------------------------------------------
+   1.2 Thème sombre « Nuit », choix manuel
+   --------------------------------------------------------------------- */
+/* NUIT */
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --bg:#0C1122; --surface-1:#121A2E; --surface-2:#182238; --surface-3:#1F2B45;
+  --ink:#EEF1F7; --ink-2:#C3CBDB; --muted:#8A95AB;
+  --line:color-mix(in srgb, var(--ink) 9%, transparent);
+  --line-strong:color-mix(in srgb, var(--ink) 18%, transparent);
+  --hairline-in:rgba(255,255,255,.05);
+  --accent:#F2C45A; --accent-ink:#201900; --accent-text:#F2C45A; --accent-line:#F2C45A;
+  --accent-soft:color-mix(in srgb, var(--accent) 14%, var(--surface-1));
+  --glacier:#5B8DEF; --glacier-text:#8FB3F5; --glacier-deep:#2F62C4; --glacier-ink:#F5F2EB;
+  --glacier-soft:color-mix(in srgb, var(--glacier) 12%, var(--surface-1));
+  --ok:#5FCF9A; --ok-text:#5FCF9A; --ok-bg:#153327; --ok-ink:#06261A;
+  --ko:#F08A7E; --ko-text:#F08A7E; --ko-bg:#3A2220;
+  --warn:#F0A75A; --warn-text:#F0A75A; --warn-bg:#3A2A14;
+  --snow:#F5F2EB; --hl:#514A3A;
+  --sky:linear-gradient(180deg, #141D36 0%, var(--bg) 46%);
+  --tint-1:#3E7C5A; --tint-2:#4E8C8A; --tint-3:#6E7490; --tint-4:#5B8DEF;
+  --tint-5:#9DB8F0; --tint-6:#C9DBFA; --tint-7:#F2C45A;
+  --shadow-1:0 1px 0 rgba(255,255,255,.03) inset, 0 2px 8px -4px rgba(4,8,20,.6);
+  --shadow-2:0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -16px rgba(4,8,20,.75), 0 2px 6px -2px rgba(4,8,20,.4);
+  --shadow-3:0 24px 64px -24px rgba(4,8,20,.85), 0 8px 20px -8px rgba(4,8,20,.5);
+  --shadow-gold:0 8px 24px -12px rgba(242,196,90,.45);
+}
+/* /NUIT */
+
+/* ---------------------------------------------------------------------
+   1.3 Thème sombre « Nuit », suivi système
+   Copie exacte du bloc ci-dessus. La garde :root:not([data-theme="light"])
+   fait gagner le choix manuel dans les deux sens.
+   --------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark){
+/* NUIT */
+:root:not([data-theme="light"]){
+  color-scheme: dark;
+  --bg:#0C1122; --surface-1:#121A2E; --surface-2:#182238; --surface-3:#1F2B45;
+  --ink:#EEF1F7; --ink-2:#C3CBDB; --muted:#8A95AB;
+  --line:color-mix(in srgb, var(--ink) 9%, transparent);
+  --line-strong:color-mix(in srgb, var(--ink) 18%, transparent);
+  --hairline-in:rgba(255,255,255,.05);
+  --accent:#F2C45A; --accent-ink:#201900; --accent-text:#F2C45A; --accent-line:#F2C45A;
+  --accent-soft:color-mix(in srgb, var(--accent) 14%, var(--surface-1));
+  --glacier:#5B8DEF; --glacier-text:#8FB3F5; --glacier-deep:#2F62C4; --glacier-ink:#F5F2EB;
+  --glacier-soft:color-mix(in srgb, var(--glacier) 12%, var(--surface-1));
+  --ok:#5FCF9A; --ok-text:#5FCF9A; --ok-bg:#153327; --ok-ink:#06261A;
+  --ko:#F08A7E; --ko-text:#F08A7E; --ko-bg:#3A2220;
+  --warn:#F0A75A; --warn-text:#F0A75A; --warn-bg:#3A2A14;
+  --snow:#F5F2EB; --hl:#514A3A;
+  --sky:linear-gradient(180deg, #141D36 0%, var(--bg) 46%);
+  --tint-1:#3E7C5A; --tint-2:#4E8C8A; --tint-3:#6E7490; --tint-4:#5B8DEF;
+  --tint-5:#9DB8F0; --tint-6:#C9DBFA; --tint-7:#F2C45A;
+  --shadow-1:0 1px 0 rgba(255,255,255,.03) inset, 0 2px 8px -4px rgba(4,8,20,.6);
+  --shadow-2:0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px -16px rgba(4,8,20,.75), 0 2px 6px -2px rgba(4,8,20,.4);
+  --shadow-3:0 24px 64px -24px rgba(4,8,20,.85), 0 8px 20px -8px rgba(4,8,20,.5);
+  --shadow-gold:0 8px 24px -12px rgba(242,196,90,.45);
+}
+/* /NUIT */
+}
+
+
+/* =====================================================================
+   1.bis  Tokens du contrat absents du premier jet (DESIGN-SPEC §2.1 et §2.2)
+   Ajoutés à l'identique du contrat : échelle d'espacement, z-index,
+   durées, tokens d'état -text/-bg/-ink, teintes de phase, alias hérités.
+   ===================================================================== */
+:root{
+  --card2:var(--surface-2);
+  --dur-2:180ms;
+  --dur-3:240ms;
+  --dur-4:480ms;
+  --dur-5:900ms;
+  --gold-ink:var(--accent-ink);
+  --gold-text:var(--accent-text);
+  --ko-bg:#F9E4E0;
+  --ko-text:#B3352B;
+  --ok-bg:#DFF1E6;
+  --ok-ink:#FFFFFF;
+  --ok-text:#16704A;
+  --s-2:8px;
+  --s-3:12px;
+  --s-4:16px;
+  --s-5:24px;
+  --s-6:32px;
+  --s-7:48px;
+  --s-8:64px;
+  --s-9:96px;
+  --tint-2:#3F8280;
+  --tint-3:#6E7490;
+  --tint-4:#2F62C4;
+  --tint-6:#3D6BBF;
+  --tint-7:#9F7008;
+  --warn-bg:#FBEBCF;
+  --warn-text:#8F5300;
+  --z-celebration:70;
+  --z-confetti:80;
+  --z-dialog:50;
+  --z-fab:30;
+  --z-head:15;
+  --z-nav:20;
+  --z-raised:5;
+  --z-sticky:10;
+  --z-toast:60;
+}
+:root[data-theme="dark"]{
+  --ko-bg:#3A2220;
+  --ko-text:#F08A7E;
+  --ok-bg:#153327;
+  --ok-ink:#06261A;
+  --ok-text:#5FCF9A;
+  --tint-2:#4E8C8A;
+  --tint-3:#6E7490;
+  --tint-4:#5B8DEF;
+  --tint-6:#C9DBFA;
+  --tint-7:#F2C45A;
+  --warn-bg:#3A2A14;
+  --warn-text:#F0A75A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ko-bg:#3A2220;
+    --ko-text:#F08A7E;
+    --ok-bg:#153327;
+    --ok-ink:#06261A;
+    --ok-text:#5FCF9A;
+    --tint-2:#4E8C8A;
+    --tint-3:#6E7490;
+    --tint-4:#5B8DEF;
+    --tint-6:#C9DBFA;
+    --tint-7:#F2C45A;
+    --warn-bg:#3A2A14;
+    --warn-text:#F0A75A;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   1.4 Densité, largeurs, grain (§2.3)
+   --------------------------------------------------------------------- */
+main#app[data-density="outil"]{ --s-block:16px; --card-pad:16px; }
+
+@media (min-width:720px){ :root{ --gutter:24px; } }
+
+@media (min-width:900px){
+  :root{ --card-pad:24px; --grain:url("../grain.png"); }
+  main#app[data-density="outil"]{ --card-pad:16px; }
+}
+
+/* ---------------------------------------------------------------------
+   1.5 Mode présentation (§2.3, §6.33, PRODUCT-SPEC M13)
+   --------------------------------------------------------------------- */
+html[data-presentation]{ font-size:20px; --measure:56ch; }
+html[data-presentation] :is(button, a, input, label, .opt, .err-type, .hm){ min-height:56px; }
+html[data-presentation][data-theme="dark"]{ --ink-2:#D5DCE8; }
+@media (pointer:fine){ html[data-presentation]{ cursor:url("../cursor-40.svg") 20 20, auto; } }
+
+
+/* =====================================================================
+   2. RESET ET BASE
+   ===================================================================== */
+
+*, *::before, *::after{ box-sizing:border-box; }
+
+html, body, h1, h2, h3, h4, p, figure, blockquote, dl, dd,
+ul, ol, li, fieldset, legend, pre{ margin:0; padding:0; }
+ul, ol{ list-style:none; }
+
+html{
+  font-size:16px;                 /* jamais sous 16 px : le zoom iOS en dépend */
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+}
+/* Le défilement doux n'est activé que si le mouvement n'est pas réduit. */
+@media (prefers-reduced-motion: no-preference){ html{ scroll-behavior:smooth; } }
+
+/* Transition de thème : uniquement pendant les 320 ms où core/theme.js
+   pose html.theming, jamais au premier rendu (pas de flash). */
+html.theming{
+  transition:background-color 300ms var(--ease-out), color 300ms var(--ease-out);
+}
+
+body{
+  min-height:100svh;
+  background:var(--bg) var(--grain) repeat;
+  color:var(--ink);
+  font-family:var(--font-text);
+  font-size:1rem;
+  line-height:1.5;
+  font-weight:400;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  overscroll-behavior-y:none;
+}
+
+/* Attribut hidden : doit gagner sur tout display: posé plus bas. */
+[hidden]{ display:none !important; }
+
+img, video, canvas{ max-width:100%; height:auto; }
+img{ border-style:none; }
+svg{ max-width:100%; }
+
+button, input, select, textarea{
+  font-family:inherit;
+  font-size:1rem;
+  line-height:inherit;
+  color:inherit;
+  margin:0;
+}
+button{
+  background:none;
+  border:0;
+  padding:0;
+  cursor:pointer;
+  color:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+button:disabled{ cursor:default; }
+/* Jamais sous 16 px : sinon iOS zoome à la mise au point. */
+input, select, textarea{ font-size:max(1rem, 16px); border:0; }
+textarea{ resize:vertical; }
+input[type="checkbox"], input[type="radio"]{ accent-color:var(--accent-line); }
+input[type="range"]{ accent-color:var(--accent-line); }
+::placeholder{ color:var(--muted); opacity:1; }
+::-webkit-search-cancel-button{ -webkit-appearance:none; appearance:none; }
+
+/* Mise au point visible partout, jamais retirée (§6). */
+:focus{ outline:none; }
+:focus-visible{
+  outline:2px solid var(--glacier);
+  outline-offset:3px;
+  border-radius:var(--r-1);
+}
+
+::selection{ background:var(--hl); color:var(--ink); }
+
+hr{ border:0; height:1px; background:var(--line); margin:var(--s-5) 0; }
+
+table{ border-collapse:collapse; width:100%; }
+
+dialog{ border:0; padding:0; color:inherit; background:transparent; }
+
+
+/* =====================================================================
+   3. TYPOGRAPHIE (§3.3)
+   ===================================================================== */
+
+h1, h2, .display-l, .display-xl{ text-wrap:balance; }
+p{ text-wrap:pretty; }
+
+h1{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 40;
+  font-size:2rem;
+  line-height:1.15;
+  letter-spacing:-.01em;
+  color:var(--ink);
+}
+h2{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 24;
+  font-size:1.5rem;
+  line-height:1.2;
+  letter-spacing:0;
+  color:var(--ink);
+}
+h3{
+  font-family:var(--font-text);
+  font-weight:600;
+  font-size:1.0625rem;
+  line-height:1.3;
+  letter-spacing:0;
+  color:var(--ink);
+}
+h4{
+  font-family:var(--font-text);
+  font-weight:600;
+  font-size:1rem;
+  line-height:1.35;
+  color:var(--ink);
+}
+
+.display-xl{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 144, "SOFT" 30, "WONK" 1;
+  font-variant-numeric:tabular-nums lining-nums;
+  font-size:clamp(3.5rem, 12vw, 6rem);
+  line-height:.95;
+  letter-spacing:-.02em;
+  color:var(--ink);
+}
+.display-l{
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 72, "WONK" 0;
+  font-size:2.5rem;
+  line-height:1.05;
+  letter-spacing:-.015em;
+  color:var(--ink);
+}
+
+.overline, .k{
+  font-family:var(--font-text);
+  font-weight:600;
+  font-size:.75rem;
+  line-height:1;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.k-gold{ color:var(--accent-text); }   /* jamais var(--accent) : 1,8:1 en Aube */
+
+.body-l{
+  font-size:1.125rem;
+  line-height:1.6;
+  color:var(--ink-2);
+}
+.lede{ font-weight:500; }
+
+.small{
+  font-size:.875rem;
+  line-height:1.45;
+}
+
+.label{
+  font-family:var(--font-text);
+  font-weight:500;
+  font-size:.8125rem;
+  line-height:1.2;
+  letter-spacing:.01em;
+}
+
+.num{
+  font-family:var(--font-mono);
+  font-weight:500;
+  font-variant-numeric:tabular-nums lining-nums;
+  font-size:.8125rem;
+  line-height:1;
+  letter-spacing:0;
+}
+.num-l{
+  font-family:var(--font-mono);
+  font-weight:500;
+  font-variant-numeric:tabular-nums lining-nums;
+  font-size:1.5rem;
+  line-height:1;
+  letter-spacing:-.01em;
+}
+
+a{
+  color:var(--glacier-text);
+  text-decoration:underline;
+  text-decoration-thickness:1px;
+  text-underline-offset:.15em;
+}
+@media (hover:hover){ a:hover{ color:var(--ink); } }
+/* Les liens de navigation ne sont pas soulignés. */
+.brand, .tabbar a, .topnav a, .card-link{ text-decoration:none; }
+
+strong, b{ font-weight:600; color:var(--ink); }
+em{ font-style:italic; }
+i{ font-style:italic; font-weight:400; }          /* variable mathématique : jamais grasse */
+
+mark{
+  background:var(--hl);
+  color:var(--ink);
+  padding:.05em .25em;
+  border-radius:3px;
+  box-decoration-break:clone;
+  -webkit-box-decoration-break:clone;
+}
+
+sup, sub{ font-size:.72em; line-height:0; position:relative; }
+sup{ top:-.45em; }
+sub{ bottom:-.25em; }
+/* Note §3.3 : « sub contenant U+0304 en var(--font-mono) » n'est pas
+   exprimable en CSS sans une classe absente du contrat. La vue qui rend
+   x̄ pose la police sur son propre span (voir rapport d'intégration). */
+
+kbd{
+  font-family:var(--font-mono);
+  font-weight:500;
+  font-variant-numeric:tabular-nums lining-nums;
+  font-size:.8125rem;
+  line-height:1;
+  padding:2px 6px;
+  border-radius:var(--r-1);
+  background:var(--surface-3);
+  color:var(--muted);
+}
+@media (pointer:coarse){ kbd{ display:none; } }
+html[data-kbd="0"] kbd{ display:none; }
+
+code, samp{
+  font-family:var(--font-mono);
+  font-weight:500;
+  font-size:.9375em;
+  font-variant-numeric:tabular-nums lining-nums;
+  color:var(--ink-2);
+}
+pre{ font-family:var(--font-mono); overflow-x:auto; }
+
+
+/* =====================================================================
+   4. COQUE DE PAGE (§6.1)
+   ===================================================================== */
+
+/* Enveloppe historique du gabarit : simple colonne pleine hauteur. */
+.page{
+  display:flex;
+  flex-direction:column;
+  min-height:100svh;
+}
+
+/* Lien d'évitement (§5.1) */
+.skip{
+  position:absolute;
+  left:-9999px;
+  top:0;
+  z-index:calc(var(--z-toast) + 2);
+  background:var(--surface-1);
+  color:var(--ink);
+  padding:var(--s-3) var(--s-4);
+  border-radius:0 0 var(--r-2) 0;
+  box-shadow:var(--card-ring), var(--shadow-2);
+  text-decoration:none;
+}
+.skip:focus{ left:0; }
+
+main#app{
+  display:block;
+  max-width:var(--page-max);
+  margin-inline:auto;
+  padding:var(--s-5) var(--gutter) calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px);
+}
+
+.view{
+  display:flex;
+  flex-direction:column;
+  gap:var(--s-block);
+}
+.view > h1{ view-transition-name:page-title; }
+
+/* Grille desktop (§5.4) : sur mobile, une seule colonne. */
+.page-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:var(--s-5);
+}
+
+
+/* =====================================================================
+   5. EN-TÊTE (§5.2, §6.2)
+   ===================================================================== */
+
+header.head{
+  position:sticky;
+  top:0;
+  z-index:var(--z-head);
+  background:var(--bg);
+  padding-top:env(safe-area-inset-top);
+}
+/* Sur l'accueil, le ciel de l'en-tête continue dans le hero. */
+body[data-ctx="home"] .head{ background:var(--sky); }
+
+.head-row{
+  display:grid;
+  /* colonne 1 : retour/quitter (largeur nulle quand ils sont masqués)
+     colonne 2 : marque · colonne 3 : titre ou navigation · colonne 4 : actions
+     Sous 900 px, les colonnes 1 et 3 se replient : on retrouve auto 1fr auto. */
+  grid-template-columns:auto auto 1fr auto;
+  align-items:center;
+  /* gap nul : une colonne 1 vide (retour/quitter masqués) ne doit pas
+     laisser de trou au bord gauche ; l'espacement passe par les marges. */
+  column-gap:0;
+  height:var(--head-h);
+  padding-inline:var(--gutter);
+  max-width:var(--page-max);
+  margin-inline:auto;
+}
+
+.head-back, .head-quit{ grid-column:1; grid-row:1; margin-inline-end:var(--s-2); }
+
+.brand{
+  grid-column:2; grid-row:1;
+  justify-self:start;
+  font-family:var(--font-display);
+  font-weight:500;
+  font-variation-settings:"opsz" 20;
+  font-size:1.0625rem;
+  line-height:1.2;
+  letter-spacing:0;
+  color:var(--ink);
+  white-space:nowrap;
+  margin-inline-end:var(--s-3);
+  view-transition-name:brand;
+}
+
+.head-title{
+  grid-column:3; grid-row:1;
+  justify-self:center;
+  font-family:var(--font-text);
+  font-weight:600;
+  font-size:1rem;
+  line-height:1.2;
+  color:var(--ink);
+  text-align:center;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:100%;
+}
+
+.topnav{
+  grid-column:3; grid-row:1;
+  justify-self:center;
+  display:none;                 /* visible ≥ 900 px seulement */
+  align-items:center;
+  gap:var(--s-5);
+}
+
+.head-actions{
+  grid-column:4; grid-row:1;
+  justify-self:end;
+  display:flex;
+  align-items:center;
+  gap:var(--s-1);
+}
+
+.head-count{
+  color:var(--muted);
+  padding-inline:var(--s-2);
+  white-space:nowrap;
+}
+
+/* Pastille réseau (§5.1) */
+.reseau{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--s-2);
+  min-height:44px;
+  padding:0 var(--s-2);
+  color:var(--muted);
+  font-size:.8125rem;
+}
+@media (max-width:399px){ .reseau span{ display:none; } }
+
+/* ---------------------------------------------------------------------
+   5.1 Boutons de l'en-tête
+   La base .btn-icon (44 × 44) est définie en 2-composants.css (§6.4) ;
+   ici, seules les règles propres à l'en-tête.
+   --------------------------------------------------------------------- */
+.head-actions .btn-icon,
+.head-row > .btn-icon{ flex:none; }
+
+/* Son et Prof : réservés au desktop (§5.1). Le masquage est borné à
+   « sous 900 px » pour ne pas avoir à réaffirmer un display au-dessus. */
+@media (max-width:899.98px){ #btn-sound, #btn-prof-top{ display:none; } }
+
+/* Pastille de sauvegarde : icône 20 px, teinte selon l'état (§5.2). */
+#cloud .ic{ width:20px; height:20px; }
+#cloud.ok{ color:var(--ok-text); }
+#cloud.ko{ color:var(--ko-text); }
+
+/* Rotation du bouton de thème (§2.4, motion #15). */
+#btn-theme .ic{ transition:transform 300ms var(--ease-out); }
+:root[data-theme="dark"] #btn-theme .ic{ transform:rotate(180deg); }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) #btn-theme .ic{ transform:rotate(180deg); }
+}
+
+/* ---------------------------------------------------------------------
+   5.2 Anneau du jour (§6.8) : le conteneur.
+   Le SVG .ring lui-même est décrit en 2-composants.css (§6.7).
+   --------------------------------------------------------------------- */
+.ring-day{
+  position:relative;
+  display:grid;
+  width:40px;
+  height:40px;
+  flex:none;
+  view-transition-name:ring-day;
+}
+.ring-day > *{ grid-area:1 / 1; place-self:center; }
+.ring-day .num{ font-size:.6875rem; color:var(--ink); pointer-events:none; }
+
+/* ---------------------------------------------------------------------
+   5.3 Ligne de crête de l'en-tête (§6.9)
+   --------------------------------------------------------------------- */
+.crete{
+  display:block;
+  height:24px;
+  line-height:0;
+  view-transition-name:crete;
+}
+.crete-svg{ display:block; width:100%; height:24px; }
+.crete-line{
+  fill:none;
+  stroke:var(--line-strong);
+  stroke-width:1.25;
+  transition:stroke var(--dur-1) var(--ease-out);
+}
+.crete-fill{ fill:var(--tint, var(--tint-3)); opacity:.16; }
+.crete-dot{
+  fill:var(--accent-line);
+  transition:cx var(--dur-5) var(--ease-out-expo),
+             cy var(--dur-5) var(--ease-out-expo),
+             fill var(--dur-1) var(--ease-out);
+}
+#crete-clip-rect{ transition:width var(--dur-5) var(--ease-out-expo); }
+/* Dernière minute d'une épreuve (motion #20) */
+.crete.alarm .crete-line{ stroke:var(--ko); }
+.crete.alarm .crete-dot{ fill:var(--ko); }
+
+/* ---------------------------------------------------------------------
+   5.4 Contextes de page (§5.7)
+   --------------------------------------------------------------------- */
+/* Parcours : la marque, la navigation et l'anneau du jour cèdent la place
+   au titre et au compteur (§5.2). */
+body[data-ctx="parcours"] .brand,
+body[data-ctx="parcours"] .topnav,
+body[data-ctx="parcours"] .ring-day{ display:none; }
+
+/* Lecture : le titre court de la leçon occupe la colonne centrale, la
+   navigation desktop s'efface pour ne pas la chevaucher. */
+body[data-ctx="lecon"] .topnav{ display:none; }
+
+
+/* =====================================================================
+   6. BARRE D'ONGLETS MOBILE (§5.3, §6.3)
+   ===================================================================== */
+
+.tabbar{
+  position:fixed;
+  left:12px;
+  right:12px;
+  bottom:max(12px, env(safe-area-inset-bottom));
+  height:var(--nav-h);
+  z-index:var(--z-nav);
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  border-radius:var(--r-pill);
+  background:color-mix(in srgb, var(--surface-1) 78%, transparent);
+  backdrop-filter:blur(24px) saturate(1.4);
+  -webkit-backdrop-filter:blur(24px) saturate(1.4);
+  box-shadow:var(--card-ring), var(--shadow-3);
+  transition:transform var(--dur-3) var(--ease-out-expo);
+}
+@supports not (backdrop-filter: blur(1px)){
+  .tabbar{ background:var(--surface-1); }
+}
+
+.tabbar a{
+  position:relative;
+  display:grid;
+  place-items:center;
+  align-content:center;
+  gap:2px;
+  min-height:44px;
+  color:var(--muted);
+  font:500 .6875rem/1 var(--font-text);
+  border-radius:var(--r-pill);
+  transition:color var(--dur-1) var(--ease-out);
+}
+@media (hover:hover){ .tabbar a:hover{ color:var(--ink); } }
+.tabbar a:active{ transform:translateY(1px); }
+
+.tabbar a[aria-current="page"]{ color:var(--ink); }
+.tabbar a[aria-current="page"]::after{
+  content:"";
+  position:absolute;
+  bottom:6px;
+  width:20px;
+  height:3px;
+  border-radius:2px;
+  background:var(--accent-line);
+  view-transition-name:tab-ink;
+}
+
+/* Retirée pendant un parcours (setCtx). */
+.tabbar.away{ transform:translateY(calc(100% + 24px)); }
+
+
+/* =====================================================================
+   7. RAIL DESKTOP (≥ 900 px, §5.4)
+   ===================================================================== */
+
+@media (min-width:900px){
+
+  .tabbar{ display:none; }
+
+  main#app{ padding-bottom:var(--s-8); }
+
+  .topnav{ display:flex; }
+  .topnav a{
+    position:relative;
+    display:inline-flex;
+    align-items:center;
+    gap:var(--s-2);
+    min-height:44px;
+    font-family:var(--font-text);
+    font-weight:500;
+    font-size:.75rem;
+    line-height:1.2;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    color:var(--muted);
+    transition:color var(--dur-1) var(--ease-out);
+  }
+  .topnav a:hover{ color:var(--ink); }
+  .topnav a[aria-current="page"]{ color:var(--ink); }
+  .topnav a[aria-current="page"]::after{
+    content:"";
+    position:absolute;
+    left:0;
+    right:0;
+    bottom:12px;
+    height:2px;
+    border-radius:1px;
+    background:var(--accent-line);
+    view-transition-name:nav-ink;
+  }
+  /* Le raccourci n'apparaît qu'au survol, et jamais au doigt. */
+  .topnav kbd{ opacity:0; transition:opacity var(--dur-1) var(--ease-out); }
+  .topnav a:hover kbd, .topnav a:focus-visible kbd{ opacity:1; }
+
+  /* Grille à 12 colonnes des vues larges. */
+  .page-grid{ grid-template-columns:repeat(12, 1fr); }
+}
+
+@media (pointer:coarse){ .topnav kbd{ display:none; } }
+
+
+/* =====================================================================
+   8. TRANSITIONS D'ÉCRAN (§5.5, motion #5 et #15)
+   ===================================================================== */
+
+@keyframes vt-out{ to{ opacity:0; } }
+@keyframes vt-in{ from{ opacity:0; transform:translateY(8px); } }
+@keyframes sunrise{
+  from{ clip-path:circle(0 at var(--tx, 50%) var(--ty, 0)); }
+  to{ clip-path:circle(150% at var(--tx, 50%) var(--ty, 0)); }
+}
+
+::view-transition-old(root){ animation:vt-out var(--dur-1) var(--ease-in) both; }
+::view-transition-new(root){ animation:vt-in var(--dur-3) var(--ease-out-expo) both; }
+
+html.theming::view-transition-old(root){ animation:none; }
+html.theming::view-transition-new(root){ animation:sunrise 400ms var(--ease-out-expo); }
+@media (pointer:coarse){
+  html.theming::view-transition-new(root){ animation:vt-in 300ms var(--ease-out) both; }
+}
+
+
+/* =====================================================================
+   9. UTILITAIRES
+   ===================================================================== */
+
+.row{
+  display:flex;
+  align-items:center;
+  gap:var(--s-3);
+  flex-wrap:wrap;
+}
+.stack{
+  display:flex;
+  flex-direction:column;
+  gap:var(--s-4);
+}
+.grow{ flex:1 1 auto; min-width:0; }
+.muted{ color:var(--muted); }
+.hidden{ display:none !important; }
+
+.sr-only{
+  position:absolute;
+  width:1px;
+  height:1px;
+  overflow:hidden;
+  clip-path:inset(50%);
+  white-space:nowrap;
+}
+
+/* Les 5 emojis autorisés (§4.4), toujours aria-hidden. */
+.emoji{
+  font-size:1em;
+  font-style:normal;
+  font-weight:400;
+  line-height:1;
+  font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+}
+
+/* ---------------------------------------------------------------------
+   9.1 Icônes du sprite (§4.1)
+   --------------------------------------------------------------------- */
+.ic{
+  display:inline-block;
+  width:1.1em;
+  height:1.1em;
+  flex:none;
+  fill:currentColor;
+  vertical-align:-.18em;
+  pointer-events:none;
+}
+.ic-20{ width:20px; height:20px; vertical-align:middle; }
+.ic-24{ width:24px; height:24px; vertical-align:middle; }
+.ic-32{ width:32px; height:32px; vertical-align:middle; }
+.ic-48{ width:48px; height:48px; vertical-align:middle; }
+
+
+/* =====================================================================
+   10. MOUVEMENT RÉDUIT, TRANSPARENCE RÉDUITE, IMPRESSION
+   ===================================================================== */
+
+/* Bloc « mouvement réduit », source unique dupliquée deux fois :
+   préférence système, puis réglage S.prefs.animations === 'reduit'. */
+@media (prefers-reduced-motion: reduce){
+  :root{
+    --dur-1:0ms; --dur-2:80ms; --dur-3:0ms; --dur-4:0ms; --dur-5:0ms;
+    --ease-spring:var(--ease-out); --ease-out-expo:var(--ease-out);
+  }
+  *, ::before, ::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:80ms !important;
+    scroll-behavior:auto !important;
+  }
+  .allow-motion{ transition-duration:300ms !important; }
+  .halo, .snow, #confetti, .gain{ display:none !important; }
+}
+
+html[data-motion="reduit"]{
+  --dur-1:0ms; --dur-2:80ms; --dur-3:0ms; --dur-4:0ms; --dur-5:0ms;
+  --ease-spring:var(--ease-out); --ease-out-expo:var(--ease-out);
+}
+html[data-motion="reduit"] *,
+html[data-motion="reduit"] ::before,
+html[data-motion="reduit"] ::after{
+  animation-duration:.01ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:80ms !important;
+  scroll-behavior:auto !important;
+}
+html[data-motion="reduit"] .allow-motion{ transition-duration:300ms !important; }
+html[data-motion="reduit"] :is(.halo, .snow, #confetti, .gain){ display:none !important; }
+
+@media (prefers-reduced-transparency: reduce){
+  .tabbar, .toast{
+    background:var(--surface-1);
+    backdrop-filter:none;
+    -webkit-backdrop-filter:none;
+  }
+}
+
+@media print{
+  /* Périmètre du socle : en-tête, barre d'onglets, lien d'évitement.
+     Le FAB, les toasts et le bandeau de présentation sont masqués par
+     2-composants.css. */
+  header.head, .tabbar, .skip{ display:none !important; }
+  body{ background:#FFFFFF; color:#000000; }
+  main#app{ max-width:none; padding:0; }
+  .view{ gap:var(--s-5); }
+  a{ color:inherit; text-decoration:none; }
+}

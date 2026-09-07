@@ -15,7 +15,7 @@ window.CM_FAMS = [
 
 /* ============ BASES ============ */
 {
-  id: 'tables', nom: 'Tables ×', icone: '✖️', cat: 'Les bases',
+  id: 'tables', nom: 'Tables ×', icone: '×', cat: 'Les bases',
   astuce: "Passe par une table facile : ×10, ×5, ou le double d'un résultat connu.",
   methode: `<p class="lede">Les tables ne se récitent pas : elles se <mark>reconstruisent en une seconde</mark> à partir de trois ancrages — ×10, ×5 et le double.</p>
 <div class="etapes">
@@ -32,7 +32,7 @@ window.CM_FAMS = [
   gen(R){ const a = R.int(3, 12), b = R.int(3, 12); return {q: a + ' × ' + b, a: String(a * b), expl: tipMult(a, b)}; }
 },
 {
-  id: 'tables-inv', nom: 'Tables ÷', icone: '➗', cat: 'Les bases',
+  id: 'tables-inv', nom: 'Tables ÷', icone: '÷', cat: 'Les bases',
   astuce: "Ne divise pas : demande-toi « combien de fois ? » et remonte la table.",
   methode: `<p class="lede">Une division des tables n'est pas un calcul : c'est une <mark>question de multiplication à l'envers</mark>.</p>
 <p>Devant 56 ÷ 7, ne cherche pas à « diviser ». Demande-toi : <strong>7 fois combien font 56 ?</strong> Ton cerveau connaît déjà la réponse par la table de 7.</p>
@@ -45,7 +45,7 @@ window.CM_FAMS = [
   gen(R){ const a = R.int(3, 12), b = R.int(3, 12); return {q: (a * b) + ' ÷ ' + a, a: String(b), expl: '« ' + a + ' fois combien font ' + (a * b) + ' ? » → ' + a + ' × ' + b + ' = ' + (a * b) + '.'}; }
 },
 {
-  id: 'add', nom: 'Additions', icone: '➕', cat: 'Les bases',
+  id: 'add', nom: 'Additions', icone: '+', cat: 'Les bases',
   astuce: "Arrondis à la dizaine, puis compense : 68 + 48 → 68 + 50 − 2.",
   methode: `<p class="lede">On n'additionne jamais « en colonnes » dans sa tête. On <mark>arrondit, puis on compense</mark>.</p>
 <div class="etapes">
@@ -67,7 +67,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'sub', nom: 'Soustractions', icone: '➖', cat: 'Les bases',
+  id: 'sub', nom: 'Soustractions', icone: '−', cat: 'Les bases',
   astuce: "Arrondis ce que tu enlèves : 83 − 47 → 83 − 50 + 3.",
   methode: `<p class="lede">Deux techniques, selon les nombres : <mark>arrondir-compenser</mark> ou <mark>avancer</mark>.</p>
 <div class="etapes">
@@ -89,7 +89,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'compl', nom: 'Compléments', icone: '🎯', cat: 'Les bases',
+  id: 'compl', nom: 'Compléments', icone: '100', cat: 'Les bases',
   astuce: "Vers 100 : les dizaines vont à 9, les unités à 10.",
   methode: `<p class="lede">Le complément à 100 ou à 1000 se lit <mark>sans calculer</mark>, chiffre par chiffre.</p>
 <div class="etapes">
@@ -107,7 +107,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'doubles', nom: 'Doubles et moitiés', icone: '🔁', cat: 'Les bases',
+  id: 'doubles', nom: 'Doubles et moitiés', icone: '×2', cat: 'Les bases',
   astuce: "Coupe le nombre en tranches : double de 47 = 80 + 14.",
   methode: `<p class="lede">Doubler et couper en deux sont les <mark>deux gestes les plus rentables</mark> du calcul mental : ils servent partout (×4, ×8, ÷4, ×5, ×25, pourcentages).</p>
 <div class="etapes">
@@ -126,7 +126,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'x10', nom: '× et ÷ par 10, 100', icone: '🔟', cat: 'Les bases',
+  id: 'x10', nom: '× et ÷ par 10, 100', icone: '10', cat: 'Les bases',
   astuce: "La virgule glisse : autant de rangs que de zéros.",
   methode: `<p class="lede">Multiplier ou diviser par 10, 100, 1000, c'est <mark>faire glisser la virgule</mark>, jamais « ajouter un zéro ».</p>
 <div class="etapes">
@@ -175,7 +175,7 @@ window.CM_FAMS = [
 
 /* ============ MULTIPLICATION ============ */
 {
-  id: 'x11', nom: 'Multiplier par 11', icone: '⚡', cat: 'Multiplication',
+  id: 'x11', nom: 'Multiplier par 11', icone: '×11', cat: 'Multiplication',
   astuce: "×11 : écarte les chiffres et glisse leur somme au milieu.",
   methode: `<p class="lede">La plus spectaculaire des techniques : <mark>×11 se fait sans calculer</mark>.</p>
 <div class="etapes">
@@ -196,7 +196,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'x5', nom: '× 5, × 50, × 25', icone: '🖐️', cat: 'Multiplication',
+  id: 'x5', nom: '× 5, × 50, × 25', icone: '×5', cat: 'Multiplication',
   astuce: "×5 = moitié puis ×10 · ×25 = ÷4 puis ×100.",
   methode: `<p class="lede">5, 25 et 50 sont des <mark>morceaux de 100</mark> : on passe toujours par une division puis un décalage.</p>
 <div class="formule">×5 = ÷2 puis ×10 · ×50 = ÷2 puis ×100 · ×25 = ÷4 puis ×100</div>
@@ -216,7 +216,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'x9', nom: '× 9, × 99', icone: '9️⃣', cat: 'Multiplication',
+  id: 'x9', nom: '× 9, × 99', icone: '×9', cat: 'Multiplication',
   astuce: "×9 = ×10 puis j'enlève une fois le nombre.",
   methode: `<p class="lede">Les nombres « juste en dessous d'un nombre rond » se calculent <mark>par excès puis retrait</mark>.</p>
 <div class="formule">×9 = ×10 − 1 fois · ×99 = ×100 − 1 fois · ×19 = ×20 − 1 fois</div>
@@ -235,7 +235,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'mult2c', nom: 'Multiplier à 2 chiffres', icone: '🧩', cat: 'Multiplication',
+  id: 'mult2c', nom: 'Multiplier à 2 chiffres', icone: '2×', cat: 'Multiplication',
   astuce: "Découpe le second nombre : 14 × 23 = 14×20 + 14×3.",
   methode: `<p class="lede">Une multiplication à deux chiffres se fait de tête en la <mark>découpant en deux morceaux faciles</mark>. C'est la distributivité.</p>
 <div class="etapes">
@@ -256,7 +256,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'carres', nom: 'Carrés express', icone: '⬛', cat: 'Multiplication',
+  id: 'carres', nom: 'Carrés express', icone: 'a²', cat: 'Multiplication',
   astuce: "Carré finissant par 5 : n×(n+1) puis « 25 » collé derrière.",
   methode: `<p class="lede">Les carrés reviennent sans arrêt (aires, second degré, statistiques). Deux techniques suffisent.</p>
 <div class="etapes">
@@ -276,7 +276,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'base', nom: 'Autour d\'un nombre rond', icone: '🎪', cat: 'Multiplication',
+  id: 'base', nom: 'Autour d\'un nombre rond', icone: '98', cat: 'Multiplication',
   astuce: "51 × 49 = 50² − 1² = 2 499. Repère le centre !",
   methode: `<p class="lede">Quand deux nombres sont <mark>à égale distance d'un nombre rond</mark>, leur produit se calcule en une seconde grâce à une identité remarquable.</p>
 <div class="formule">(a − b)(a + b) = a² − b²</div>
@@ -297,7 +297,7 @@ window.CM_FAMS = [
 
 /* ============ DIVISION ============ */
 {
-  id: 'div-astuce', nom: 'Divisions rapides', icone: '🪓', cat: 'Division',
+  id: 'div-astuce', nom: 'Divisions rapides', icone: '÷5', cat: 'Division',
   astuce: "÷5 = ×2 puis ÷10 · ÷4 = couper deux fois · ÷25 = ×4 puis ÷100.",
   methode: `<p class="lede">On ne pose presque jamais une division mentale : on la <mark>transforme en multiplication facile</mark>.</p>
 <div class="formule">÷5 = ×2 ÷10 · ÷50 = ×2 ÷100 · ÷25 = ×4 ÷100 · ÷4 = ÷2 ÷2 · ÷8 = ÷2 ÷2 ÷2</div>
@@ -318,7 +318,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'divisibilite', nom: 'Critères de divisibilité', icone: '🔍', cat: 'Division',
+  id: 'divisibilite', nom: 'Critères de divisibilité', icone: '÷?', cat: 'Division',
   astuce: "Par 3 : la somme des chiffres est dans la table de 3.",
   methode: `<p class="lede">Savoir <mark>en un coup d'œil</mark> si une division tombe juste : indispensable pour simplifier les fractions et repérer la bonne réponse d'un QCM.</p>
 <div class="tblwrap"><table class="tbl">
@@ -368,7 +368,7 @@ window.CM_FAMS = [
 
 /* ============ POURCENTAGES & PROPORTIONS ============ */
 {
-  id: 'pct', nom: 'Pourcentages de tête', icone: '％', cat: 'Pourcentages',
+  id: 'pct', nom: 'Pourcentages de tête', icone: '%', cat: 'Pourcentages',
   astuce: "Calcule 10 % (÷10), puis déduis tout le reste.",
   methode: `<p class="lede">Toute la technique des pourcentages tient dans un seul geste : <mark>calculer 10 %, puis en déduire le reste</mark>.</p>
 <div class="etapes">
@@ -392,7 +392,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'pct-malin', nom: 'Pourcentages malins', icone: '🔄', cat: 'Pourcentages',
+  id: 'pct-malin', nom: 'Pourcentages malins', icone: '⇄', cat: 'Pourcentages',
   astuce: "x % de y = y % de x. 8 % de 50 = 50 % de 8 = 4 !",
   methode: `<p class="lede">Une propriété que presque personne ne connaît, et qui fait gagner un temps fou : <mark>on peut échanger les deux nombres</mark>.</p>
 <div class="formule">x % de y = y % de x</div>
@@ -416,7 +416,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'fractions', nom: 'Fractions ↔ % ↔ décimaux', icone: '🍕', cat: 'Pourcentages',
+  id: 'fractions', nom: 'Fractions ↔ % ↔ décimaux', icone: '½', cat: 'Pourcentages',
   astuce: "1/4 = 0,25 = 25 % — connais les 8 conversions par cœur.",
   methode: `<p class="lede">Les mêmes valeurs reviennent en boucle sous trois habillages. Les connaître <mark>par cœur</mark> supprime des dizaines de calculs.</p>
 <div class="tblwrap"><table class="tbl">
@@ -441,7 +441,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'evolution', nom: 'Hausses et baisses', icone: '📈', cat: 'Pourcentages',
+  id: 'evolution', nom: 'Hausses et baisses', icone: '↗', cat: 'Pourcentages',
   astuce: "+20 % → ×1,2 · −20 % → ×0,8. Un seul calcul, jamais deux.",
   methode: `<p class="lede">Une évolution en pourcentage se fait <mark>en une seule multiplication</mark> — c'est le cœur du programme de STMG et un classique des concours.</p>
 <div class="formule">+ t % → × (1 + t/100) &nbsp;·&nbsp; − t % → × (1 − t/100)</div>
@@ -464,7 +464,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'proportion', nom: 'Règle de trois éclair', icone: '⚖️', cat: 'Pourcentages',
+  id: 'proportion', nom: 'Règle de trois éclair', icone: '∝', cat: 'Pourcentages',
   astuce: "Passe par 1 unité, ou repère le coefficient d'un coup d'œil.",
   methode: `<p class="lede">La proportionnalité se résout de tête dès qu'on repère <mark>le coefficient</mark> ou qu'on <mark>passe par l'unité</mark>.</p>
 <div class="etapes">
@@ -487,7 +487,7 @@ window.CM_FAMS = [
 
 /* ============ ASTUCES DE CHAMPION ============ */
 {
-  id: 'estim', nom: 'Ordres de grandeur', icone: '🔭', cat: 'Astuces de champion',
+  id: 'estim', nom: 'Ordres de grandeur', icone: '≈', cat: 'Astuces de champion',
   astuce: "Arrondis tout, compte les zéros : la bonne réponse saute aux yeux.",
   methode: `<p class="lede">Aux QCM, il est souvent inutile de calculer : <mark>l'ordre de grandeur élimine trois réponses sur quatre</mark>.</p>
 <div class="etapes">
@@ -510,7 +510,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'simplif', nom: 'Simplifier avant de calculer', icone: '✂️', cat: 'Astuces de champion',
+  id: 'simplif', nom: 'Simplifier avant de calculer', icone: 'a/b', cat: 'Astuces de champion',
   astuce: "Divise le haut et le bas par le même nombre avant de foncer.",
   methode: `<p class="lede">La technique du paresseux intelligent : <mark>on simplifie d'abord, on calcule ensuite</mark> — souvent il ne reste presque rien à calculer.</p>
 <div class="etapes">
@@ -530,7 +530,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'moyennes', nom: 'Moyennes de tête', icone: '📊', cat: 'Astuces de champion',
+  id: 'moyennes', nom: 'Moyennes de tête', icone: 'x̄', cat: 'Astuces de champion',
   astuce: "Choisis un pivot et fais la moyenne des écarts.",
   methode: `<p class="lede">Calculer une moyenne sans tout additionner : on prend un <mark>pivot</mark> et on ne travaille que sur les écarts.</p>
 <div class="etapes">
@@ -556,7 +556,7 @@ window.CM_FAMS = [
   }
 },
 {
-  id: 'puissances', nom: 'Puissances utiles', icone: '🔺', cat: 'Astuces de champion',
+  id: 'puissances', nom: 'Puissances utiles', icone: 'aⁿ', cat: 'Astuces de champion',
   astuce: "Connais 2⁴=16, 2⁵=32, 2¹⁰=1024, et les carrés jusqu'à 20².",
   methode: `<p class="lede">Quelques puissances reviennent sans cesse. Les connaître par cœur, c'est <mark>autant de calculs supprimés</mark>.</p>
 <div class="tblwrap"><table class="tbl">
