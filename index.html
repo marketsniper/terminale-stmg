@@ -4076,6 +4076,7 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
     });
   }
   function renderHome(){
+    renderIaRow();
     const grid = $('matiere-grid');
     grid.innerHTML = '';
     let vues = 0, bons = 0, reps = 0;
@@ -4231,7 +4232,27 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
   coachCss.textContent = '.coach-row{margin-top:14px;text-align:center}' +
     '.coach-btn{border:1.5px dashed var(--acc,#3454D1);background:transparent;color:inherit;border-radius:10px;padding:8px 14px;font:inherit;font-size:.85rem;cursor:pointer;opacity:.85}' +
     '.coach-btn:hover{opacity:1;background:rgba(52,84,209,.06)}' +
-    '#coach-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c2433;color:#fff;padding:10px 18px;border-radius:12px;font-size:.85rem;z-index:99;max-width:88vw;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.25)}';
+    '#coach-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c2433;color:#fff;padding:10px 18px;border-radius:12px;font-size:.85rem;z-index:99;max-width:88vw;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.25)}' +
+    '.coach-chat{margin-top:10px;border:1px solid rgba(52,84,209,.3);border-radius:12px;padding:10px;text-align:left;background:rgba(52,84,209,.04)}' +
+    '.coach-log{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}' +
+    '.coach-msg{padding:8px 12px;border-radius:10px;font-size:.88rem;line-height:1.45;white-space:pre-wrap;word-break:break-word}' +
+    '.coach-msg.moi{align-self:flex-end;background:var(--acc,#3454D1);color:#fff;max-width:85%}' +
+    '.coach-msg.prof{align-self:flex-start;background:#fff;border:1px solid rgba(0,0,0,.08);max-width:95%}' +
+    '.coach-bar{display:flex;gap:6px;margin-top:8px}' +
+    '.coach-bar input{flex:1;min-width:0;border:1px solid rgba(0,0,0,.2);border-radius:9px;padding:8px 10px;font:inherit;font-size:.88rem}' +
+    '.coach-send{border:0;border-radius:9px;background:var(--acc,#3454D1);color:#fff;padding:0 14px;font-size:1rem;cursor:pointer}' +
+    '.coach-alt{margin:6px 0 0;font-size:.72rem;opacity:.65;text-align:center}' +
+    '.coach-alt a{color:inherit}' +
+    '.ia-row{margin:4px 0 14px;text-align:center;font-size:.82rem;opacity:.9}' +
+    '.ia-row button{border:1px solid rgba(0,0,0,.2);background:transparent;color:inherit;border-radius:9px;padding:5px 11px;font:inherit;font-size:.8rem;cursor:pointer;margin-left:8px}' +
+    '#ia-modal{position:fixed;inset:0;background:rgba(10,14,25,.55);z-index:98;display:flex;align-items:center;justify-content:center;padding:18px}' +
+    '#ia-modal .box{background:#fff;color:#1c2433;border-radius:16px;padding:20px;max-width:460px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 14px 50px rgba(0,0,0,.3)}' +
+    '#ia-modal h3{margin:0 0 10px}#ia-modal p{font-size:.85rem;line-height:1.5;margin:8px 0}' +
+    '#ia-modal input{width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,.25);border-radius:9px;padding:9px 11px;font:inherit;font-size:.85rem;margin:6px 0}' +
+    '#ia-modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}' +
+    '#ia-modal .acts button{border-radius:9px;padding:8px 14px;font:inherit;font-size:.85rem;cursor:pointer;border:1px solid rgba(0,0,0,.2);background:transparent}' +
+    '#ia-modal .acts .ok{background:#3454D1;border-color:#3454D1;color:#fff}' +
+    '#ia-status{font-size:.8rem;margin-top:6px}';
   document.head.appendChild(coachCss);
   function coachToast(msg){
     let t = document.getElementById('coach-toast');
@@ -4254,19 +4275,230 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
     }
     return p;
   }
-  function coachButton(label, makePrompt){
+  function coachButton(label, ctx){
     const row = document.createElement('div'); row.className = 'coach-row';
     const b = document.createElement('button'); b.type = 'button'; b.className = 'coach-btn';
     b.textContent = label;
     b.addEventListener('click', function(){
       snd.click();
-      const p = makePrompt();
+      if (iaKey()){ openCoach(row, ctx); return; }
+      const p = coachPrompt(ctx.q, ctx.afterWrong, ctx.my, ctx.right);
       try { navigator.clipboard.writeText(p); } catch(e){}
       window.open(COACH_URL, '_blank');
-      coachToast('Message copié 📋 — dans le chat du projet qui s’ouvre, colle-le (appui long → Coller) et envoie.');
+      coachToast('Message copié 📋 — dans le chat du projet qui s’ouvre, colle-le (appui long → Coller) et envoie. Astuce : mets ta clé Groq dans ⚙️ IA pour avoir l’aide directement ici.');
     });
     row.appendChild(b);
     return row;
+  }
+
+  /* ================= IA en direct (Groq, clé de l'élève — comme l'app maths) ================= */
+  const K_IA = 'stmg-cle-groq';
+  const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
+  const GROQ_MODEL = 'openai/gpt-oss-120b';
+  const GROQ_WEB = 'groq/compound';
+  const BESOIN_WEB = /\b(cherche|recherche|internet|web|actualit|r[ée]cent|aujourd|202[6-9]|date du|source|site|lien|programme officiel)\b/i;
+  function iaKey(){ try { return localStorage.getItem(K_IA) || localStorage.getItem('mzs-cle-groq') || ''; } catch(e){ return ''; } }
+
+  const IA_SYS = 'Tu es le tuteur intégré à l’application de révision d’un lycéen français en terminale STMG (bac 2027, spécialité Gestion et finance, lycée à Bordeaux). Il révise aussi ses matières de première (SDGN, management, droit, économie).\n' +
+    'RÈGLES :\n' +
+    '- Tu tutoies. Direct, chaleureux, jamais condescendant. Réponses COURTES (3 à 8 lignes), une idée par phrase, pas de politesse d’introduction ni de conclusion.\n' +
+    '- Français uniquement, nombres à la française (virgule décimale, espace des milliers). Jamais de LaTeX ni de $ : fractions a/b, puissances avec ^, signes × ÷ et vrai signe moins.\n' +
+    '- Reste dans le programme STMG. En droit : raisonne en syllogisme (règle, faits qualifiés, conclusion) et cite l’article quand tu le connais. En gestion-finance et maths : calculs étape par étape avec les nombres. Ne fabrique jamais un résultat : si tu doutes, dis-le.\n' +
+    '- RÈGLE ABSOLUE : si le contexte indique que l’élève N’A PAS ENCORE répondu à la question en cours, tu ne donnes JAMAIS la réponse ni ne désignes la bonne option. Tu donnes un indice, tu rappelles la méthode ou tu poses une question qui débloque. S’il insiste, détaille la méthode sur un exemple DIFFÉRENT. La solution complète n’est permise que s’il a déjà répondu.\n' +
+    '- Termine par une question courte ou un mini-exercice quand c’est utile.';
+
+  function ficheTexte(chap){
+    const f = chap && document.getElementById(chap);
+    if (!f) return '';
+    return (f.textContent || '').replace(/\s+/g, ' ').slice(0, 3500);
+  }
+  function iaContexte(ctx){
+    const q = ctx.q, meta = FICHE_META[q.chap];
+    let c = 'CONTEXTE ACTUEL\nMatière : ' + q.mat.titre + (meta ? ' — chapitre ' + meta.num + ' « ' + meta.title + ' »' : '') + '.\n' +
+      'Question de l’exercice en cours : ' + q.q + '\n';
+    if (q.options) c += 'Options : ' + q.options.map((o, i) => 'ABCD'[i] + ') ' + o).join(' ') + '\nBonne réponse (à ne pas révéler si l’élève n’a pas répondu) : ' + q.options[q.bonne] + '\n';
+    if (q.type === 'vf') c += 'Bonne réponse (à ne pas révéler si l’élève n’a pas répondu) : ' + (q.bonne ? 'Vrai' : 'Faux') + '\n';
+    if (q.reponse) c += 'Corrigé attendu : ' + q.reponse.slice(0, 900) + '\n';
+    if (q.explication) c += 'Explication du corrigé : ' + q.explication + '\n';
+    c += ctx.afterWrong
+      ? 'L’élève A DÉJÀ répondu (réponse donnée : « ' + (ctx.my || '?') + ' ») : tu peux tout expliquer, puis pose-lui UNE nouvelle question du même type avec d’autres valeurs et corrige sa réponse.\n'
+      : 'L’élève N’A PAS encore répondu : indices seulement, ne révèle rien.\n';
+    const ft = ficheTexte(q.chap);
+    if (ft) c += '\nEXTRAIT DE SA FICHE DE COURS (ta source prioritaire) :\n' + ft;
+    return c;
+  }
+
+  async function iaStream(messages, onDelta, opts){
+    const cle = iaKey();
+    if (!cle) throw new Error('PAS_DE_CLE');
+    const model = (opts && opts.model) || GROQ_MODEL;
+    const body = Object.assign({ model: model, messages: messages, stream: true, max_completion_tokens: 3000 },
+      model === GROQ_MODEL ? { reasoning_effort: 'low' } : {}, (opts && opts.extras) || {});
+    const r = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + cle },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok){
+      let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+      const err = new Error(r.status === 401 ? 'CLE_INVALIDE' : r.status === 429 ? 'QUOTA' : 'HTTP ' + r.status);
+      err.statut = r.status; err.detail = msg; throw err;
+    }
+    const reader = r.body.getReader(), dec = new TextDecoder();
+    let buf = '', texte = '';
+    for (;;){
+      const rd = await reader.read(); if (rd.done) break;
+      buf += dec.decode(rd.value, { stream: true });
+      const lignes = buf.split('\n'); buf = lignes.pop();
+      for (const l of lignes){
+        if (!l.startsWith('data:')) continue;
+        const d = l.slice(5).trim(); if (!d || d === '[DONE]') continue;
+        let ev; try { ev = JSON.parse(d); } catch(e){ continue; }
+        const ch = ev.choices && ev.choices[0]; if (!ch || !ch.delta) continue;
+        if (ch.delta.content){ texte += ch.delta.content; if (onDelta) onDelta(ch.delta.content); }
+      }
+    }
+    let s = texte.replace(/<think>[\s\S]*?<\/think>/gi, '');
+    const i = s.toLowerCase().lastIndexOf('<think>');
+    if (i >= 0) s = s.slice(0, i);
+    return s.replace(/<\/?think>/gi, '').trim();
+  }
+  function iaErreur(e){
+    if (e.message === 'PAS_DE_CLE') return 'Pas de clé IA : ouvre ⚙️ IA depuis l’accueil des exercices.';
+    if (e.message === 'CLE_INVALIDE') return 'Clé Groq invalide : vérifie-la dans ⚙️ IA (accueil des exercices).';
+    if (e.message === 'QUOTA') return 'Quota gratuit atteint pour l’instant — réessaie dans une minute, ou utilise le projet Claude.';
+    if (navigator.onLine === false) return 'Pas de connexion internet.';
+    return 'L’IA n’a pas répondu (' + (e.detail || e.message) + '). Réessaie, ou utilise le projet Claude.';
+  }
+
+  function openCoach(row, ctx){
+    if (row._chat){ row._chat.remove(); row._chat = null; return; }
+    const box = document.createElement('div'); box.className = 'coach-chat';
+    const log = document.createElement('div'); log.className = 'coach-log';
+    const bar = document.createElement('div'); bar.className = 'coach-bar';
+    const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Réponds ou pose ta question…'; inp.setAttribute('enterkeyhint', 'send');
+    const go = document.createElement('button'); go.type = 'button'; go.className = 'coach-send'; go.textContent = '➤';
+    const alt = document.createElement('p'); alt.className = 'coach-alt';
+    const altA = document.createElement('a'); altA.href = COACH_URL; altA.target = '_blank'; altA.textContent = 'ouvrir plutôt mon projet Claude';
+    alt.appendChild(document.createTextNode('IA en direct (Groq, ta clé) · '));
+    alt.appendChild(altA);
+    bar.appendChild(inp); bar.appendChild(go);
+    box.appendChild(log); box.appendChild(bar); box.appendChild(alt);
+    row.parentNode.insertBefore(box, row.nextSibling);
+    row._chat = box;
+
+    const histoire = [];
+    function bulle(cls, txt){
+      const d = document.createElement('div'); d.className = 'coach-msg ' + cls; d.textContent = txt;
+      log.appendChild(d); d.scrollIntoView({ block: 'nearest' });
+      return d;
+    }
+    let busy = false;
+    async function envoyer(txt, visible){
+      if (busy) return;
+      busy = true; go.disabled = true;
+      if (visible) bulle('moi', txt);
+      const rep = bulle('prof', '…');
+      const sys = { role: 'system', content: IA_SYS + '\n\n' + iaContexte(ctx) };
+      const msgs = [sys].concat(histoire, [{ role: 'user', content: txt }]);
+      try {
+        let first = true;
+        const model = BESOIN_WEB.test(txt) ? GROQ_WEB : GROQ_MODEL;
+        let out;
+        try {
+          out = await iaStream(msgs, function(dt){ if (first){ rep.textContent = ''; first = false; } rep.textContent += dt; rep.scrollIntoView({ block: 'nearest' }); }, { model: model });
+        } catch(e){
+          if (model === GROQ_WEB){ out = await iaStream(msgs, function(dt){ if (first){ rep.textContent = ''; first = false; } rep.textContent += dt; }, {}); }
+          else throw e;
+        }
+        if (out) rep.textContent = out; else rep.textContent = '(pas de réponse — réessaie)';
+        histoire.push({ role: 'user', content: txt }, { role: 'assistant', content: out || '' });
+        if (histoire.length > 12) histoire.splice(0, histoire.length - 12);
+      } catch(e){ rep.textContent = '⚠️ ' + iaErreur(e); }
+      busy = false; go.disabled = false;
+    }
+    go.addEventListener('click', function(){ const t = inp.value.trim(); if (t){ inp.value = ''; envoyer(t, true); } });
+    inp.addEventListener('keydown', function(ev){ if (ev.key === 'Enter'){ ev.preventDefault(); go.click(); } });
+    envoyer(ctx.afterWrong
+      ? 'Je me suis trompé : j’ai répondu « ' + (ctx.my || 'je ne savais pas') + ' ». Explique-moi mon erreur simplement, puis pose-moi une nouvelle question du même type pour vérifier.'
+      : 'Je bloque sur cette question. Donne-moi un premier indice sans révéler la réponse.', false);
+  }
+
+  /* ---- génération de questions inédites sur un chapitre ---- */
+  async function genQuestions(chap, m, n){
+    const meta = FICHE_META[chap] || { num: '', title: 'ce chapitre' };
+    const deja = (BY_CHAP[chap] || []).map(q => '- ' + q.q.slice(0, 110)).join('\n');
+    const sys = 'Tu écris des QCM de révision pour un élève de terminale STMG (France). Tu réponds UNIQUEMENT par un objet JSON valide, sans texte autour, sans balises de code.';
+    const user = 'Matière : ' + m.titre + '. Chapitre ' + meta.num + ' « ' + meta.title + ' ».\n\nCOURS (seule source autorisée) :\n' + ficheTexte(chap) +
+      '\n\nQuestions DÉJÀ posées (interdiction de les reformuler ou paraphraser) :\n' + deja +
+      '\n\nÉcris ' + n + ' QCM INÉDITS sur ce chapitre : angles nouveaux, cas concrets, pièges classiques. Niveau bac STMG. 4 options plausibles dont UNE seule correcte. Explication en 2-3 phrases. Français, nombres à la française, pas de LaTeX.\n' +
+      'Format STRICT : {"questions":[{"q":"…","options":["…","…","…","…"],"bonne":0,"explication":"…"}]} — "bonne" = index 0 à 3 de l’option correcte.';
+    const brut = await iaStream([{ role: 'system', content: sys }, { role: 'user', content: user }], null,
+      { extras: { response_format: { type: 'json_object' }, max_completion_tokens: 4000 } });
+    let j;
+    try { j = JSON.parse(brut.slice(brut.indexOf('{'), brut.lastIndexOf('}') + 1)); }
+    catch(e){ throw new Error('JSON illisible'); }
+    const ok = [];
+    (j.questions || []).forEach(function(o, i){
+      if (!o || typeof o.q !== 'string' || !Array.isArray(o.options) || o.options.length !== 4) return;
+      if (!Number.isInteger(o.bonne) || o.bonne < 0 || o.bonne > 3) return;
+      if (new Set(o.options.map(String)).size !== 4) return;
+      ok.push({ type: 'qcm', chap: chap, q: o.q, options: o.options.map(String), bonne: o.bonne,
+        explication: String(o.explication || ''), ia: true, qid: 'ia-' + Date.now() + '-' + i, mat: m });
+    });
+    if (!ok.length) throw new Error('aucune question valide reçue');
+    return ok.slice(0, n);
+  }
+
+  /* ---- réglage de la clé IA ---- */
+  const iaRow = document.createElement('p'); iaRow.className = 'ia-row';
+  (function(){ const hint = vQuizHome.querySelector('.hint'); vQuizHome.insertBefore(iaRow, hint); })();
+  function renderIaRow(){
+    iaRow.innerHTML = '';
+    const propre = (function(){ try { return !!localStorage.getItem(K_IA); } catch(e){ return false; } })();
+    const herite = !propre && !!iaKey();
+    iaRow.appendChild(document.createTextNode(iaKey()
+      ? '🤖 IA en direct : activée' + (herite ? ' (clé de ton app maths réutilisée)' : ' (Groq)')
+      : '🤖 IA en direct : désactivée — aide et questions inédites dans l’app avec une clé gratuite'));
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = '⚙️ IA';
+    b.addEventListener('click', function(){ snd.click(); openIaModal(); });
+    iaRow.appendChild(b);
+  }
+  function openIaModal(){
+    if (document.getElementById('ia-modal')) return;
+    const ov = document.createElement('div'); ov.id = 'ia-modal';
+    const box = document.createElement('div'); box.className = 'box';
+    box.innerHTML = '<h3>🤖 IA en direct</h3>' +
+      '<p>Avec une clé <strong>Groq</strong> (gratuite), le Coach IA répond directement dans les questions, cherche sur le web si besoin, et peut te générer des <strong>questions inédites</strong> sur chaque chapitre.</p>' +
+      '<p>1. Va sur <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a> (compte gratuit)<br>2. Crée une clé API et colle-la ici :</p>' +
+      '<input type="password" id="ia-cle" placeholder="gsk_…" autocomplete="off">' +
+      '<p id="ia-status"></p>' +
+      '<p style="opacity:.7">Ta clé reste UNIQUEMENT sur cet appareil (jamais dans le site public). Si tu utilises déjà l’IA de ton app maths sur ce navigateur, sa clé est réutilisée automatiquement : rien à faire.</p>' +
+      '<div class="acts"><button type="button" id="ia-eff">Effacer</button><button type="button" id="ia-annu">Fermer</button><button type="button" class="ok" id="ia-save">Tester et enregistrer</button></div>';
+    ov.appendChild(box); document.body.appendChild(ov);
+    const st = box.querySelector('#ia-status'), inp = box.querySelector('#ia-cle');
+    try { inp.value = localStorage.getItem(K_IA) || ''; } catch(e){}
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+    box.querySelector('#ia-annu').addEventListener('click', function(){ ov.remove(); });
+    box.querySelector('#ia-eff').addEventListener('click', function(){
+      try { localStorage.removeItem(K_IA); } catch(e){}
+      inp.value = ''; st.textContent = 'Clé effacée.'; renderIaRow();
+    });
+    box.querySelector('#ia-save').addEventListener('click', async function(){
+      const k = inp.value.trim();
+      if (!k){ st.textContent = 'Colle d’abord ta clé (elle commence par gsk_).'; return; }
+      st.textContent = 'Test en cours…';
+      try {
+        const r = await fetch(GROQ_URL, { method: 'POST',
+          headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + k },
+          body: JSON.stringify({ model: GROQ_MODEL, max_completion_tokens: 1, messages: [{ role: 'user', content: 'ok' }] }) });
+        if (!r.ok) throw new Error(r.status === 401 ? 'clé refusée' : 'HTTP ' + r.status);
+        try { localStorage.setItem(K_IA, k); } catch(e){}
+        st.textContent = '✅ Clé valide et enregistrée !';
+        snd.good(); renderIaRow();
+        setTimeout(function(){ ov.remove(); }, 900);
+      } catch(e){ st.textContent = '❌ Test raté : ' + e.message + '. Vérifie la clé.'; snd.bad(); }
+    });
   }
 
   /* ================= exercices : session ================= */
@@ -4279,6 +4511,7 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
   }
 
   function record(q, ok){
+    if (q.ia){ if (ok) session.bons++; else session.rates.push(q); return; }
     const s = stats[q.qid] || { vu: 0, bon: 0 };
     s.vu++; if (ok) s.bon++;
     stats[q.qid] = s; save(K_STATS, stats);
@@ -4335,14 +4568,14 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
           feedback(card, e.ok, q.explication);
           if (!e.ok){
             const right = entries.filter(x => x.ok).map(x => x.t).join(' / ');
-            card.appendChild(coachButton('🤖 Comprendre avec le Coach IA', function(){ return coachPrompt(q, true, e.t, right); }));
+            card.appendChild(coachButton('🤖 Comprendre avec le Coach IA', { q: q, afterWrong: true, my: e.t, right: right }));
           }
         });
         b._ok = e.ok;
         btns.push(b); opts.appendChild(b);
       });
       card.appendChild(opts);
-      card.appendChild(coachButton('🤖 Coach IA — je coince', function(){ return coachPrompt(q, false); }));
+      card.appendChild(coachButton('🤖 Coach IA — je coince', { q: q, afterWrong: false }));
     } else {
       const reveal = document.createElement('button');
       reveal.className = 'primary'; reveal.type = 'button';
@@ -4360,16 +4593,14 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
         okb.addEventListener('click', function(){ record(q, true); snd.good(); sg.remove(); nextRow(card); });
         kob.addEventListener('click', function(){
           record(q, false); snd.bad(); replay(card, 'shake'); sg.remove();
-          card.appendChild(coachButton('🤖 Comprendre avec le Coach IA', function(){
-            return coachPrompt(q, true, 'je ne savais pas / réponse incomplète', (q.reponse || '').slice(0, 400));
-          }));
+          card.appendChild(coachButton('🤖 Comprendre avec le Coach IA', { q: q, afterWrong: true, my: 'je ne savais pas / réponse incomplète', right: (q.reponse || '').slice(0, 400) }));
           nextRow(card);
         });
         sg.appendChild(okb); sg.appendChild(kob);
         card.appendChild(sg);
       });
       card.appendChild(reveal);
-      card.appendChild(coachButton('🤖 Coach IA — je coince', function(){ return coachPrompt(q, false); }));
+      card.appendChild(coachButton('🤖 Coach IA — je coince', { q: q, afterWrong: false }));
     }
   }
 
@@ -4427,6 +4658,29 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
       missed.appendChild(h); missed.appendChild(ul);
     }
     $('btn-retry').style.display = session.rates.length ? '' : 'none';
+
+    const old = document.getElementById('ia-more'); if (old) old.remove();
+    if (iaKey() && session.fromFiche){
+      const chap = session.fromFiche, m = session.list[0].mat;
+      const wrap = document.createElement('div'); wrap.id = 'ia-more'; wrap.className = 'coach-row';
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'coach-btn';
+      b.textContent = '🤖 5 questions inédites sur ce chapitre (IA)';
+      b.addEventListener('click', async function(){
+        snd.click(); b.disabled = true; b.textContent = '🤖 L’IA écrit tes questions…';
+        try {
+          const qs = await genQuestions(chap, m, 5);
+          startSession(qs, (FICHE_META[chap] ? FICHE_META[chap].num + ' · ' : '') + 'Questions inédites 🤖', chap, session.fromMat);
+        } catch(e){
+          b.disabled = false; b.textContent = '🤖 5 questions inédites sur ce chapitre (IA)';
+          coachToast('⚠️ ' + iaErreur(e));
+        }
+      });
+      wrap.appendChild(b);
+      const note = document.createElement('p'); note.className = 'coach-alt';
+      note.textContent = 'Générées par l’IA à partir de ta fiche : jamais deux fois les mêmes. Elles ne comptent pas dans tes statistiques.';
+      wrap.appendChild(note);
+      $('e-missed').parentNode.insertBefore(wrap, $('e-missed'));
+    }
   }
 
   $('btn-quit').addEventListener('click', function(){
