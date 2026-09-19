@@ -4888,6 +4888,22 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
   mFiches.addEventListener('click', () => { snd.click(); setModeButtons(false); showPanel(vFiches); });
   mQuiz.addEventListener('click', () => { snd.click(); setModeButtons(true); renderHome(); showPanel(vQuizHome); });
 
+  /* ===== lien profond : …/#droit1-2 ouvre la fiche, …/#droit1 va à la matière (utilisé par le tableau de bord) ===== */
+  function openFromHash(){
+    let id = ''; try { id = decodeURIComponent(location.hash.slice(1)); } catch(e){ return; }
+    if (!/^[a-z0-9-]+$/.test(id)) return;
+    const el = document.getElementById(id);
+    if (!el || !(el.matches('details.fiche') || el.matches('section.matiere'))) return;
+    const switched = vFiches.classList.contains('hidden');
+    if (switched){ setModeButtons(false); showPanel(vFiches); }
+    if (el.matches('details.fiche')) el.open = true;
+    const go = function(){ el.scrollIntoView({ block: 'start', behavior: 'instant' }); };  // instantané : la page fait 15 000 px
+    setTimeout(go, 60);
+    if (switched) setTimeout(go, 560);  // recale après l'animation d'entrée du panneau, sinon la fiche finit sous la barre collante
+  }
+  window.addEventListener('hashchange', openFromHash);
+  setTimeout(openFromHash, 0);
+
   /* ================= fiches ================= */
   const K_DONE = 'stmg-fiches-done';
   let done = load(K_DONE, []);
