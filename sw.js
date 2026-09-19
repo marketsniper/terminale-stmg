@@ -1,4 +1,4 @@
-const CACHE = 'stmg-b25d015980';
+const CACHE = 'stmg-7ca6841573';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -19,6 +19,12 @@ self.addEventListener('fetch', e => {
   if (url.origin !== location.origin) return;
   // l'app Maths (/maths/) a son propre service worker : ne pas intercepter
   if (url.pathname.includes('/maths/')) return;
+  // les échéances changent tous les jours : réseau d'abord, cache en secours (hors-ligne)
+  if (url.pathname.endsWith('/echeances.json')){
+    e.respondWith(fetch(e.request).then(res => { if (res.ok) caches.open(CACHE).then(c => c.put('./echeances.json', res.clone())); return res; })
+      .catch(() => caches.match('./echeances.json')));
+    return;
+  }
   const key = e.request.mode === 'navigate' ? './index.html' : e.request;
   e.respondWith(
     caches.match(key).then(hit => {

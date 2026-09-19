@@ -343,6 +343,32 @@ button:active{transform:translateY(1px) scale(.985)}
   .fiche{box-shadow:none; break-inside:avoid}
   body{background:#fff; color:#000}
 }
+
+/* ===== échéances (reliées au tableau de bord) ===== */
+.agenda{margin:1rem 0 0; background:var(--card); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow); overflow:hidden}
+.agenda .ag-head{display:flex; align-items:baseline; gap:.6rem; padding:.7rem .9rem .5rem; flex-wrap:wrap}
+.agenda h2{margin:0; font-size:1rem; font-weight:700}
+.agenda .ag-maj{font-size:.75rem; color:var(--muted)}
+.agenda .ag-open{margin-left:auto; font-size:.8rem; font-weight:600; color:var(--ink); text-decoration:none; border:1px solid var(--line); border-radius:99px; padding:.2rem .7rem}
+.agenda .ag-open:hover{border-color:var(--muted)}
+.agenda ul{list-style:none; margin:0; padding:0 .4rem .5rem}
+.agenda li{display:flex; gap:.7rem; align-items:flex-start; padding:.5rem; border-top:1px solid var(--line)}
+.ag-when{flex:0 0 4.6rem; text-align:center; font-size:.72rem; font-weight:700; line-height:1.25; padding:.3rem .2rem; border-radius:7px; background:color-mix(in srgb, var(--muted) 14%, var(--card)); color:var(--ink)}
+.ag-when b{display:block; font-size:.86rem}
+.ag-when.soon{background:color-mix(in srgb, #D8433B 16%, var(--card)); color:color-mix(in srgb, #D8433B 75%, var(--ink))}
+.ag-when.near{background:color-mix(in srgb, #DD8A17 18%, var(--card)); color:color-mix(in srgb, #DD8A17 70%, var(--ink))}
+.ag-main{flex:1 1 auto; min-width:0}
+.ag-title{font-weight:600; font-size:.92rem; line-height:1.3}
+.ag-sub{font-size:.78rem; color:var(--muted); margin-top:.1rem}
+.ag-chips{display:flex; flex-wrap:wrap; gap:.3rem; margin-top:.35rem}
+.ag-chips a{font-size:.75rem; font-weight:600; text-decoration:none; color:var(--ink); border:1px solid var(--line); border-radius:99px; padding:.15rem .6rem; background:var(--bg)}
+.ag-chips a:hover{border-color:var(--muted)}
+.f-due{flex:0 0 auto; margin-left:auto; font-size:.68rem; font-weight:700; white-space:nowrap; padding:.14rem .45rem; border-radius:4px; background:color-mix(in srgb, #DD8A17 20%, var(--card)); color:color-mix(in srgb, #DD8A17 65%, var(--ink))}
+.f-due.soon{background:color-mix(in srgb, #D8433B 18%, var(--card)); color:color-mix(in srgb, #D8433B 75%, var(--ink))}
+.f-due + .done-chip{margin-left:.45rem}
+.due-line{margin:.9rem 0 0; font-size:.84rem; padding:.5rem .7rem; border-radius:7px; border:1px solid var(--line); background:var(--bg)}
+.due-line a{font-weight:600; color:inherit}
+.m-head .due-line{margin-top:.6rem}
 </style>
 
 <div class="page">
@@ -373,6 +399,7 @@ button:active{transform:translateY(1px) scale(.985)}
     <span class="pbar"><span id="pbar-fill"></span></span>
     <span>Clique sur « Maîtrisé » quand tu connais une fiche — c'est enregistré sur ton appareil.</span>
   </p>
+  <section id="agenda" class="agenda hidden" aria-label="Prochaines échéances"></section>
 
   <nav class="tabs" aria-label="Matières">
     <a href="#management" style="--acc:#3454D1">Management SDGN</a>
@@ -5014,6 +5041,96 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
     }, { rootMargin: '-20% 0px -70% 0px' });
     document.querySelectorAll('section.matiere').forEach(s => obs.observe(s));
   }
+
+  /* ================= échéances : echeances.json est poussé par la synchro de l'organisme =================
+     Format : {maj, tableau, items:[{id,title,matiere,kind,due,time,chapitre:[ids],steps,stepsDone}]}
+     chapitre = id de fiche (droit1-2) ou de matière (droit1). Tout raisonne sur l'heure réelle. */
+  (function(){
+    const box = $('agenda'); if (!box) return;
+    const K_ECH = 'stmg-echeances';
+    const KIND_L = { ds:'DS', controle:'Contrôle', devoir_note:'Devoir noté', expose:'Exposé', devoir:'Devoir' };
+    const JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
+    const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+    let data = load(K_ECH, null);
+    function dueTs(it){
+      const p = String(it.due || '').split('-').map(Number); if (p.length !== 3 || p.some(isNaN)) return NaN;
+      const d = new Date(p[0], p[1]-1, p[2]);
+      const t = /^\d{1,2}:\d{2}$/.test(it.time || '') ? it.time.split(':').map(Number) : [23, 59];
+      d.setHours(t[0], t[1], t[0] === 23 && t[1] === 59 ? 59 : 0, 0); return d.getTime();
+    }
+    function dayDiff(it){ const p = it.due.split('-').map(Number), a = new Date(p[0], p[1]-1, p[2]), n = new Date(); n.setHours(0,0,0,0); return Math.round((a - n) / 864e5); }
+    function relTxt(n){ return n <= 0 ? "aujourd'hui" : n === 1 ? 'demain' : 'dans ' + n + ' j'; }
+    function dayTxt(it, long){ const p = it.due.split('-').map(Number), d = new Date(p[0], p[1]-1, p[2]); return JOURS[d.getDay()] + ' ' + d.getDate() + (long ? ' ' + MOIS[d.getMonth()] : ''); }
+    function sevOf(it){ const n = dayDiff(it), heavy = it.kind === 'ds' || it.kind === 'controle' || it.kind === 'devoir_note' || it.kind === 'expose'; return n <= 1 || (n <= 3 && heavy) ? 'soon' : n <= 7 ? 'near' : ''; }
+    function chapLabel(id){
+      const el = document.getElementById(id); if (!el) return null;
+      if (el.matches('details.fiche')){ const n = el.querySelector('.f-num'), sec = el.closest('section.matiere'), h = sec && sec.querySelector('h2'); return (h ? h.textContent.trim() + ' · ' : '') + (n ? n.textContent.trim() : id); }
+      if (el.matches('section.matiere')){ const h = el.querySelector('h2'); return h ? h.textContent.trim() : id; }
+      return null;
+    }
+    function stepsTxt(it){ const t = it.steps | 0, d = it.stepsDone | 0; if (!t) return ''; const r = Math.max(0, t - d); return r ? r + ' étape' + (r > 1 ? 's' : '') + ' restante' + (r > 1 ? 's' : '') + ' sur ' + t : 'préparation terminée (' + t + '/' + t + ')'; }
+    function el(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+    function dashUrl(){ return data && /^https:\/\/claude\.ai\//.test(data.tableau || '') ? data.tableau : null; }
+
+    function render(){
+      document.querySelectorAll('.f-due, .due-line').forEach(function(n){ n.remove(); });
+      box.textContent = '';
+      const now = Date.now();
+      const up = ((data && Array.isArray(data.items)) ? data.items : [])
+        .filter(function(it){ return it && it.title && KIND_L[it.kind] && !it.done && dueTs(it) > now; })
+        .sort(function(a, b){ return dueTs(a) - dueTs(b); });
+      box.classList.toggle('hidden', !up.length);
+      if (!up.length) return;
+
+      const head = el('div', 'ag-head'); head.appendChild(el('h2', null, 'Mes prochaines échéances'));
+      if (data.maj) head.appendChild(el('span', 'ag-maj', 'à jour du ' + String(data.maj).slice(8,10) + '/' + String(data.maj).slice(5,7) + ' à ' + String(data.maj).slice(11,16).replace(':', 'h')));
+      if (dashUrl()){ const a = el('a', 'ag-open', 'Tableau de bord →'); a.href = dashUrl(); a.target = '_blank'; a.rel = 'noopener'; head.appendChild(a); }
+      box.appendChild(head);
+      const ul = el('ul');
+      up.slice(0, 5).forEach(function(it){
+        const li = el('li'), w = el('div', 'ag-when ' + sevOf(it));
+        w.appendChild(el('b', null, relTxt(dayDiff(it)))); w.appendChild(document.createTextNode(dayTxt(it, false) + (it.time ? ' · ' + it.time.replace(':', 'h') : '')));
+        const main = el('div', 'ag-main'); main.appendChild(el('div', 'ag-title', it.title));
+        const sub = [KIND_L[it.kind], it.matiere, stepsTxt(it)].filter(Boolean).join(' · '); main.appendChild(el('div', 'ag-sub', sub));
+        const chips = el('div', 'ag-chips');
+        let chaps = (Array.isArray(it.chapitre) ? it.chapitre : []).filter(function(id){ return chapLabel(id); });
+        if (chaps.length > 3){   // beaucoup de fiches : une puce par matière suffit
+          const secs = []; chaps.forEach(function(id){ const t = document.getElementById(id), sc = t.matches('section.matiere') ? t : t.closest('section.matiere'); if (sc && secs.indexOf(sc.id) === -1) secs.push(sc.id); });
+          chaps = secs;
+        }
+        chaps.forEach(function(id){ const a = el('a', null, chapLabel(id) + ' →'); a.href = '#' + id; chips.appendChild(a); });
+        if (chips.children.length) main.appendChild(chips);
+        li.appendChild(w); li.appendChild(main); ul.appendChild(li);
+      });
+      box.appendChild(ul);
+
+      // repères sur les fiches et les matières : la plus proche échéance seulement
+      const seen = {};
+      up.forEach(function(it){
+        (Array.isArray(it.chapitre) ? it.chapitre : []).forEach(function(id){
+          if (seen[id]) return; const target = document.getElementById(id); if (!target) return; seen[id] = 1;
+          const line = el('p', 'due-line');
+          line.appendChild(el('strong', null, 'Prochaine échéance : '));
+          line.appendChild(document.createTextNode(it.title + ' — ' + dayTxt(it, true) + (it.time ? ' à ' + it.time.replace(':', 'h') : '') + ' (' + relTxt(dayDiff(it)) + ')' + (stepsTxt(it) ? ' · ' + stepsTxt(it) : '') + (dashUrl() ? ' · ' : '')));
+          if (dashUrl()){ const a = el('a', null, 'cocher dans le tableau de bord →'); a.href = dashUrl(); a.target = '_blank'; a.rel = 'noopener'; line.appendChild(a); }
+          if (target.matches('details.fiche')){
+            const sum = target.querySelector('summary'), chip = sum && sum.querySelector('.done-chip');
+            const b = el('span', 'f-due ' + (sevOf(it) === 'soon' ? 'soon' : ''), KIND_L[it.kind] + ' ' + dayTxt(it, false));
+            b.title = it.title; if (sum){ if (chip) sum.insertBefore(b, chip); else sum.appendChild(b); }
+            const body = target.querySelector('.f-body'); if (body) body.insertBefore(line, body.firstChild);
+          } else if (target.matches('section.matiere')){
+            const h = target.querySelector('.m-head'); if (h) h.appendChild(line);
+          }
+        });
+      });
+    }
+    render();
+    fetch('./echeances.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+      if (j && Array.isArray(j.items)){ data = j; save(K_ECH, j); render(); }
+    }).catch(function(){});
+    setInterval(render, 60000);
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) render(); });
+  })();
 
   /* ================= exercices : accueil ================= */
   // méta des fiches (numéro, titre, thème, matière) pour le choix par sous-thème
