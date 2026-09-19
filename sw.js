@@ -1,4 +1,4 @@
-const CACHE = 'stmg-b13e301762';
+const CACHE = 'stmg-ccd8607133';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {

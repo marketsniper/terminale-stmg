@@ -369,6 +369,69 @@ button:active{transform:translateY(1px) scale(.985)}
 .due-line{margin:.9rem 0 0; font-size:.84rem; padding:.5rem .7rem; border-radius:7px; border:1px solid var(--line); background:var(--bg)}
 .due-line a{font-weight:600; color:inherit}
 .m-head .due-line{margin-top:.6rem}
+
+/* ===== DS générés par l'IA ===== */
+#view-ds{margin-top:1.2rem}
+.ds-head h2{margin:0;font-size:1.35rem}
+.ds-lede{color:var(--muted);font-size:.9rem;margin:.4rem 0 0;max-width:62ch}
+.ds-card{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:1rem;margin-top:1rem}
+.ds-card h3{margin:0 0 .6rem;font-size:1.05rem}
+.ds-kicker{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.2rem}
+.ds-sugg{border-left:4px solid #DD8A17}
+.ds-resume{border-left:4px solid var(--ok)}
+.ds-acts{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.7rem}
+.ds-acts button,.ds-go{padding:.55rem .95rem;font-weight:600}
+#view-ds button.ok{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ds-mini{padding:.25rem .6rem;font-size:.78rem;font-weight:600}
+.ds-lab{display:block;font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:.9rem 0 .35rem}
+.ds-select{width:100%;padding:.55rem;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px}
+.ds-fiches{display:flex;flex-direction:column;gap:.15rem;max-height:15rem;overflow:auto;padding:.4rem;border:1px solid var(--line);border-radius:7px;background:var(--bg)}
+.ds-chk{display:flex;align-items:flex-start;gap:.5rem;font-size:.9rem;padding:.2rem 0;cursor:pointer}
+.ds-chk input{margin-top:.2rem;flex:none}
+.ds-chk span{flex:1;min-width:0}
+.ds-chk em{flex:none;font-style:normal;font-size:.75rem;font-weight:700;color:var(--muted)}
+.ds-weak{color:#D8433B!important}
+.ds-formats{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
+.ds-fmt{display:flex;flex-direction:column;gap:.15rem;text-align:left;padding:.6rem}
+.ds-fmt span{font-size:.75rem;color:var(--muted)}
+.ds-fmt.active{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+@media (max-width:520px){.ds-formats{grid-template-columns:1fr}}
+.ds-go{margin-top:1rem;width:100%}
+.ds-msg{font-size:.85rem;color:var(--muted);min-height:1.2em;margin:.5rem 0 0}
+.ds-wait{text-align:center;padding:2rem 1rem}
+.ds-spin{width:2rem;height:2rem;margin:0 auto .8rem;border-radius:50%;border:3px solid var(--line);border-top-color:var(--ink);animation:ds-rot 1s linear infinite}
+@keyframes ds-rot{to{transform:rotate(360deg)}}
+.ds-hist{list-style:none;margin:0;padding:0}
+.ds-hist li{display:flex;align-items:center;gap:.6rem;padding:.5rem 0;border-top:1px solid var(--line);flex-wrap:wrap}
+.ds-h-note{flex:0 0 3.6rem;font-weight:700;font-family:ui-monospace,Menlo,monospace;font-size:.85rem}
+.ds-h-main{flex:1 1 12rem;min-width:0;display:flex;flex-direction:column}
+.ds-h-main span{font-size:.78rem;color:var(--muted)}
+.ds-top{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:.8rem;padding:.6rem .8rem;margin-top:.6rem;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.ds-title{flex:1;min-width:0;display:flex;flex-direction:column}
+.ds-title span{font-size:.78rem;color:var(--muted)}
+.ds-timer,.ds-note{flex:none;display:flex;align-items:center;gap:.5rem}
+.ds-timer b,.ds-note b{font-family:ui-monospace,Menlo,monospace;font-size:1.25rem}
+.ds-note span{font-size:.8rem;color:var(--muted)}
+.ds-timer.soon b{color:#DD8A17}.ds-timer.over b{color:#D8433B}
+.ds-partie{margin-top:1.2rem}
+.ds-partie h3{margin:0 0 .4rem;font-size:1.05rem;border-bottom:2px solid var(--line);padding-bottom:.3rem}
+.ds-consigne{color:var(--muted);font-size:.9rem;margin:.2rem 0}
+.ds-doc{margin:.7rem 0;padding:.7rem .9rem;border-left:3px solid var(--muted);background:var(--card);border-radius:0 8px 8px 0;font-size:.92rem}
+.ds-doc p{margin:.3rem 0}
+.ds-q{margin:.8rem 0;padding:.8rem;background:var(--card);border:1px solid var(--line);border-radius:10px}
+.ds-q-t{display:flex;gap:.6rem;align-items:flex-start}
+.ds-q-n{flex:none;font-weight:700}
+.ds-q-e{flex:1;min-width:0}.ds-q-e p{margin:0 0 .3rem}
+.ds-q-p{flex:none;font-size:.78rem;font-weight:700;color:var(--muted);white-space:nowrap}
+.ds-ans{width:100%;min-height:4.5rem;margin-top:.6rem;padding:.5rem;font:inherit;font-size:.9rem;color:var(--ink);background:var(--bg);border:1px dashed var(--line);border-radius:7px;resize:vertical}
+.ds-corr,.ds-mine{margin-top:.6rem;padding:.6rem .8rem;border-radius:8px;font-size:.92rem;background:color-mix(in srgb,var(--ok) 10%,var(--card))}
+.ds-mine{background:var(--bg)}
+.ds-corr p,.ds-mine p{margin:.25rem 0}
+.ds-bar{margin-top:.5rem;padding:.4rem .6rem;border:1px solid var(--line);border-radius:8px}
+.ds-ia-out{font-size:.88rem;color:var(--muted);margin:.4rem 0 0}
+.ds-end{margin:1.2rem 0 2rem}
+#ds-print{display:none}
+@media print{ body.ds-printing > *:not(#ds-print){display:none!important} body.ds-printing #ds-print{display:block!important;color:#000;background:#fff;font-size:11pt} #ds-print h1{font-size:15pt;margin:0 0 4pt} #ds-print .ds-q,#ds-print .ds-doc{break-inside:avoid;border:1px solid #999;background:#fff} }
 </style>
 
 <div class="page">
@@ -384,6 +447,7 @@ button:active{transform:translateY(1px) scale(.985)}
     <div class="mode-switch" role="tablist" aria-label="Mode">
       <button id="mode-fiches" class="active" type="button" role="tab" aria-selected="true">📒 Fiches</button>
       <button id="mode-quiz" type="button" role="tab" aria-selected="false">✏️ Exercices</button>
+      <button id="mode-ds" type="button" role="tab" aria-selected="false">📝 DS</button>
     </div>
     <button id="snd-btn" type="button" aria-label="Activer ou couper les sons" title="Sons">🔊</button>
   </div>
@@ -4824,6 +4888,8 @@ button:active{transform:translateY(1px) scale(.985)}
 </footer>
 </div>
 
+<div id="view-ds" class="hidden"></div>
+
 <div id="view-quiz" class="hidden">
   <div class="gstats">
     <div class="gstat"><b id="g-total">0</b><span>questions au total</span></div>
@@ -4962,12 +5028,12 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
   let revoir = load(K_REV, []).filter(id => BY_ID[id]);
 
   /* ================= bascule de mode ================= */
-  const vFiches = $('view-fiches'), vQuizHome = $('view-quiz'), vQuiz = $('quiz'), vEnd = $('end');
-  const mFiches = $('mode-fiches'), mQuiz = $('mode-quiz');
-  function showPanel(el){ [vFiches, vQuizHome, vQuiz, vEnd].forEach(x => x.classList.toggle('hidden', x !== el)); window.scrollTo(0, 0); replay(el, 'panel-in'); }
-  function setModeButtons(quizMode){
-    mFiches.classList.toggle('active', !quizMode); mQuiz.classList.toggle('active', quizMode);
-    mFiches.setAttribute('aria-selected', String(!quizMode)); mQuiz.setAttribute('aria-selected', String(quizMode));
+  const vFiches = $('view-fiches'), vQuizHome = $('view-quiz'), vQuiz = $('quiz'), vEnd = $('end'), vDS = $('view-ds');
+  const mFiches = $('mode-fiches'), mQuiz = $('mode-quiz'), mDSbtn = $('mode-ds');
+  function showPanel(el){ [vFiches, vQuizHome, vQuiz, vEnd, vDS].forEach(x => x.classList.toggle('hidden', x !== el)); window.scrollTo(0, 0); replay(el, 'panel-in'); }
+  function setModeButtons(mode){   // false = fiches, true = exercices, 'ds' = DS
+    const m = mode === 'ds' ? 'ds' : mode ? 'quiz' : 'fiches';
+    [[mFiches, 'fiches'], [mQuiz, 'quiz'], [mDSbtn, 'ds']].forEach(function(p){ if (!p[0]) return; p[0].classList.toggle('active', p[1] === m); p[0].setAttribute('aria-selected', String(p[1] === m)); });
   }
   mFiches.addEventListener('click', () => { snd.click(); setModeButtons(false); showPanel(vFiches); });
   mQuiz.addEventListener('click', () => { snd.click(); setModeButtons(true); renderHome(); showPanel(vQuizHome); });
@@ -5640,6 +5706,382 @@ const DATA = [{"matiere":"management","titre":"Management","acc":"#3454D1","ques
       } catch(e){ st.textContent = '❌ Test raté : ' + e.message + '. Vérifie la clé.'; snd.bad(); }
     });
   }
+
+  /* DS-MODULE-START */
+  /* ================= DS et DS blancs générés par l'IA =================
+     Source de ce bloc : ds-module.js (injecté dans merged-foot.html par inject_ds.py — ne pas éditer la copie).
+     Principe : l'APP choisit (notions imposées tirées au sort dans les fiches, en évitant celles déjà tombées et en pondérant
+     les chapitres faibles) ; l'IA rédige le sujet, le barème et le corrigé à partir du seul texte des fiches. */
+  (function(){
+    const root = $('view-ds'); if (!root) return;
+    const K_HIST = 'stmg-ds-hist', K_CUR = 'stmg-ds-cur', K_TAGS = 'stmg-ds-tags';
+    const FORMATS = {
+      court: { nom: 'DS court', duree: 30, total: 10, appels: 1, desc: '30 min · /10 · un thème à fond' },
+      ds:    { nom: 'DS', duree: 60, total: 20, appels: 2, desc: '1 h · /20 · notions + étude de cas' },
+      blanc: { nom: 'DS blanc', duree: 120, total: 20, appels: 2, desc: '2 h · /20 · conditions réelles' }
+    };
+    const CONTEXTES = ['une boulangerie artisanale', 'un club de football amateur', 'une start-up d’applications mobiles', 'un magasin de vélos', 'une association étudiante', 'un salon de coiffure', 'un restaurant familial', 'une boutique en ligne de vêtements', 'une auto-école', 'un festival de musique', 'une salle de sport', 'une entreprise de livraison à vélo', 'un garage automobile', 'une librairie indépendante', 'une colocation entre étudiants', 'un camping en bord de mer', 'une ferme en vente directe', 'un studio de jeux vidéo'];
+    const PRENOMS = ['Inès', 'Malo', 'Sacha', 'Lila', 'Noé', 'Maya', 'Enzo', 'Jade', 'Tom', 'Zoé', 'Rayan', 'Clara', 'Hugo', 'Nina', 'Adam', 'Léna', 'Théo', 'Sofia'];
+
+    // Profil d'épreuve par matière : ce que le prof attend vraiment.
+    function profil(sec){
+      const N = 'PARTIE NOTIONS : pour chaque notion imposée, l’élève doit donner la définition précise, un exemple, puis la distinction avec la notion voisine. Barème par notion : « Définition précise » 0,5 · « Exemple » 0,5 · « Distinction avec la notion voisine » 0,5.';
+      if (/^droit/.test(sec)) return { nom: 'droit', p1: N,
+        p2: 'PARTIE CAS : cas pratiques à résoudre en SYLLOGISME. Chaque énoncé raconte une situation concrète (prénoms, montants, dates) qui déclenche UNE règle du cours, avec toutes les informations nécessaires pour vérifier ses conditions. Barème de chaque question : « Majeure : la règle de droit, en général » · « Mineure : qualification des faits, condition par condition » · « Conclusion ». Le corrigé est rédigé « En droit… Or, en l’espèce… Donc… ». N’invente JAMAIS un numéro d’article : ne cite que ceux du cours.',
+        p3: 'ANALYSE D’ARRÊT : rédige un arrêt FICTIF de la Cour de cassation de 6 à 9 lignes, dans le style réel (« Attendu, selon l’arrêt attaqué… », « fait grief à l’arrêt… alors que… », puis « Mais attendu que… rejette » OU « Vu l’article… casse et annule… renvoie »), sur une règle du cours ; place-le dans "documents" avec le titre « Arrêt fictif d’entraînement ». Questions : rejet ou cassation et indices · demandeur au pourvoi · procédure (confirmatif/infirmatif) · problème de droit · solution et motifs.' };
+      if (/^eco/.test(sec)) return { nom: 'économie', p1: N,
+        p2: 'PARTIE ARGUMENTATION : une question d’économie appuyée sur 2 courts documents que tu rédiges dans "documents" (uniquement avec des faits et chiffres présents dans le cours). Barème : « Idée » · « Mécanisme économique expliqué pas à pas » · « Exemple ou chiffre du cours » pour chaque argument, plus « Vocabulaire précis ».' };
+      if (/^(management|mgmt1|sdgn)/.test(sec)) return { nom: 'management', p1: N,
+        p2: 'PARTIE ÉTUDE DE CAS : décris dans "documents" une organisation (12 à 18 lignes : activité, taille, finalité, ressources, problème rencontré). Questions dans l’ordre attendu : identifier l’organisation · mobiliser la notion du cours · l’appliquer au cas · nuancer (avantages ET limites). Barème par question : « Notion du cours » · « Application au cas » · « Nuance ».' };
+      if (/^gf/.test(sec)) return { nom: 'gestion et finance', p1: N,
+        p2: 'PARTIE EXERCICES CHIFFRÉS : donne toutes les données dans "documents" (nombres RONDS, faciles à vérifier). Chaque question demande un calcul du cours. Barème : « Formule » · « Calcul posé » · « Résultat et interprétation ». Dans le corrigé, pose chaque calcul étape par étape et VÉRIFIE chaque résultat deux fois.' };
+      if (/^maths/.test(sec)) return { nom: 'mathématiques', p1: 'PARTIE AUTOMATISMES : questions courtes de cours et de calcul (formule à connaître, application directe). Barème : « Méthode » · « Résultat ».',
+        p2: 'PARTIE EXERCICES : exercices progressifs avec nombres RONDS. Barème : « Méthode » · « Calcul » · « Conclusion rédigée ». Corrigé étape par étape, chaque résultat vérifié deux fois. Pas de LaTeX : fractions a/b, puissances avec ^.' };
+      if (/^philo/.test(sec)) return { nom: 'philosophie', p1: 'PARTIE DISTINCTIONS : pour chaque notion imposée, définition, exemple et distinction avec la notion voisine. Barème : 0,5 · 0,5 · 0,5.',
+        p2: 'PARTIE RÉDIGÉE : un sujet de réflexion lié aux notions. On attend l’introduction entièrement rédigée (amorce, définitions, problématique, annonce) et le plan détaillé. Barème : « Définition des termes » · « Problématique » · « Plan avec arguments et références du cours » · « Exemple analysé ». Le corrigé donne une introduction modèle et le plan.' };
+      if (/^(anglais|espagnol)/.test(sec)) return { nom: 'langue', p1: 'PARTIE LANGUE : questions de grammaire et de vocabulaire du cours (phrases à compléter, à traduire, à corriger). Barème : « Forme correcte » · « Règle expliquée ».',
+        p2: 'PARTIE COMPRÉHENSION ET EXPRESSION : un texte court (10 à 14 lignes) dans la langue, placé dans "documents", puis des questions de compréhension et un sujet d’expression de 10 lignes. Barème : « Compréhension » · « Correction de la langue » · « Richesse du vocabulaire ». Les consignes sont en français, le texte dans la langue.' };
+      return { nom: 'histoire-géographie / EMC', p1: N,
+        p2: 'PARTIE QUESTION PROBLÉMATISÉE : une question qui demande une réponse organisée. Barème : « Introduction et problématique » · « Arguments datés et localisés » · « Conclusion ». Le corrigé donne le plan, les dates et les acteurs exacts du cours.' };
+    }
+
+    // ---------- matière, fiches, notions ----------
+    function sections(){ return Array.prototype.slice.call(document.querySelectorAll('section.matiere')).filter(function(s){ return s.id !== 'bac' && s.querySelector('details.fiche'); }); }
+    function secTitre(id){ const s = document.getElementById(id), h = s && s.querySelector('h2'); return h ? h.textContent.trim() : id; }
+    function fichesDe(id){ const s = document.getElementById(id); return s ? Array.prototype.slice.call(s.querySelectorAll('details.fiche')) : []; }
+    function notionsDe(f){
+      const out = [];
+      f.querySelectorAll('table').forEach(function(t){ const th = t.querySelector('th'); if (!th || !/^notion/i.test(th.textContent.trim())) return;
+        t.querySelectorAll('tbody tr').forEach(function(tr){ const c = tr.querySelector('td'); if (c) out.push(c.textContent.trim()); }); });
+      if (out.length < 4) f.querySelectorAll('dl.defs dt').forEach(function(dt){ const v = dt.textContent.trim(); if (v && out.indexOf(v) === -1) out.push(v); });
+      return out.filter(function(v){ return v.length > 2 && v.length < 70; });
+    }
+    function condense(f, max){
+      const blocs = [];
+      f.querySelectorAll('table').forEach(function(t){ const th = t.querySelector('th'); if (th && /^notion/i.test(th.textContent.trim())) t.querySelectorAll('tbody tr').forEach(function(tr){ blocs.push(Array.prototype.map.call(tr.children, function(c){ return c.textContent.trim(); }).join(' | ')); }); });
+      f.querySelectorAll('.box.retenir p:not(.box-t)').forEach(function(p){ blocs.push('À RETENIR : ' + p.textContent.trim()); });
+      let txt = blocs.join('\n');
+      if (txt.length < max){ const tout = (f.querySelector('.f-body') || f).textContent.replace(/\s+/g, ' '); txt = (txt + '\nCOURS : ' + tout).slice(0, max); }
+      return txt.slice(0, max);
+    }
+    // taux d'échec par fiche d'après les exercices déjà faits (0 = rien vu → neutre 0,5)
+    function faiblesse(fid){
+      const qs = (typeof BY_CHAP !== 'undefined' && BY_CHAP[fid]) || []; let vu = 0, bon = 0;
+      qs.forEach(function(q){ const s = stats[q.qid]; if (s && s.vu){ vu += s.vu; bon += s.bon; } });
+      return vu ? 1 - bon / vu : 0.5;
+    }
+    function tirer(arr, n, poids){
+      const pool = arr.slice(), out = [];
+      while (pool.length && out.length < n){
+        const w = pool.map(function(x){ return Math.max(0.05, poids ? poids(x) : 1); }), tot = w.reduce(function(a, b){ return a + b; }, 0);
+        let r = Math.random() * tot, i = 0; for (; i < pool.length - 1; i++){ r -= w[i]; if (r <= 0) break; }
+        out.push(pool.splice(i, 1)[0]);
+      }
+      return out;
+    }
+
+    // ---------- appel IA : JSON strict, une relance automatique si quota ----------
+    // Le palier gratuit de Groq limite les jetons par minute : chaque appel reste petit, et si le quota est atteint
+    // on attend le délai annoncé par l'API (ou 30 s) avant de relancer — jusqu'à 3 essais.
+    async function iaJson(sys, user, maxTok, onWait){
+      for (let essai = 0; essai < 3; essai++){
+        try {
+          const brut = await iaStream([{ role: 'system', content: sys }, { role: 'user', content: user }], null,
+            { extras: { response_format: { type: 'json_object' }, max_completion_tokens: maxTok } });
+          return JSON.parse(brut.slice(brut.indexOf('{'), brut.lastIndexOf('}') + 1));
+        } catch(e){
+          if (e.message === 'QUOTA' && essai < 2){
+            const m = /try again in (?:(\d+)m)?([\d.]+)s/i.exec(e.detail || ''); let att = m ? Math.ceil((+m[1] || 0) * 60 + parseFloat(m[2])) + 2 : 30; att = Math.min(90, Math.max(5, att));
+            for (let sec = att; sec > 0; sec--){ if (onWait) onWait(sec); await new Promise(function(r){ setTimeout(r, 1000); }); }
+            continue;
+          }
+          if (e instanceof SyntaxError){ if (essai < 1) continue; throw new Error('JSON'); }
+          throw e;
+        }
+      }
+      throw new Error('QUOTA');
+    }
+    const num = function(v){ const n = typeof v === 'number' ? v : parseFloat(String(v).replace(',', '.')); return isFinite(n) && n > 0 ? Math.round(n * 4) / 4 : 0; };
+    function nettoiePartie(p, cible){
+      if (!p || !Array.isArray(p.questions)) return null;
+      const qs = [];
+      p.questions.forEach(function(q){
+        if (!q || typeof q.enonce !== 'string' || q.enonce.trim().length < 8 || typeof q.corrige !== 'string' || q.corrige.trim().length < 8) return;
+        let bar = (Array.isArray(q.bareme) ? q.bareme : []).map(function(b){ return { critere: String((b && b.critere) || '').slice(0, 140), points: num(b && b.points) }; }).filter(function(b){ return b.critere && b.points; });
+        let pts = num(q.points);
+        const somme = bar.reduce(function(a, b){ return a + b.points; }, 0);
+        if (!bar.length){ if (!pts) pts = 1; bar = [{ critere: 'Réponse conforme au corrigé', points: pts }]; }
+        else pts = somme;                                   // le barème fait foi : la question vaut la somme de ses critères
+        qs.push({ tag: String(q.tag || '').slice(0, 60), enonce: q.enonce.trim(), points: pts, bareme: bar, corrige: q.corrige.trim() });
+      });
+      if (!qs.length) return null;
+      // remise à l'échelle sur le total visé (au quart de point), sans toucher aux proportions
+      const tot = qs.reduce(function(a, q){ return a + q.points; }, 0);
+      if (cible && Math.abs(tot - cible) > 0.01){
+        const k = cible / tot, crit = [];
+        qs.forEach(function(q){ q.bareme.forEach(function(b){ b.points = Math.max(0.25, Math.round(b.points * k * 4) / 4); crit.push(b); }); });
+        // l'arrondi au quart de point décale le total : on rend ou on reprend des quarts, en commençant par les plus gros critères
+        let reste = Math.round((cible - crit.reduce(function(a, b){ return a + b.points; }, 0)) * 4);
+        const ordre = crit.slice().sort(function(a, b){ return b.points - a.points; });
+        for (let i = 0, garde = 0; reste !== 0 && garde < 400; i = (i + 1) % ordre.length, garde++){
+          if (reste > 0){ ordre[i].points += 0.25; reste--; } else if (ordre[i].points > 0.25){ ordre[i].points -= 0.25; reste++; }
+        }
+        qs.forEach(function(q){ q.points = q.bareme.reduce(function(a, b){ return a + b.points; }, 0); });
+      }
+      const docs = (Array.isArray(p.documents) ? p.documents : []).filter(function(d){ return d && typeof d.texte === 'string' && d.texte.trim(); })
+        .map(function(d){ return { titre: String(d.titre || 'Document').slice(0, 120), texte: d.texte.trim() }; });
+      return { titre: String(p.titre || 'Partie').slice(0, 120), consigne: String(p.consigne || '').slice(0, 600), duree_min: Math.round(num(p.duree_min)) || 0, documents: docs, questions: qs };
+    }
+
+    async function generer(cfg, etat){
+      const F = FORMATS[cfg.format], pr = profil(cfg.sec), fs = cfg.fiches.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+      if (!fs.length) throw new Error('AUCUNE_FICHE');
+      const tagsVus = (load(K_TAGS, {})[cfg.sec] || []).map(function(t){ return t.toLowerCase(); });
+      // 1) l'app choisit les notions : jamais celles des derniers DS tant qu'il en reste, chapitres faibles plus probables
+      const toutes = []; fs.forEach(function(f){ notionsDe(f).forEach(function(n){ toutes.push({ n: n, f: f.id }); }); });
+      const neuves = toutes.filter(function(x){ return tagsVus.indexOf(x.n.toLowerCase()) === -1; });
+      const nbNotions = cfg.format === 'court' ? 3 : 6;
+      const base = neuves.length >= nbNotions ? neuves : toutes;
+      const imposees = tirer(base, nbNotions, function(x){ return cfg.faibles ? 0.4 + faiblesse(x.f) : 1; }).map(function(x){ return x.n; });
+      const parFiche = Math.max(700, Math.floor(6000 / fs.length));   // ≈ 1 800 jetons de cours : l'appel entier tient sous la limite gratuite
+      const cours = fs.map(function(f){ const m = FICHE_META[f.id] || {}; return '### ' + (m.num || '') + ' ' + (m.title || f.id) + '\n' + condense(f, parFiche); }).join('\n\n');
+      const decor = tirer(CONTEXTES, 2).join(' ; ') + ' — prénoms à utiliser : ' + tirer(PRENOMS, 4).join(', ');
+      const sys = 'Tu es professeur de ' + pr.nom + ' en lycée (série STMG, France) et tu rédiges un devoir surveillé. Tu réponds UNIQUEMENT par un objet JSON valide, sans texte autour ni balise de code. ' +
+        'RÈGLES : le COURS fourni est ta SEULE source — aucune notion, date, chiffre, article de loi ou jurisprudence qui n’y figure pas. Niveau et formulations d’un vrai DS de lycée. Français, nombres à la française, jamais de LaTeX. ' +
+        'Chaque question a un "tag" (2 à 5 mots : la notion ou la situation évaluée), des "points", un "bareme" (liste de critères dont la somme = points) et un "corrige" complet, rédigé comme la copie attendue.';
+      const forme = 'Format STRICT : {"titre":"…","parties":[{"titre":"…","duree_min":30,"consigne":"…","documents":[{"titre":"…","texte":"…"}],"questions":[{"tag":"…","enonce":"…","points":1.5,"bareme":[{"critere":"…","points":0.5}],"corrige":"…"}]}]}';
+      const eviter = tagsVus.length ? '\nDÉJÀ TOMBÉ dans ses DS précédents (interdit de reprendre ces notions ou ces situations, change d’angle) : ' + tagsVus.slice(-30).join(' · ') : '';
+      const commun = 'Matière : ' + secTitre(cfg.sec) + '. Chapitres : ' + fs.map(function(f){ return (FICHE_META[f.id] || {}).num || f.id; }).join(', ') + '.\nDécor imposé pour varier les sujets : ' + decor + '.' + eviter + '\n\nCOURS :\n' + cours + '\n\n' + forme;
+      const parties = []; let titre = '';
+      const attente = function(sec){ etat('Quota gratuit de l’IA atteint : je reprends dans ' + sec + ' s…'); };
+      if (cfg.format === 'court'){
+        etat('J’écris ton DS court…');
+        const j = await iaJson(sys, 'Rédige un DS COURT de ' + F.duree + ' minutes noté sur ' + F.total + ', en DEUX parties.\nPartie 1 (' + (F.total * 0.45) + ' points) — ' + pr.p1 + ' Notions IMPOSÉES (exactement celles-ci, une question par notion) : ' + imposees.join(' ; ') + '.\nPartie 2 (' + (F.total * 0.55) + ' points) — ' + pr.p2 + ' Une ou deux questions.\n' + commun, 4800, attente);
+        const brutes = (j.parties || []).map(function(p){ return nettoiePartie(p, 0); }).filter(Boolean);
+        if (brutes.length === 1){ const c = nettoiePartie(brutes[0], F.total); if (c) parties.push(c); }
+        else brutes.slice(0, 2).forEach(function(p, i){ const c = nettoiePartie(p, i === 0 ? F.total * 0.45 : F.total * 0.55); if (c) parties.push(c); });
+        titre = j.titre;
+      } else {
+        const avecArret = cfg.format === 'blanc' && !!pr.p3, d1 = F.duree / 2, ptsCas = avecArret ? 6 : 10;
+        etat('Passe 1 : les notions de cours…');
+        const j1 = await iaJson(sys, 'Rédige la PARTIE 1 d’un ' + F.nom + ' (' + d1 + ' minutes, 10 points) dans "parties" (une seule partie).\n' + pr.p1 + ' Notions IMPOSÉES (exactement celles-ci, une question par notion) : ' + imposees.join(' ; ') + '.\nComplète à 10 points avec UNE question de cours différente (classement, éléments à remettre en ordre, vrai/faux justifié).\n' + commun, 4800, attente);
+        const c1 = nettoiePartie((j1.parties || [])[0], 10); if (c1) parties.push(c1);
+        titre = j1.titre;
+        const dejaP1 = c1 ? c1.questions.map(function(q){ return q.tag; }).filter(Boolean).join(' · ') : '';
+        etat('Passe 2 : les études de cas…');
+        const j2 = await iaJson(sys, 'Rédige la PARTIE 2 d’un ' + F.nom + ' (' + (avecArret ? Math.round(d1 * 0.6) : d1) + ' minutes, ' + ptsCas + ' points) dans "parties" (une seule partie).\n' + pr.p2 +
+          '\nNe réutilise pas les notions de la partie 1 (' + dejaP1 + ') : fais travailler d’AUTRES règles du cours. ' + (cfg.format === 'blanc' ? 'Deux situations distinctes, 2 questions chacune.' : 'Une situation, 3 questions.') + '\n' + commun, 4800, attente);
+        const c2 = nettoiePartie((j2.parties || [])[0], ptsCas); if (c2) parties.push(c2);
+        if (avecArret){
+          etat('Passe 3 : l’arrêt à analyser…');
+          const dejaP2 = c2 ? c2.questions.map(function(q){ return q.tag; }).filter(Boolean).join(' · ') : '';
+          const j3 = await iaJson(sys, 'Rédige la PARTIE 3 d’un ' + F.nom + ' (' + Math.round(d1 * 0.4) + ' minutes, 4 points) dans "parties" (une seule partie).\n' + pr.p3 + '\nChoisis une règle du cours qui n’a pas encore servi (déjà utilisé : ' + dejaP1 + ' · ' + dejaP2 + ').\n' + commun, 4200, attente);
+          const c3 = nettoiePartie((j3.parties || [])[0], 4); if (c3) parties.push(c3);
+        }
+      }
+      if (!parties.length || parties.reduce(function(a, p){ return a + p.questions.length; }, 0) < 2) throw new Error('SUJET_VIDE');
+      let n = 0; parties.forEach(function(p){ p.questions.forEach(function(q){ n++; q.id = 'q' + n; }); });
+      const total = parties.reduce(function(a, p){ return a + p.questions.reduce(function(x, q){ return x + q.points; }, 0); }, 0);
+      return { id: 'ds' + Date.now(), date: new Date().toISOString(), sec: cfg.sec, fiches: cfg.fiches, format: cfg.format, duree: F.duree,
+        titre: String(titre || (F.nom + ' — ' + secTitre(cfg.sec))).slice(0, 140), total: Math.round(total * 4) / 4, parties: parties };
+    }
+
+    // ---------- état courant ----------
+    let cur = load(K_CUR, null), tick = null;
+    function saveCur(){ save(K_CUR, cur); }
+    function el(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
+    function btn(txt, cls, fn){ const b = el('button', cls, txt); b.type = 'button'; b.addEventListener('click', fn); return b; }
+    function fmtPts(n){ return String(Math.round(n * 100) / 100).replace('.', ','); }
+    function paras(parent, txt, cls){ String(txt).split(/\n+/).forEach(function(l){ l = l.trim(); if (l) parent.appendChild(el('p', cls, l)); }); }
+    function elapsed(){ if (!cur) return 0; return cur.elapsed + (cur.runningSince ? (Date.now() - cur.runningSince) / 1000 : 0); }
+    function fmtT(s){ s = Math.max(0, Math.floor(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+
+    // ---------- accueil ----------
+    function accueil(){
+      clearInterval(tick); root.textContent = '';
+      const head = el('div', 'ds-head'); head.appendChild(el('h2', null, '📝 DS et DS blancs'));
+      head.appendChild(el('p', 'ds-lede', 'Un sujet différent à chaque fois, écrit à partir de TES fiches, au format de tes profs, avec le barème et le corrigé. L’app choisit les notions (jamais celles de tes derniers DS, et plus souvent tes chapitres faibles) ; l’IA rédige.'));
+      root.appendChild(head);
+      if (cur && cur.ds){ const r = el('div', 'ds-card ds-resume'); r.appendChild(el('strong', null, (cur.phase === 'corrige' ? 'Correction en cours : ' : 'DS en cours : ') + cur.ds.titre));
+        const a = el('div', 'ds-acts'); a.appendChild(btn('Reprendre', 'ok', function(){ cur.phase === 'corrige' ? correction() : epreuve(); })); a.appendChild(btn('Abandonner', null, function(){ if (confirm('Abandonner ce DS ? Il ne sera pas enregistré.')){ cur = null; saveCur(); accueil(); } })); r.appendChild(a); root.appendChild(r); }
+      if (!iaKey()){ const k = el('div', 'ds-card'); k.appendChild(el('p', null, 'Il faut une clé IA gratuite (Groq) pour écrire des sujets inédits. C’est la même que pour le Coach IA : 2 minutes à configurer, elle reste sur ton appareil.'));
+        k.appendChild(btn('⚙️ Configurer l’IA', 'ok', function(){ openIaModal(); const t = setInterval(function(){ if (!document.getElementById('ia-modal')){ clearInterval(t); accueil(); } }, 400); })); root.appendChild(k); }
+
+      // suggestion d'après les prochaines évaluations
+      const ech = load('stmg-echeances', null), now = Date.now();
+      const prochains = ((ech && ech.items) || []).filter(function(it){ return (it.kind === 'ds' || it.kind === 'controle') && Array.isArray(it.chapitre) && it.chapitre.length && new Date(it.due + 'T' + (it.time || '23:59')).getTime() > now; })
+        .sort(function(a, b){ return a.due < b.due ? -1 : 1; }).slice(0, 2);
+      prochains.forEach(function(it){
+        const ids = []; let sec = null;
+        it.chapitre.forEach(function(c){ const t = document.getElementById(c); if (!t) return; const s = t.matches('section.matiere') ? t : t.closest('section.matiere'); if (!s || s.id === 'bac') return; if (!sec) sec = s.id; if (s.id !== sec) return;
+          if (t.matches('details.fiche')) ids.push(t.id); else fichesDe(s.id).forEach(function(f){ ids.push(f.id); }); });
+        if (!sec || !ids.length) return;
+        const j = Math.round((new Date(it.due + 'T00:00').getTime() - new Date().setHours(0, 0, 0, 0)) / 864e5);
+        const c = el('div', 'ds-card ds-sugg'); c.appendChild(el('div', 'ds-kicker', 'Conseillé · ' + (j <= 0 ? 'aujourd’hui' : j === 1 ? 'demain' : 'dans ' + j + ' jours')));
+        c.appendChild(el('strong', null, it.title));
+        const a = el('div', 'ds-acts');
+        a.appendChild(btn('DS court dessus', null, function(){ lancer({ sec: sec, fiches: tirer(ids, Math.min(2, ids.length), function(f){ return 0.4 + faiblesse(f); }), format: 'court', faibles: true }); }));
+        a.appendChild(btn('DS blanc complet', 'ok', function(){ lancer({ sec: sec, fiches: ids, format: j <= 3 ? 'blanc' : 'ds', faibles: true }); }));
+        c.appendChild(a); root.appendChild(c);
+      });
+
+      // formulaire
+      const form = el('div', 'ds-card'); form.appendChild(el('h3', null, 'Composer mon DS'));
+      const selSec = el('select', 'ds-select'); sections().forEach(function(s){ const o = el('option', null, secTitre(s.id)); o.value = s.id; selSec.appendChild(o); });
+      const last = load('stmg-ds-last', null); if (last && document.getElementById(last.sec)) selSec.value = last.sec;
+      form.appendChild(el('label', 'ds-lab', 'Matière')); form.appendChild(selSec);
+      form.appendChild(el('label', 'ds-lab', 'Chapitres'));
+      const boxF = el('div', 'ds-fiches'); form.appendChild(boxF);
+      function majFiches(){ boxF.textContent = '';
+        const tous = btn('Tout cocher / décocher', 'ds-mini', function(){ const cb = boxF.querySelectorAll('input'); const on = Array.prototype.some.call(cb, function(c){ return !c.checked; }); cb.forEach(function(c){ c.checked = on; }); });
+        boxF.appendChild(tous);
+        fichesDe(selSec.value).forEach(function(f){ const m = FICHE_META[f.id] || {}, l = el('label', 'ds-chk'), c = el('input'); c.type = 'checkbox'; c.value = f.id; c.checked = true;
+          const w = faiblesse(f.id); l.appendChild(c); l.appendChild(el('span', null, (m.num ? m.num + ' — ' : '') + (m.title || f.id))); if (w > 0.55) l.appendChild(el('em', 'ds-weak', 'point faible')); boxF.appendChild(l); }); }
+      selSec.addEventListener('change', majFiches); majFiches();
+      form.appendChild(el('label', 'ds-lab', 'Format'));
+      const boxFmt = el('div', 'ds-formats'); let fmt = (last && FORMATS[last.format]) ? last.format : 'court';
+      Object.keys(FORMATS).forEach(function(k){ const b = btn('', 'ds-fmt' + (k === fmt ? ' active' : ''), function(){ fmt = k; boxFmt.querySelectorAll('.ds-fmt').forEach(function(x){ x.classList.toggle('active', x === b); }); });
+        b.appendChild(el('strong', null, FORMATS[k].nom)); b.appendChild(el('span', null, FORMATS[k].desc)); boxFmt.appendChild(b); });
+      form.appendChild(boxFmt);
+      const lw = el('label', 'ds-chk'), cw = el('input'); cw.type = 'checkbox'; cw.checked = true; lw.appendChild(cw); lw.appendChild(el('span', null, 'Insister sur mes points faibles (d’après mes exercices)')); form.appendChild(lw);
+      const go = btn('Générer mon DS', 'ok ds-go', function(){
+        const ids = Array.prototype.map.call(boxF.querySelectorAll('input:checked'), function(c){ return c.value; });
+        if (!ids.length){ msg.textContent = 'Coche au moins un chapitre.'; return; }
+        if (!iaKey()){ msg.textContent = 'Configure d’abord la clé IA (bouton ci-dessus).'; return; }
+        lancer({ sec: selSec.value, fiches: ids, format: fmt, faibles: cw.checked });
+      });
+      const msg = el('p', 'ds-msg'); form.appendChild(go); form.appendChild(msg); root.appendChild(form);
+
+      // historique
+      const hist = load(K_HIST, []);
+      if (hist.length){ const h = el('div', 'ds-card'); h.appendChild(el('h3', null, 'Mes DS passés'));
+        const moy = hist.filter(function(x){ return typeof x.note20 === 'number'; }); if (moy.length) h.appendChild(el('p', 'ds-lede', moy.length + ' DS notés · moyenne ' + fmtPts(moy.reduce(function(a, x){ return a + x.note20; }, 0) / moy.length) + '/20'));
+        const ul = el('ul', 'ds-hist'); hist.slice(0, 12).forEach(function(x){ const li = el('li');
+          const d = new Date(x.date); li.appendChild(el('span', 'ds-h-note', typeof x.note20 === 'number' ? fmtPts(x.note20) + '/20' : '—'));
+          const m = el('div', 'ds-h-main'); m.appendChild(el('strong', null, x.titre)); m.appendChild(el('span', null, secTitre(x.sec) + ' · ' + FORMATS[x.format].nom + ' · ' + d.getDate() + '/' + (d.getMonth() + 1) + (x.faible ? ' · à retravailler : ' + x.faible : ''))); li.appendChild(m);
+          li.appendChild(btn('Revoir', 'ds-mini', function(){ cur = { ds: x.ds, phase: 'corrige', checks: x.checks || {}, answers: {}, elapsed: x.temps || 0, runningSince: null, archive: true }; correction(); }));
+          li.appendChild(btn('Un autre', 'ds-mini', function(){ lancer({ sec: x.sec, fiches: x.fiches, format: x.format, faibles: true }); }));
+          ul.appendChild(li); }); h.appendChild(ul); root.appendChild(h); }
+    }
+
+    async function lancer(cfg){
+      if (!iaKey()){ accueil(); return; }
+      save('stmg-ds-last', { sec: cfg.sec, format: cfg.format });
+      clearInterval(tick); root.textContent = '';
+      const w = el('div', 'ds-card ds-wait'); w.appendChild(el('div', 'ds-spin')); const t = el('p', null, 'Je relis tes fiches…'); w.appendChild(t);
+      w.appendChild(el('p', 'ds-lede', cfg.format === 'court' ? 'Compte 20 à 40 secondes.' : 'Un DS complet s’écrit en plusieurs passes. Avec une clé gratuite, l’IA impose parfois une minute d’attente entre deux passes : laisse tourner, ça reprend tout seul.')); root.appendChild(w); window.scrollTo(0, 0);
+      try {
+        const ds = await generer(cfg, function(m){ t.textContent = m; });
+        cur = { ds: ds, phase: 'epreuve', checks: {}, answers: {}, elapsed: 0, runningSince: Date.now() }; saveCur();
+        const tags = load(K_TAGS, {}); const liste = (tags[cfg.sec] || []).concat(ds.parties.reduce(function(a, p){ return a.concat(p.questions.map(function(q){ return q.tag; })); }, []).filter(Boolean));
+        tags[cfg.sec] = liste.slice(-60); save(K_TAGS, tags);
+        snd.good(); epreuve();
+      } catch(e){
+        root.textContent = ''; const c = el('div', 'ds-card');
+        c.appendChild(el('p', null, '⚠️ ' + (e.message === 'JSON' || e.message === 'SUJET_VIDE' ? 'L’IA a rendu un sujet illisible. Relance : le tirage sera différent.' : e.message === 'AUCUNE_FICHE' ? 'Aucun chapitre trouvé.' : iaErreur(e))));
+        const a = el('div', 'ds-acts'); a.appendChild(btn('Réessayer', 'ok', function(){ lancer(cfg); })); a.appendChild(btn('Retour', null, accueil)); c.appendChild(a); root.appendChild(c);
+      }
+    }
+
+    // ---------- épreuve ----------
+    function sujetDom(avecCorrige){
+      const wrap = el('div', 'ds-sujet'), ds = cur.ds;
+      ds.parties.forEach(function(p, pi){
+        const sec = el('section', 'ds-partie'); const pts = p.questions.reduce(function(a, q){ return a + q.points; }, 0);
+        sec.appendChild(el('h3', null, 'Partie ' + (pi + 1) + ' — ' + p.titre + ' (' + (p.duree_min ? p.duree_min + ' min · ' : '') + fmtPts(pts) + ' pts)'));
+        if (p.consigne) paras(sec, p.consigne, 'ds-consigne');
+        p.documents.forEach(function(d){ const b = el('div', 'ds-doc'); b.appendChild(el('strong', null, d.titre)); paras(b, d.texte); sec.appendChild(b); });
+        p.questions.forEach(function(q){
+          const qd = el('div', 'ds-q'); qd.dataset.q = q.id;
+          const t = el('div', 'ds-q-t'); t.appendChild(el('span', 'ds-q-n', q.id.slice(1) + '.')); const en = el('div', 'ds-q-e'); paras(en, q.enonce); t.appendChild(en); t.appendChild(el('span', 'ds-q-p', fmtPts(q.points) + ' pt' + (q.points > 1 ? 's' : ''))); qd.appendChild(t);
+          if (!avecCorrige){
+            const ta = el('textarea', 'ds-ans'); ta.placeholder = 'Facultatif : tape ta réponse ici si tu veux que l’IA la corrige. Sinon, compose sur feuille comme au vrai DS.'; ta.value = cur.answers[q.id] || '';
+            ta.addEventListener('input', function(){ cur.answers[q.id] = ta.value; saveCur(); }); qd.appendChild(ta);
+          } else {
+            if (cur.answers[q.id]){ const m = el('div', 'ds-mine'); m.appendChild(el('strong', null, 'Ta réponse')); paras(m, cur.answers[q.id]); qd.appendChild(m); }
+            const c = el('div', 'ds-corr'); c.appendChild(el('strong', null, 'Corrigé')); paras(c, q.corrige); qd.appendChild(c);
+            const bar = el('div', 'ds-bar');
+            q.bareme.forEach(function(b, bi){ const k = q.id + '/' + bi, l = el('label', 'ds-chk'), cb = el('input'); cb.type = 'checkbox'; cb.checked = !!cur.checks[k]; cb.disabled = !!cur.archive;
+              cb.addEventListener('change', function(){ cur.checks[k] = cb.checked; saveCur(); majNote(); }); l.appendChild(cb); l.appendChild(el('span', null, b.critere)); l.appendChild(el('em', null, fmtPts(b.points))); bar.appendChild(l); });
+            qd.appendChild(bar);
+            if (cur.answers[q.id] && !cur.archive){ const out = el('p', 'ds-ia-out'); const bIa = btn('🤖 Faire corriger ma réponse par l’IA', 'ds-mini', async function(){
+                bIa.disabled = true; out.textContent = 'Correction en cours…';
+                try { const r = await iaJson('Tu corriges la copie d’un lycéen de STMG avec bienveillance et exigence. Tu réponds UNIQUEMENT en JSON : {"criteres":[true,false,…],"commentaire":"2 à 4 phrases : ce qui est acquis, ce qui manque, comment le dire"} — un booléen par critère du barème, dans l’ordre, true seulement si le critère est réellement satisfait.',
+                    'QUESTION : ' + q.enonce + '\nBARÈME : ' + q.bareme.map(function(b, i){ return (i + 1) + ') ' + b.critere + ' (' + b.points + ')'; }).join(' ; ') + '\nCORRIGÉ DE RÉFÉRENCE : ' + q.corrige + '\nRÉPONSE DE L’ÉLÈVE : ' + cur.answers[q.id], 900);
+                  (Array.isArray(r.criteres) ? r.criteres : []).slice(0, q.bareme.length).forEach(function(v, bi){ cur.checks[q.id + '/' + bi] = v === true; });
+                  saveCur(); bar.querySelectorAll('input').forEach(function(cb, bi){ cb.checked = !!cur.checks[q.id + '/' + bi]; }); majNote();
+                  out.textContent = '🤖 ' + String(r.commentaire || 'Barème coché d’après ta réponse : vérifie et ajuste.');
+                } catch(e){ out.textContent = '⚠️ ' + (e.message === 'JSON' ? 'Correction illisible, réessaie.' : iaErreur(e)); }
+                bIa.disabled = false; });
+              qd.appendChild(bIa); qd.appendChild(out); }
+          }
+          sec.appendChild(qd);
+        });
+        wrap.appendChild(sec);
+      });
+      return wrap;
+    }
+    function sujetTexte(){ const ds = cur.ds; let s = ds.titre + ' — ' + ds.duree + ' min — /' + fmtPts(ds.total) + '\n';
+      ds.parties.forEach(function(p, i){ s += '\nPARTIE ' + (i + 1) + ' — ' + p.titre + '\n' + (p.consigne ? p.consigne + '\n' : ''); p.documents.forEach(function(d){ s += '\n[' + d.titre + ']\n' + d.texte + '\n'; });
+        p.questions.forEach(function(q){ s += '\n' + q.id.slice(1) + '. ' + q.enonce + ' (' + fmtPts(q.points) + ' pt)\n'; }); }); return s; }
+
+    function epreuve(){
+      clearInterval(tick); root.textContent = ''; cur.phase = 'epreuve'; saveCur();
+      const bar = el('div', 'ds-top'); const ti = el('div', 'ds-title'); ti.appendChild(el('strong', null, cur.ds.titre)); ti.appendChild(el('span', null, FORMATS[cur.ds.format].nom + ' · ' + cur.ds.duree + ' min · /' + fmtPts(cur.ds.total)));
+      const tm = el('div', 'ds-timer'); const tv = el('b', null, ''); const tp = btn('⏸', 'ds-mini', function(){ if (cur.runningSince){ cur.elapsed = elapsed(); cur.runningSince = null; } else cur.runningSince = Date.now(); saveCur(); maj(); });
+      tm.appendChild(tv); tm.appendChild(tp); bar.appendChild(ti); bar.appendChild(tm); root.appendChild(bar);
+      function maj(){ const rest = cur.ds.duree * 60 - elapsed(); tv.textContent = rest >= 0 ? fmtT(rest) : '+' + fmtT(-rest); tm.classList.toggle('over', rest < 0); tm.classList.toggle('soon', rest >= 0 && rest < 300); tp.textContent = cur.runningSince ? '⏸' : '▶'; }
+      maj(); tick = setInterval(maj, 1000);
+      root.appendChild(el('p', 'ds-lede', 'Conditions réelles : sans fiches, sur feuille. Le corrigé et le barème n’apparaissent qu’à la fin.'));
+      root.appendChild(sujetDom(false));
+      const a = el('div', 'ds-acts ds-end');
+      a.appendChild(btn('Copier le sujet', null, function(){ const t = sujetTexte(); (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ info.textContent = 'Sujet copié.'; }, function(){ info.textContent = 'Copie impossible sur cet appareil.'; }); }));
+      a.appendChild(btn('Imprimer le sujet', null, function(){
+        const old = document.getElementById('ds-print'); if (old) old.remove();
+        const pr = el('div'); pr.id = 'ds-print'; pr.appendChild(el('h1', null, cur.ds.titre)); pr.appendChild(el('p', null, FORMATS[cur.ds.format].nom + ' · ' + cur.ds.duree + ' min · /' + fmtPts(cur.ds.total) + ' · Nom : ……………………'));
+        const copie = sujetDom(false); copie.querySelectorAll('textarea').forEach(function(t){ t.remove(); }); pr.appendChild(copie); document.body.appendChild(pr);
+        document.body.classList.add('ds-printing');
+        const fin = function(){ document.body.classList.remove('ds-printing'); pr.remove(); window.removeEventListener('afterprint', fin); };
+        window.addEventListener('afterprint', fin); try { window.print(); } catch(e){ fin(); info.textContent = 'Impression indisponible ici : utilise « Copier le sujet ».'; } setTimeout(fin, 120000); }));
+      a.appendChild(btn('J’ai fini → corrigé et barème', 'ok', function(){ if (!confirm('Afficher le corrigé ? Le chrono s’arrête et tu ne pourras plus composer.')) return; cur.elapsed = elapsed(); cur.runningSince = null; correction(); }));
+      const info = el('p', 'ds-msg'); root.appendChild(a); root.appendChild(info); window.scrollTo(0, 0);
+    }
+
+    // ---------- correction ----------
+    let majNote = function(){};
+    function correction(){
+      clearInterval(tick); root.textContent = ''; cur.phase = 'corrige'; if (!cur.archive) saveCur();
+      const ds = cur.ds, top = el('div', 'ds-top'); const ti = el('div', 'ds-title'); ti.appendChild(el('strong', null, ds.titre)); ti.appendChild(el('span', null, 'Correction · coche chaque critère que ta copie remplit vraiment'));
+      const nt = el('div', 'ds-note'); const nv = el('b'); const ns = el('span'); nt.appendChild(nv); nt.appendChild(ns); top.appendChild(ti); top.appendChild(nt); root.appendChild(top);
+      const synth = el('p', 'ds-lede');
+      majNote = function(){
+        let pts = 0; const manq = {};
+        ds.parties.forEach(function(p){ p.questions.forEach(function(q){ q.bareme.forEach(function(b, bi){ if (cur.checks[q.id + '/' + bi]) pts += b.points; else { const k = b.critere.split(/[:(—]/)[0].trim().toLowerCase(); manq[k] = (manq[k] || 0) + b.points; } }); }); });
+        const n20 = ds.total ? Math.round(pts / ds.total * 20 * 4) / 4 : 0;
+        nv.textContent = fmtPts(pts) + '/' + fmtPts(ds.total); ns.textContent = ds.total === 20 ? '' : '≈ ' + fmtPts(n20) + '/20';
+        const pire = Object.keys(manq).sort(function(a, b){ return manq[b] - manq[a]; })[0];
+        synth.textContent = pire && pts < ds.total ? 'Là où tu perds le plus de points : « ' + pire + ' » (' + fmtPts(manq[pire]) + ' pt). C’est ça qu’il faut retravailler.' : pts >= ds.total ? 'Sans faute.' : '';
+        return { pts: pts, n20: n20, pire: pire || '' };
+      };
+      root.appendChild(synth); root.appendChild(sujetDom(true)); majNote();
+      const a = el('div', 'ds-acts ds-end');
+      if (cur.archive) a.appendChild(btn('Retour', 'ok', function(){ cur = load(K_CUR, null); accueil(); }));
+      else {
+        a.appendChild(btn('Enregistrer ma note', 'ok', function(){ const r = majNote(); const hist = load(K_HIST, []);
+          hist.unshift({ id: ds.id, date: ds.date, titre: ds.titre, sec: ds.sec, fiches: ds.fiches, format: ds.format, note20: r.n20, faible: r.pire, temps: Math.round(cur.elapsed), checks: cur.checks, ds: ds });
+          let h = hist.slice(0, 25); try { localStorage.setItem(K_HIST, JSON.stringify(h)); } catch(e){ h = h.slice(0, 8); save(K_HIST, h); }
+          cur = null; saveCur(); snd.good(); accueil(); window.scrollTo(0, 0); }));
+        a.appendChild(btn('Revoir le sujet', null, function(){ if (confirm('Revenir au sujet ? (le chrono reste arrêté)')) epreuve(); }));
+      }
+      root.appendChild(a); window.scrollTo(0, 0);
+    }
+
+    // ---------- branchement du mode ----------
+    const mDS = $('mode-ds');
+    if (mDS) mDS.addEventListener('click', function(){ snd.click(); setModeButtons('ds'); showPanel(root); if (cur && cur.ds && cur.phase === 'epreuve') epreuve(); else if (cur && cur.ds) correction(); else accueil(); });
+    window.__stmgDS = { accueil: accueil };
+  })();
+  /* DS-MODULE-END */
 
   /* ================= exercices : session ================= */
   let session = null;
