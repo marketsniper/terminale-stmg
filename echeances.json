@@ -1,5 +1,5 @@
 {
- "maj": "2026-09-19T17:33",
+ "maj": "2026-09-19T18:32",
  "tableau": "https://claude.ai/artifact/Jn31HgFZNGhakS5UoiS6Bn",
  "items": [
   {
@@ -79,7 +79,7 @@
    "kind": "controle",
    "due": "2026-09-25",
    "chapitre": [
-    "philo"
+    "philo-0"
    ],
    "steps": 3,
    "stepsDone": 0,
