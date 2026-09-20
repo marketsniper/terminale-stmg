@@ -44,6 +44,15 @@ function revalider(e, requete, cle, cache) {
   return p;
 }
 
+//  Une requête qui ne peut PAS être servie par le cache HTTP du navigateur.
+//  GitHub Pages répond `max-age=600` : sans ça, un `fetch` depuis le service worker peut rendre
+//  pendant dix minutes la page d'avant le déploiement, cache du service worker à jour ou non.
+//  `no-cache` (et pas `reload`) laisse le navigateur valider avec l'ETag : réponse 304 le plus souvent,
+//  donc aucun téléchargement inutile des 2 Mo de la page.
+function sansCacheHttp(url) {
+  return new Request(url, { cache: 'no-cache', credentials: 'same-origin' });
+}
+
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
@@ -63,7 +72,7 @@ self.addEventListener('fetch', e => {
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
       let minuteur;
-      const reseau = revalider(e, e.request, key, cache);
+      const reseau = revalider(e, sansCacheHttp(e.request.url), key, cache);
       const attente = new Promise(r => { minuteur = setTimeout(() => r(null), DELAI_RESEAU); });
       try {
         const res = await Promise.race([reseau, attente]);
