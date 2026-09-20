@@ -1,4 +1,8 @@
-const CACHE = 'stmg-126e0116fa';
+const CACHE = 'stmg-94b4c6fdd1';
+//  Plusieurs apps cohabitent sur le domaine (perso à la racine, Maths dans /maths/, version partagée dans
+//  son propre dossier). Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier.
+const PREFIX = CACHE.slice(0, CACHE.lastIndexOf('-') + 1);
+const SCOPE = new URL('./', self.location).pathname;
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -8,7 +12,7 @@ self.addEventListener('install', e => {
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k.startsWith(PREFIX)).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -17,6 +21,7 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
+  if (!url.pathname.startsWith(SCOPE)) return;
   // l'app Maths (/maths/) a son propre service worker : ne pas intercepter
   if (url.pathname.includes('/maths/')) return;
   // les échéances changent tous les jours : réseau d'abord, cache en secours (hors-ligne)
@@ -26,7 +31,11 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  const key = e.request.mode === 'navigate' ? './index.html' : e.request;
+  //  une autre app du domaine (la version partagée, par exemple) doit recevoir SA page, pas la nôtre :
+  //  on ne répond aux navigations que pour notre propre index.
+  const navigation = e.request.mode === 'navigate';
+  if (navigation && url.pathname !== SCOPE && url.pathname !== SCOPE + 'index.html') return;
+  const key = navigation ? './index.html' : e.request;
   e.respondWith(
     caches.match(key).then(hit => {
       const fetched = fetch(e.request).then(res => {
