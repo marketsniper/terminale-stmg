@@ -1,4 +1,4 @@
-const CACHE = 'stmg-ccd8607133';
+const CACHE = 'stmg-342cce4f06';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
@@ -25,6 +25,7 @@ self.addEventListener('fetch', e => {
       .catch(() => caches.match('./echeances.json')));
     return;
   }
+
   const key = e.request.mode === 'navigate' ? './index.html' : e.request;
   e.respondWith(
     caches.match(key).then(hit => {
