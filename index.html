@@ -5363,7 +5363,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
   }
   appliquerProfil();
   updateFicheCounts();
-  if (CFG.edition === 'commercial' && !profil) setTimeout(function(){ ouvrirProfil(true); }, 250);
+  if (CFG.edition === 'commercial' && CFG.profil !== false && !profil) setTimeout(function(){ ouvrirProfil(true); }, 250);
 
   /* ================= accueil du premier jour =================
      Sans lui, l'élève qui vient d'acheter tombe sur une centaine de fiches repliées et ne sait pas
@@ -6073,7 +6073,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
     const b = document.createElement('button'); b.type = 'button'; b.textContent = '⚙️ IA';
     b.addEventListener('click', function(){ snd.click(); openIaModal(); });
     iaRow.appendChild(b);
-    if (CFG.edition === 'commercial'){
+    if (CFG.edition === 'commercial' && CFG.profil !== false){
       const pb = document.createElement('button'); pb.type = 'button'; pb.textContent = '⚙️ Mon profil';
       pb.addEventListener('click', function(){ snd.click(); ouvrirProfil(false); });
       iaRow.appendChild(pb);
@@ -6689,7 +6689,10 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
 
 <script>
 if ('serviceWorker' in navigator) {
+  // un navigateur peut refuser l'enregistrement (navigation privée, réglage de l'utilisateur, politique
+  // d'entreprise) : la promesse est alors rejetée, ou tenue sans objet. On ne doit pas planter pour ça.
   navigator.serviceWorker.register('./sw.js').then(reg => {
+    if (!reg || !reg.addEventListener) return;
     reg.addEventListener('updatefound', () => {
       const sw = reg.installing;
       sw && sw.addEventListener('statechange', () => {
@@ -6702,7 +6705,7 @@ if ('serviceWorker' in navigator) {
         }
       });
     });
-  });
+  }).catch(() => {});
 }
 </script>
 </body>

@@ -1,7 +1,7 @@
 {
-  "name": "Réviser la STMG · fiches et exercices",
-  "short_name": "Réviser STMG",
-  "description": "Fiches de révision et exercices corrigés pour la première et la terminale STMG, d'après les programmes officiels.",
+  "name": "Réviser la première STMG · fiches et exercices",
+  "short_name": "1re STMG",
+  "description": "Fiches de révision et exercices corrigés pour la première STMG (sciences de gestion et numérique, management, droit, économie), d'après le programme officiel.",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",
