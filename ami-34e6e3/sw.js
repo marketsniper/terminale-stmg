@@ -1,4 +1,4 @@
-const CACHE = 'stmg-c8ba3d8baf';
+const CACHE = 'amistmg-857df52c85';
 //  Plusieurs apps cohabitent sur le domaine (perso à la racine, Maths dans /maths/, version partagée dans
 //  son propre dossier). Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier.
 const PREFIX = CACHE.slice(0, CACHE.lastIndexOf('-') + 1);
@@ -22,14 +22,6 @@ self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
   if (!url.pathname.startsWith(SCOPE)) return;
-  // l'app Maths (/maths/) a son propre service worker : ne pas intercepter
-  if (url.pathname.includes('/maths/')) return;
-  // les échéances changent tous les jours : réseau d'abord, cache en secours (hors-ligne)
-  if (url.pathname.endsWith('/echeances.json')){
-    e.respondWith(fetch(e.request).then(res => { if (res.ok) caches.open(CACHE).then(c => c.put('./echeances.json', res.clone())); return res; })
-      .catch(() => caches.match('./echeances.json')));
-    return;
-  }
 
   //  une autre app du domaine (la version partagée, par exemple) doit recevoir SA page, pas la nôtre :
   //  on ne répond aux navigations que pour notre propre index.
