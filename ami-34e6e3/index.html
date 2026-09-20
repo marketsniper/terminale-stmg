@@ -383,6 +383,24 @@ button:active{transform:translateY(1px) scale(.985)}
   border:1px solid var(--line); background:transparent; color:var(--ink)}
 #ech-modal .acts .ok{background:var(--acc-main,#3454D1); border-color:var(--acc-main,#3454D1); color:#fff; font-weight:600}
 
+/* ---------- sauvegarde de la progression ---------- */
+#sauve-modal{position:fixed; inset:0; background:rgba(10,14,25,.6); z-index:99; display:flex; align-items:center; justify-content:center; padding:18px}
+#sauve-modal .box{background:var(--card); color:var(--ink); border-radius:16px; padding:18px; max-width:460px; width:100%;
+  max-height:88vh; overflow-y:auto; box-shadow:0 14px 50px rgba(0,0,0,.35)}
+#sauve-modal h3{margin:0 0 .5rem; font-size:1.05rem}
+#sauve-modal p{margin:.4rem 0; font-size:.85rem; line-height:1.5}
+#sauve-modal .sauve-note{color:var(--muted); font-size:.78rem}
+#sauve-modal .sauve-imp{display:block; margin:.9rem 0 .3rem; font-size:.8rem; font-weight:600; color:var(--muted)}
+#sauve-modal .sauve-imp input{display:block; margin-top:.35rem; font:inherit; font-size:.82rem; max-width:100%}
+#sauve-modal .sauve-fus{display:flex; gap:.5rem; align-items:flex-start; font-size:.8rem; color:var(--muted); margin:.3rem 0}
+#sauve-modal .sauve-fus input{margin:.15rem 0 0; min-width:16px}
+#sauve-modal .sauve-err{color:var(--bad,#B23A32); font-size:.8rem; min-height:1rem}
+#sauve-modal .sauve-ok{color:var(--ok,#0E8A6D); font-size:.8rem; min-height:1rem}
+#sauve-modal .acts{display:flex; gap:.5rem; justify-content:flex-end; margin-top:.6rem}
+#sauve-modal .acts button{border-radius:9px; padding:9px 16px; font:inherit; font-size:.88rem; cursor:pointer;
+  border:1px solid var(--line); background:transparent; color:var(--ink)}
+#sauve-modal .acts .ok{background:var(--acc-main,#3454D1); border-color:var(--acc-main,#3454D1); color:#fff; font-weight:600}
+
 /* ---------- accueil du premier jour ---------- */
 .debut{margin:1rem 0 0; padding:.9rem 1rem 1rem; background:var(--card); border:1px solid var(--line);
   border-left:3px solid var(--acc-main,#3454D1); border-radius:0 10px 10px 0; box-shadow:var(--shadow)}
@@ -477,6 +495,9 @@ button:active{transform:translateY(1px) scale(.985)}
 .ds-partie{margin-top:1.2rem}
 .ds-partie h3{margin:0 0 .4rem;font-size:1.05rem;border-bottom:2px solid var(--line);padding-bottom:.3rem}
 .ds-consigne{color:var(--muted);font-size:.9rem;margin:.2rem 0}
+.ds-ia{margin:.5rem 0 0;padding:.5rem .7rem;font-size:.78rem;line-height:1.45;border-radius:8px;
+  background:rgba(52,84,209,.10);border:1px solid var(--line);color:var(--ink)}
+.ds-prev{margin:.25rem 0 .6rem;font-size:.74rem;line-height:1.4;color:var(--muted)}
 .ds-doc{margin:.7rem 0;padding:.7rem .9rem;border-left:3px solid var(--muted);background:var(--card);border-radius:0 8px 8px 0;font-size:.92rem}
 .ds-doc p{margin:.3rem 0}
 .ds-q{margin:.8rem 0;padding:.8rem;background:var(--card);border:1px solid var(--line);border-radius:10px}
@@ -5455,7 +5476,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
 
   let formulaireEcheance = null;   // rempli par le module des échéances, utilisé par l'accueil
 
-  /* ================= échéances : echeances.json est poussé par la synchro de l'organisme =================
+  /* ================= échéances : echeances.enc.json (chiffré) est poussé par la synchro =================
      Format : {maj, tableau, items:[{id,title,matiere,kind,due,time,chapitre:[ids],steps,stepsDone}]}
      chapitre = id de fiche (droit1-2) ou de matière (droit1). Tout raisonne sur l'heure réelle. */
   (function(){
@@ -5891,24 +5912,26 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     '.coach-btn{border:1.5px dashed var(--acc,#3454D1);background:transparent;color:inherit;border-radius:10px;padding:8px 14px;font:inherit;font-size:.85rem;cursor:pointer;opacity:.85}' +
     '.coach-btn:hover{opacity:1;background:rgba(52,84,209,.06)}' +
     '#coach-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1c2433;color:#fff;padding:10px 18px;border-radius:12px;font-size:.85rem;z-index:99;max-width:88vw;text-align:center;box-shadow:0 6px 24px rgba(0,0,0,.25)}' +
-    '.coach-chat{margin-top:10px;border:1px solid rgba(52,84,209,.3);border-radius:12px;padding:10px;text-align:left;background:rgba(52,84,209,.04)}' +
+    '.coach-chat{margin-top:10px;border:1px solid var(--line);border-radius:12px;padding:10px;text-align:left;background:var(--bg)}' +
     '.coach-log{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}' +
     '.coach-msg{padding:8px 12px;border-radius:10px;font-size:.88rem;line-height:1.45;white-space:pre-wrap;word-break:break-word}' +
     '.coach-msg.moi{align-self:flex-end;background:var(--acc,#3454D1);color:#fff;max-width:85%}' +
-    '.coach-msg.prof{align-self:flex-start;background:#fff;border:1px solid rgba(0,0,0,.08);max-width:95%}' +
+    '.coach-msg.prof{align-self:flex-start;background:var(--card);color:var(--ink);border:1px solid var(--line);max-width:95%}' +
     '.coach-bar{display:flex;gap:6px;margin-top:8px}' +
-    '.coach-bar input{flex:1;min-width:0;border:1px solid rgba(0,0,0,.2);border-radius:9px;padding:8px 10px;font:inherit;font-size:.88rem}' +
+    '.coach-bar input{flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:inherit;font-size:.88rem;background:var(--bg);color:var(--ink)}' +
     '.coach-send{border:0;border-radius:9px;background:var(--acc,#3454D1);color:#fff;padding:0 14px;font-size:1rem;cursor:pointer}' +
+    '.coach-ia{margin:0 0 8px;padding:6px 10px;font-size:.76rem;line-height:1.4;border-radius:8px;background:rgba(52,84,209,.10);border:1px solid var(--line);color:var(--ink)}' +
+    '.coach-prev{margin:6px 0 0;font-size:.72rem;line-height:1.4;color:var(--muted)}' +
     '.coach-alt{margin:6px 0 0;font-size:.72rem;opacity:.65;text-align:center}' +
     '.coach-alt a{color:inherit}' +
     '.ia-row{margin:4px 0 14px;text-align:center;font-size:.82rem;opacity:.9}' +
-    '.ia-row button{border:1px solid rgba(0,0,0,.2);background:transparent;color:inherit;border-radius:9px;padding:5px 11px;font:inherit;font-size:.8rem;cursor:pointer;margin-left:8px}' +
+    '.ia-row button{border:1px solid var(--line);background:transparent;color:inherit;border-radius:9px;padding:5px 11px;font:inherit;font-size:.8rem;cursor:pointer;margin-left:8px}' +
     '#ia-modal{position:fixed;inset:0;background:rgba(10,14,25,.55);z-index:98;display:flex;align-items:center;justify-content:center;padding:18px}' +
-    '#ia-modal .box{background:#fff;color:#1c2433;border-radius:16px;padding:20px;max-width:460px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 14px 50px rgba(0,0,0,.3)}' +
+    '#ia-modal .box{background:var(--card);color:var(--ink);border-radius:16px;padding:20px;max-width:460px;width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 14px 50px rgba(0,0,0,.35)}' +
     '#ia-modal h3{margin:0 0 10px}#ia-modal p{font-size:.85rem;line-height:1.5;margin:8px 0}' +
-    '#ia-modal input{width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,.25);border-radius:9px;padding:9px 11px;font:inherit;font-size:.85rem;margin:6px 0}' +
+    '#ia-modal input{width:100%;box-sizing:border-box;border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:inherit;font-size:.85rem;margin:6px 0;background:var(--bg);color:var(--ink)}' +
     '#ia-modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}' +
-    '#ia-modal .acts button{border-radius:9px;padding:8px 14px;font:inherit;font-size:.85rem;cursor:pointer;border:1px solid rgba(0,0,0,.2);background:transparent}' +
+    '#ia-modal .acts button{border-radius:9px;padding:8px 14px;font:inherit;font-size:.85rem;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink)}' +
     '#ia-modal .acts .ok{background:#3454D1;border-color:#3454D1;color:#fff}' +
     '#ia-status{font-size:.8rem;margin-top:6px}';
   document.head.appendChild(coachCss);
@@ -5939,7 +5962,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     b.textContent = label;
     b.addEventListener('click', function(){
       snd.click();
-      if (iaKey()){ openCoach(row, ctx); return; }
+      if (iaDisponible()){ openCoach(row, ctx); return; }
       const p = coachPrompt(ctx.q, ctx.afterWrong, ctx.my, ctx.right);
       try { navigator.clipboard.writeText(p); } catch(e){}
       if (COACH_URL){
@@ -5992,12 +6015,43 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     return c;
   }
 
-  async function iaStream(messages, onDelta, opts){
+  /* Deux chemins possibles vers l'IA, et un seul endroit qui choisit :
+     - RELAIS de l'éditeur (édition vendue) : c'est sa clé qui est utilisée, l'élève n'ouvre de compte nulle part.
+       Indispensable, parce que les conditions des fournisseurs d'IA exigent 18 ans du titulaire du compte.
+     - CLÉ PERSONNELLE (l'édition perso, et l'option avancée d'un client) : appel direct au fournisseur.
+     Voir commercial/relais/CAHIER-DES-CHARGES.md pour le contrat de l'interface. */
+  const K_LICENCE = 'stmg:licence';
+  function licence(){ try { return localStorage.getItem(K_LICENCE) || ''; } catch(e){ return ''; } }
+  function parRelais(){ return !!(CFG.relaisIA && licence()); }
+  function iaDisponible(){ return parRelais() || !!iaKey(); }
+
+  const ERR_RELAIS = {
+    licence_absente: 'LICENCE', licence_invalide: 'LICENCE', licence_expiree: 'LICENCE_EXPIREE',
+    licence_revoquee: 'LICENCE_REVOQUEE', quota_jour: 'QUOTA_JOUR', quota_mois: 'QUOTA_MOIS',
+    trop_vite: 'TROP_VITE', plafond_editeur: 'INDISPONIBLE', fournisseur: 'QUOTA', requete_invalide: 'BUG'
+  };
+
+  async function appelIa(messages, opts){
+    const o = opts || {};
+    if (parRelais()){
+      const r = await fetch(CFG.relaisIA.replace(/\/$/, '') + '/api/ia', {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ licence: licence(), tache: o.tache || 'coach', messages: messages,
+          json: !!(o.extras && o.extras.response_format), web: o.model === GROQ_WEB,
+          max: (o.extras && o.extras.max_completion_tokens) || 3000 })
+      });
+      if (!r.ok){
+        let j = {}; try { j = await r.json(); } catch(e){}
+        const err = new Error(ERR_RELAIS[j.erreur] || 'HTTP ' + r.status);
+        err.statut = r.status; err.detail = j.erreur || ''; err.retryApres = j.retryApres || 0; throw err;
+      }
+      return r;
+    }
     const cle = iaKey();
     if (!cle) throw new Error('PAS_DE_CLE');
-    const model = (opts && opts.model) || GROQ_MODEL;
+    const model = o.model || GROQ_MODEL;
     const body = Object.assign({ model: model, messages: messages, stream: true, max_completion_tokens: 3000 },
-      model === GROQ_MODEL ? { reasoning_effort: 'low' } : {}, (opts && opts.extras) || {});
+      model === GROQ_MODEL ? { reasoning_effort: 'low' } : {}, o.extras || {});
     const r = await fetch(GROQ_URL, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'authorization': 'Bearer ' + cle },
@@ -6008,6 +6062,11 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       const err = new Error(r.status === 401 ? 'CLE_INVALIDE' : r.status === 429 ? 'QUOTA' : 'HTTP ' + r.status);
       err.statut = r.status; err.detail = msg; throw err;
     }
+    return r;
+  }
+
+  async function iaStream(messages, onDelta, opts){
+    const r = await appelIa(messages, opts);
     const reader = r.body.getReader(), dec = new TextDecoder();
     let buf = '', texte = '';
     for (;;){
@@ -6028,6 +6087,13 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     return s.replace(/<\/?think>/gi, '').trim();
   }
   function iaErreur(e){
+    if (e.message === 'LICENCE') return 'Ta licence n’est pas valide : vérifie-la dans ⚙️ IA.';
+    if (e.message === 'LICENCE_EXPIREE') return 'Ta licence est arrivée à échéance.';
+    if (e.message === 'LICENCE_REVOQUEE') return 'Cette licence a été désactivée. Écris-nous si c’est une erreur.';
+    if (e.message === 'QUOTA_JOUR') return 'Tu as atteint ta limite d’IA du jour. Elle repart demain matin.';
+    if (e.message === 'QUOTA_MOIS') return 'Tu as atteint ta limite d’IA du mois.';
+    if (e.message === 'TROP_VITE') return 'Doucement : attends ' + Math.max(1, e.retryApres || 3) + ' seconde' + ((e.retryApres || 3) > 1 ? 's' : '') + ' avant de relancer.';
+    if (e.message === 'INDISPONIBLE') return 'L’IA est momentanément indisponible. Réessaie plus tard.';
     if (e.message === 'PAS_DE_CLE') return 'Pas de clé IA : ouvre ⚙️ IA depuis l’accueil des exercices.';
     if (e.message === 'CLE_INVALIDE') return 'Clé Groq invalide : vérifie-la dans ⚙️ IA (accueil des exercices).';
     if (e.message === 'QUOTA') return 'Quota gratuit atteint pour l’instant — réessaie dans une minute, ou utilise le projet Claude.';
@@ -6038,19 +6104,27 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
   function openCoach(row, ctx){
     if (row._chat){ row._chat.remove(); row._chat = null; return; }
     const box = document.createElement('div'); box.className = 'coach-chat';
+    // Article 50 du règlement européen sur l'IA, applicable depuis le 2 août 2026 : l'utilisateur doit être
+    // informé qu'il s'adresse à une IA, de façon claire et distinguable, à L'OUVERTURE DE CHAQUE session.
+    const avis = document.createElement('p'); avis.className = 'coach-ia';
+    avis.appendChild(document.createTextNode('🤖 Tu discutes avec une intelligence artificielle, pas avec un professeur. Elle peut se tromper : vérifie dans ta fiche ou ton cours.'));
+    box.appendChild(avis);
     const log = document.createElement('div'); log.className = 'coach-log';
     const bar = document.createElement('div'); bar.className = 'coach-bar';
     const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Réponds ou pose ta question…'; inp.setAttribute('enterkeyhint', 'send');
     const go = document.createElement('button'); go.type = 'button'; go.className = 'coach-send'; go.textContent = '➤';
+    // Ce que l'élève tape part réellement chez un tiers : il doit le savoir AVANT de taper, pas dans les CGU.
+    const prev = document.createElement('p'); prev.className = 'coach-prev';
+    prev.textContent = 'Ce que tu écris ici part chez notre fournisseur d’IA pour obtenir la réponse. N’y mets ni ton nom, ni ton adresse, ni rien de personnel.';
     const alt = document.createElement('p'); alt.className = 'coach-alt';
-    alt.appendChild(document.createTextNode('IA en direct (Groq, ta clé)'));
+    alt.appendChild(document.createTextNode(parRelais() ? 'IA en direct (incluse dans ta licence)' : 'IA en direct (ta clé, sur cet appareil)'));
     if (COACH_URL){
       const altA = document.createElement('a'); altA.href = COACH_URL; altA.target = '_blank'; altA.textContent = 'ouvrir plutôt mon projet Claude';
       alt.appendChild(document.createTextNode(' · '));
       alt.appendChild(altA);
     }
     bar.appendChild(inp); bar.appendChild(go);
-    box.appendChild(log); box.appendChild(bar); box.appendChild(alt);
+    box.appendChild(log); box.appendChild(bar); box.appendChild(prev); box.appendChild(alt);
     row.parentNode.insertBefore(box, row.nextSibling);
     row._chat = box;
 
@@ -6135,7 +6209,111 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       pb.addEventListener('click', function(){ snd.click(); ouvrirProfil(false); });
       iaRow.appendChild(pb);
     }
+    const sb = document.createElement('button'); sb.type = 'button'; sb.textContent = '💾 Sauvegarde';
+    sb.title = 'Exporter ou réimporter ta progression';
+    sb.addEventListener('click', function(){ snd.click(); ouvrirSauvegarde(); });
+    iaRow.appendChild(sb);
   }
+
+  /* ================= sauvegarde de la progression =================
+     Tout vit dans le navigateur : vider ses données ou changer d'appareil efface tout. Un fichier suffit
+     à s'en protéger, et il n'y a rien à téléverser nulle part. La clé d'IA et la licence ne sont PAS
+     exportées : ce sont des secrets, ils n'ont pas à circuler dans un fichier qu'on s'envoie. */
+  const CLES_SAUVEGARDE = ['stmg-fiches-done', 'stmg-quiz-stats', 'stmg-quiz-revoir', 'stmg-echeances',
+    'stmg-ds-hist', 'stmg-ds-tags', 'stmg-ds-last', 'stmg-son', 'stmg:profil:v1'];
+
+  function exporterProgression(){
+    const d = { app: 'stmg', version: 1, edition: CFG.edition, donnees: {} };
+    CLES_SAUVEGARDE.forEach(function(k){
+      try { const v = localStorage.getItem(k); if (v !== null) d.donnees[k] = v; } catch(e){}
+    });
+    return d;
+  }
+
+  function importerProgression(d, fusionner){
+    if (!d || d.app !== 'stmg' || !d.donnees) throw new Error('FICHIER');
+    let n = 0;
+    Object.keys(d.donnees).forEach(function(k){
+      if (CLES_SAUVEGARDE.indexOf(k) === -1) return;          // on n'écrit que des clés connues
+      try {
+        if (fusionner && k === 'stmg-fiches-done'){
+          const a = load(k, []), b = JSON.parse(d.donnees[k]);
+          if (Array.isArray(a) && Array.isArray(b)){
+            const u = a.slice(); b.forEach(function(x){ if (u.indexOf(x) === -1) u.push(x); });
+            localStorage.setItem(k, JSON.stringify(u)); n++; return;
+          }
+        }
+        if (fusionner && k === 'stmg-quiz-stats'){
+          const a = load(k, {}) || {}, b = JSON.parse(d.donnees[k]) || {};
+          Object.keys(b).forEach(function(q){
+            const x = a[q], y = b[q];
+            a[q] = x ? { vu: (x.vu | 0) + (y.vu | 0), bon: (x.bon | 0) + (y.bon | 0) } : y;
+          });
+          localStorage.setItem(k, JSON.stringify(a)); n++; return;
+        }
+        localStorage.setItem(k, d.donnees[k]); n++;
+      } catch(e){}
+    });
+    return n;
+  }
+
+  function ouvrirSauvegarde(){
+    if (document.getElementById('sauve-modal')) return;
+    const ov = document.createElement('div'); ov.id = 'sauve-modal';
+    const box = document.createElement('div'); box.className = 'box';
+    const h = document.createElement('h3'); h.textContent = '💾 Ma progression';
+    const p1 = document.createElement('p');
+    p1.textContent = 'Tout est enregistré dans ce navigateur, et nulle part ailleurs : vider tes données ou changer de téléphone effacerait tout. Le fichier ci-dessous contient tes fiches cochées, tes statistiques, tes DS notés et tes échéances.';
+    const p2 = document.createElement('p'); p2.className = 'sauve-note';
+    p2.textContent = 'Ta clé d’IA et ta licence ne sont pas dans le fichier : ce sont des secrets, ils restent sur cet appareil.';
+    const err = document.createElement('p'); err.className = 'sauve-err';
+    const acts = document.createElement('div'); acts.className = 'acts';
+
+    const bExp = document.createElement('button'); bExp.type = 'button'; bExp.className = 'ok'; bExp.textContent = 'Enregistrer un fichier';
+    bExp.addEventListener('click', function(){
+      try {
+        const txt = JSON.stringify(exporterProgression(), null, 1);
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([txt], { type: 'application/json' }));
+        a.download = 'ma-progression-stmg.json';
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+        err.className = 'sauve-ok'; err.textContent = 'Fichier enregistré. Garde-le : il te suffira à tout retrouver.';
+      } catch(e){ err.className = 'sauve-err'; err.textContent = 'L’enregistrement a échoué sur cet appareil.'; }
+    });
+
+    const lab = document.createElement('label'); lab.className = 'sauve-imp';
+    lab.appendChild(document.createTextNode('Reprendre un fichier'));
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'application/json,.json';
+    const fus = document.createElement('label'); fus.className = 'sauve-fus';
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
+    fus.appendChild(cb); fus.appendChild(document.createTextNode('Fusionner avec ce qui est déjà ici (décoche pour remplacer)'));
+    inp.addEventListener('change', function(){
+      const f = inp.files && inp.files[0]; if (!f) return;
+      if (f.size > 4e6){ err.className = 'sauve-err'; err.textContent = 'Ce fichier est trop gros pour être une sauvegarde.'; return; }
+      const fr = new FileReader();
+      fr.onload = function(){
+        let d = null;
+        try { d = JSON.parse(String(fr.result)); } catch(e){ err.className = 'sauve-err'; err.textContent = 'Ce fichier n’est pas lisible.'; return; }
+        try {
+          const n = importerProgression(d, cb.checked);
+          err.className = 'sauve-ok'; err.textContent = n + ' élément' + (n > 1 ? 's' : '') + ' repris. L’app se recharge…';
+          setTimeout(function(){ location.reload(); }, 900);
+        } catch(e){ err.className = 'sauve-err'; err.textContent = 'Ce fichier ne vient pas de cette application.'; }
+      };
+      fr.readAsText(f);
+    });
+    lab.appendChild(inp);
+
+    const bFer = document.createElement('button'); bFer.type = 'button'; bFer.textContent = 'Fermer';
+    bFer.addEventListener('click', function(){ ov.remove(); });
+    acts.appendChild(bFer); acts.appendChild(bExp);
+    box.appendChild(h); box.appendChild(p1); box.appendChild(p2); box.appendChild(lab); box.appendChild(fus);
+    box.appendChild(err); box.appendChild(acts);
+    ov.appendChild(box); document.body.appendChild(ov);
+    ov.addEventListener('click', function(e){ if (e.target === ov) ov.remove(); });
+  }
+
   function openIaModal(){
     if (document.getElementById('ia-modal')) return;
     const ov = document.createElement('div'); ov.id = 'ia-modal';
@@ -6368,10 +6546,13 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       clearInterval(tick); root.textContent = '';
       const head = el('div', 'ds-head'); head.appendChild(el('h2', null, '📝 DS et DS blancs'));
       head.appendChild(el('p', 'ds-lede', 'Un sujet différent à chaque fois, écrit à partir de TES fiches, au format de l’épreuve, avec le barème et le corrigé. L’app choisit les notions (jamais celles de tes derniers DS, et plus souvent tes chapitres faibles) ; l’IA rédige.'));
+      // Article 50 du règlement européen sur l'IA + précaution de fond : une note générée est un entraînement,
+      // jamais une évaluation. C'est aussi ce qu'exigent les conditions d'usage des fournisseurs d'IA.
+      head.appendChild(el('p', 'ds-ia', '🤖 Les sujets et les corrigés sont produits par une intelligence artificielle. C’est un entraînement : la note t’indique où tu en es, elle ne vaut pas une correction de professeur, et l’IA peut se tromper.'));
       root.appendChild(head);
       if (cur && cur.ds){ const r = el('div', 'ds-card ds-resume'); r.appendChild(el('strong', null, (cur.phase === 'corrige' ? 'Correction en cours : ' : 'DS en cours : ') + cur.ds.titre));
         const a = el('div', 'ds-acts'); a.appendChild(btn('Reprendre', 'ok', function(){ cur.phase === 'corrige' ? correction() : epreuve(); })); a.appendChild(btn('Abandonner', null, function(){ if (confirm('Abandonner ce DS ? Il ne sera pas enregistré.')){ cur = null; saveCur(); accueil(); } })); r.appendChild(a); root.appendChild(r); }
-      if (!iaKey()){ const k = el('div', 'ds-card'); k.appendChild(el('p', null, 'Il faut une clé IA gratuite (Groq) pour écrire des sujets inédits. C’est la même que pour le Coach IA : 2 minutes à configurer, elle reste sur ton appareil.'));
+      if (!iaDisponible()){ const k = el('div', 'ds-card'); k.appendChild(el('p', null, 'Il faut une clé IA gratuite (Groq) pour écrire des sujets inédits. C’est la même que pour le Coach IA : 2 minutes à configurer, elle reste sur ton appareil.'));
         k.appendChild(btn('⚙️ Configurer l’IA', 'ok', function(){ openIaModal(); const t = setInterval(function(){ if (!document.getElementById('ia-modal')){ clearInterval(t); accueil(); } }, 400); })); root.appendChild(k); }
 
       // suggestion d'après les prochaines évaluations
@@ -6414,7 +6595,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       const go = btn('Générer mon DS', 'ok ds-go', function(){
         const ids = Array.prototype.map.call(boxF.querySelectorAll('input:checked'), function(c){ return c.value; });
         if (!ids.length){ msg.textContent = 'Coche au moins un chapitre.'; return; }
-        if (!iaKey()){ msg.textContent = 'Configure d’abord la clé IA (bouton ci-dessus).'; return; }
+        if (!iaDisponible()){ msg.textContent = 'Configure d’abord la clé IA (bouton ci-dessus).'; return; }
         lancer({ sec: selSec.value, fiches: ids, format: fmt, faibles: cw.checked });
       });
       const msg = el('p', 'ds-msg'); form.appendChild(go); form.appendChild(msg); root.appendChild(form);
@@ -6432,7 +6613,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     }
 
     async function lancer(cfg){
-      if (!iaKey()){ accueil(); return; }
+      if (!iaDisponible()){ accueil(); return; }
       save('stmg-ds-last', { sec: cfg.sec, format: cfg.format });
       clearInterval(tick); root.textContent = '';
       const w = el('div', 'ds-card ds-wait'); w.appendChild(el('div', 'ds-spin')); const t = el('p', null, 'Je relis tes fiches…'); w.appendChild(t);
@@ -6463,7 +6644,10 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
           const t = el('div', 'ds-q-t'); t.appendChild(el('span', 'ds-q-n', q.id.slice(1) + '.')); const en = el('div', 'ds-q-e'); paras(en, q.enonce); t.appendChild(en); t.appendChild(el('span', 'ds-q-p', fmtPts(q.points) + ' pt' + (q.points > 1 ? 's' : ''))); qd.appendChild(t);
           if (!avecCorrige){
             const ta = el('textarea', 'ds-ans'); ta.placeholder = 'Facultatif : tape ta réponse ici si tu veux que l’IA la corrige. Sinon, compose sur feuille comme au vrai DS.'; ta.value = cur.answers[q.id] || '';
+            ta.setAttribute('aria-describedby', 'ds-prev-' + q.id);
             ta.addEventListener('input', function(){ cur.answers[q.id] = ta.value; saveCur(); }); qd.appendChild(ta);
+            const pv = el('p', 'ds-prev', 'Si tu demandes la correction par l’IA, cette réponse part chez notre fournisseur d’IA. N’y mets pas ton nom.');
+            pv.id = 'ds-prev-' + q.id; qd.appendChild(pv);
           } else {
             if (cur.answers[q.id]){ const m = el('div', 'ds-mine'); m.appendChild(el('strong', null, 'Ta réponse')); paras(m, cur.answers[q.id]); qd.appendChild(m); }
             const c = el('div', 'ds-corr'); c.appendChild(el('strong', null, 'Corrigé')); paras(c, q.corrige); qd.appendChild(c);
@@ -6709,7 +6893,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     $('btn-retry').style.display = session.rates.length ? '' : 'none';
 
     const old = document.getElementById('ia-more'); if (old) old.remove();
-    if (iaKey() && session.fromFiche){
+    if (iaDisponible() && session.fromFiche){
       const chap = session.fromFiche, m = session.list[0].mat;
       const wrap = document.createElement('div'); wrap.id = 'ia-more'; wrap.className = 'coach-row';
       const b = document.createElement('button'); b.type = 'button'; b.className = 'coach-btn';
