@@ -498,6 +498,21 @@ button:active{transform:translateY(1px) scale(.985)}
 .ds-ia{margin:.5rem 0 0;padding:.5rem .7rem;font-size:.78rem;line-height:1.45;border-radius:8px;
   background:rgba(52,84,209,.10);border:1px solid var(--line);color:var(--ink)}
 .ds-prev{margin:.25rem 0 .6rem;font-size:.74rem;line-height:1.4;color:var(--muted)}
+
+/* ---------- dictée vocale et suppression dans le mode DS ---------- */
+.ds-dictee{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin:.35rem 0 0}
+.ds-dictee .ds-dictee-vu{font-size:.78rem;color:var(--muted);line-height:1.35;flex:1 1 12rem;min-width:0}
+.ds-dictee.ecoute button{background:var(--bad,#B23A32);border-color:var(--bad,#B23A32);color:#fff;font-weight:600}
+.ds-dictee.ecoute .ds-dictee-vu{color:var(--ink)}
+.ds-dictee.ecoute button::before{content:'';display:inline-block;width:.5rem;height:.5rem;margin-right:.4rem;
+  border-radius:50%;background:#fff;animation:ds-pulse 1.1s ease-in-out infinite;vertical-align:middle}
+@keyframes ds-pulse{0%,100%{opacity:1}50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.ds-dictee.ecoute button::before{animation:none}}
+button.ds-sup{border-color:var(--line);color:var(--muted)}
+button.ds-sup:hover{border-color:var(--bad,#B23A32);color:var(--bad,#B23A32)}
+.ds-hist li button.ds-sup{flex:0 0 auto;min-width:2rem;padding:.3rem .55rem;line-height:1}
+.ds-sup-tout{margin-top:.6rem;opacity:.75}
+.ds-sup-tout:hover{opacity:1;border-color:var(--bad,#B23A32);color:var(--bad,#B23A32)}
 .ds-doc{margin:.7rem 0;padding:.7rem .9rem;border-left:3px solid var(--muted);background:var(--card);border-radius:0 8px 8px 0;font-size:.92rem}
 .ds-doc p{margin:.3rem 0}
 .ds-q{margin:.8rem 0;padding:.8rem;background:var(--card);border:1px solid var(--line);border-radius:10px}
@@ -6429,7 +6444,13 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     // ---------- appel IA : JSON strict, une relance automatique si quota ----------
     // Le palier gratuit de Groq limite les jetons par minute : chaque appel reste petit, et si le quota est atteint
     // on attend le délai annoncé par l'API (ou 30 s) avant de relancer — jusqu'à 3 essais.
-    async function iaJson(sys, user, maxTok, onWait){
+    // Annulation d'un lancement : un DS complet demande plusieurs passes et parfois une minute
+    // d'attente entre deux. Sans ce drapeau, « Annuler » ne ferait que changer d'écran pendant que
+    // les passes continueraient à tourner — et à consommer le quota.
+    function verifieAnnulation(jeton){ if (jeton && jeton.demandee) throw new Error('ANNULE'); }
+
+    async function iaJson(sys, user, maxTok, onWait, jeton){
+      verifieAnnulation(jeton);
       for (let essai = 0; essai < 3; essai++){
         try {
           const brut = await iaStream([{ role: 'system', content: sys }, { role: 'user', content: user }], null,
@@ -6438,7 +6459,12 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
         } catch(e){
           if (e.message === 'QUOTA' && essai < 2){
             const m = /try again in (?:(\d+)m)?([\d.]+)s/i.exec(e.detail || ''); let att = m ? Math.ceil((+m[1] || 0) * 60 + parseFloat(m[2])) + 2 : 30; att = Math.min(90, Math.max(5, att));
-            for (let sec = att; sec > 0; sec--){ if (onWait) onWait(sec); await new Promise(function(r){ setTimeout(r, 1000); }); }
+            for (let sec = att; sec > 0; sec--){
+              verifieAnnulation(jeton);
+              if (onWait) onWait(sec);
+              await new Promise(function(r){ setTimeout(r, 1000); });
+            }
+            verifieAnnulation(jeton);
             continue;
           }
           if (e instanceof SyntaxError){ if (essai < 1) continue; throw new Error('JSON'); }
@@ -6479,7 +6505,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       return { titre: String(p.titre || 'Partie').slice(0, 120), consigne: String(p.consigne || '').slice(0, 600), duree_min: Math.round(num(p.duree_min)) || 0, documents: docs, questions: qs };
     }
 
-    async function generer(cfg, etat){
+    async function generer(cfg, etat, jeton){
       const F = FORMATS[cfg.format], pr = profil(cfg.sec), fs = cfg.fiches.map(function(id){ return document.getElementById(id); }).filter(Boolean);
       if (!fs.length) throw new Error('AUCUNE_FICHE');
       const tagsVus = (load(K_TAGS, {})[cfg.sec] || []).map(function(t){ return t.toLowerCase(); });
@@ -6502,7 +6528,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       const attente = function(sec){ etat('Quota gratuit de l’IA atteint : je reprends dans ' + sec + ' s…'); };
       if (cfg.format === 'court'){
         etat('J’écris ton DS court…');
-        const j = await iaJson(sys, 'Rédige un DS COURT de ' + F.duree + ' minutes noté sur ' + F.total + ', en DEUX parties.\nPartie 1 (' + (F.total * 0.45) + ' points) — ' + pr.p1 + ' Notions IMPOSÉES (exactement celles-ci, une question par notion) : ' + imposees.join(' ; ') + '.\nPartie 2 (' + (F.total * 0.55) + ' points) — ' + pr.p2 + ' Une ou deux questions.\n' + commun, 4800, attente);
+        const j = await iaJson(sys, 'Rédige un DS COURT de ' + F.duree + ' minutes noté sur ' + F.total + ', en DEUX parties.\nPartie 1 (' + (F.total * 0.45) + ' points) — ' + pr.p1 + ' Notions IMPOSÉES (exactement celles-ci, une question par notion) : ' + imposees.join(' ; ') + '.\nPartie 2 (' + (F.total * 0.55) + ' points) — ' + pr.p2 + ' Une ou deux questions.\n' + commun, 4800, attente, jeton);
         const brutes = (j.parties || []).map(function(p){ return nettoiePartie(p, 0); }).filter(Boolean);
         if (brutes.length === 1){ const c = nettoiePartie(brutes[0], F.total); if (c) parties.push(c); }
         else brutes.slice(0, 2).forEach(function(p, i){ const c = nettoiePartie(p, i === 0 ? F.total * 0.45 : F.total * 0.55); if (c) parties.push(c); });
@@ -6510,18 +6536,18 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
       } else {
         const avecArret = cfg.format === 'blanc' && !!pr.p3, d1 = F.duree / 2, ptsCas = avecArret ? 6 : 10;
         etat('Passe 1 : les notions de cours…');
-        const j1 = await iaJson(sys, 'Rédige la PARTIE 1 d’un ' + F.nom + ' (' + d1 + ' minutes, 10 points) dans "parties" (une seule partie).\n' + pr.p1 + ' Notions IMPOSÉES (exactement celles-ci, une question par notion) : ' + imposees.join(' ; ') + '.\nComplète à 10 points avec UNE question de cours différente (classement, éléments à remettre en ordre, vrai/faux justifié).\n' + commun, 4800, attente);
+        const j1 = await iaJson(sys, 'Rédige la PARTIE 1 d’un ' + F.nom + ' (' + d1 + ' minutes, 10 points) dans "parties" (une seule partie).\n' + pr.p1 + ' Notions IMPOSÉES (exactement celles-ci, une question par notion) : ' + imposees.join(' ; ') + '.\nComplète à 10 points avec UNE question de cours différente (classement, éléments à remettre en ordre, vrai/faux justifié).\n' + commun, 4800, attente, jeton);
         const c1 = nettoiePartie((j1.parties || [])[0], 10); if (c1) parties.push(c1);
         titre = j1.titre;
         const dejaP1 = c1 ? c1.questions.map(function(q){ return q.tag; }).filter(Boolean).join(' · ') : '';
         etat('Passe 2 : les études de cas…');
         const j2 = await iaJson(sys, 'Rédige la PARTIE 2 d’un ' + F.nom + ' (' + (avecArret ? Math.round(d1 * 0.6) : d1) + ' minutes, ' + ptsCas + ' points) dans "parties" (une seule partie).\n' + pr.p2 +
-          '\nNe réutilise pas les notions de la partie 1 (' + dejaP1 + ') : fais travailler d’AUTRES règles du cours. ' + (cfg.format === 'blanc' ? 'Deux situations distinctes, 2 questions chacune.' : 'Une situation, 3 questions.') + '\n' + commun, 4800, attente);
+          '\nNe réutilise pas les notions de la partie 1 (' + dejaP1 + ') : fais travailler d’AUTRES règles du cours. ' + (cfg.format === 'blanc' ? 'Deux situations distinctes, 2 questions chacune.' : 'Une situation, 3 questions.') + '\n' + commun, 4800, attente, jeton);
         const c2 = nettoiePartie((j2.parties || [])[0], ptsCas); if (c2) parties.push(c2);
         if (avecArret){
           etat('Passe 3 : l’arrêt à analyser…');
           const dejaP2 = c2 ? c2.questions.map(function(q){ return q.tag; }).filter(Boolean).join(' · ') : '';
-          const j3 = await iaJson(sys, 'Rédige la PARTIE 3 d’un ' + F.nom + ' (' + Math.round(d1 * 0.4) + ' minutes, 4 points) dans "parties" (une seule partie).\n' + pr.p3 + '\nChoisis une règle du cours qui n’a pas encore servi (déjà utilisé : ' + dejaP1 + ' · ' + dejaP2 + ').\n' + commun, 4200, attente);
+          const j3 = await iaJson(sys, 'Rédige la PARTIE 3 d’un ' + F.nom + ' (' + Math.round(d1 * 0.4) + ' minutes, 4 points) dans "parties" (une seule partie).\n' + pr.p3 + '\nChoisis une règle du cours qui n’a pas encore servi (déjà utilisé : ' + dejaP1 + ' · ' + dejaP2 + ').\n' + commun, 4200, attente, jeton);
           const c3 = nettoiePartie((j3.parties || [])[0], 4); if (c3) parties.push(c3);
         }
       }
@@ -6533,7 +6559,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
     }
 
     // ---------- état courant ----------
-    let cur = load(K_CUR, null), tick = null;
+    let cur = load(K_CUR, null), tick = null, enVol = null;
     function saveCur(){ save(K_CUR, cur); }
     function el(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
     function btn(txt, cls, fn){ const b = el('button', cls, txt); b.type = 'button'; b.addEventListener('click', fn); return b; }
@@ -6610,26 +6636,154 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
           const m = el('div', 'ds-h-main'); m.appendChild(el('strong', null, x.titre)); m.appendChild(el('span', null, secTitre(x.sec) + ' · ' + FORMATS[x.format].nom + ' · ' + d.getDate() + '/' + (d.getMonth() + 1) + (x.faible ? ' · à retravailler : ' + x.faible : ''))); li.appendChild(m);
           li.appendChild(btn('Revoir', 'ds-mini', function(){ cur = { ds: x.ds, phase: 'corrige', checks: x.checks || {}, answers: {}, elapsed: x.temps || 0, runningSince: null, archive: true }; correction(); }));
           li.appendChild(btn('Un autre', 'ds-mini', function(){ lancer({ sec: x.sec, fiches: x.fiches, format: x.format, faibles: true }); }));
-          ul.appendChild(li); }); h.appendChild(ul); root.appendChild(h); }
+          const sup = btn('✕', 'ds-sup', function(){
+            const quand = d.getDate() + '/' + (d.getMonth() + 1);
+            if (!confirm('Supprimer « ' + x.titre + ' » du ' + quand + ' ?\n\nLe sujet, ta copie et la note disparaissent. Ta moyenne est recalculée. C’est définitif.')) return;
+            const liste = load(K_HIST, []).filter(function(y){ return !(y.date === x.date && y.titre === x.titre); });
+            save(K_HIST, liste); accueil();
+          });
+          sup.title = 'Supprimer ce DS'; sup.setAttribute('aria-label', 'Supprimer ' + x.titre);
+          li.appendChild(sup);
+          ul.appendChild(li); }); h.appendChild(ul);
+        if (hist.length > 1){
+          const tout = btn('Tout effacer', 'ds-mini', function(){
+            if (!confirm('Effacer les ' + hist.length + ' DS de ton historique ?\n\nLes sujets, les copies et les notes disparaissent. C’est définitif.')) return;
+            save(K_HIST, []); accueil();
+          });
+          tout.className = 'ds-mini ds-sup-tout'; h.appendChild(tout);
+        }
+        root.appendChild(h); }
     }
 
     async function lancer(cfg){
       if (!iaDisponible()){ accueil(); return; }
       save('stmg-ds-last', { sec: cfg.sec, format: cfg.format });
       clearInterval(tick); root.textContent = '';
+      if (enVol) enVol.demandee = true;              // un lancement encore en vol est abandonné
+      const mien = { demandee: false };
+      enVol = mien;
       const w = el('div', 'ds-card ds-wait'); w.appendChild(el('div', 'ds-spin')); const t = el('p', null, 'Je relis tes fiches…'); w.appendChild(t);
-      w.appendChild(el('p', 'ds-lede', cfg.format === 'court' ? 'Compte 20 à 40 secondes.' : 'Un DS complet s’écrit en plusieurs passes. Avec une clé gratuite, l’IA impose parfois une minute d’attente entre deux passes : laisse tourner, ça reprend tout seul.')); root.appendChild(w); window.scrollTo(0, 0);
+      w.appendChild(el('p', 'ds-lede', cfg.format === 'court' ? 'Compte 20 à 40 secondes.' : 'Un DS complet s’écrit en plusieurs passes. Avec une clé gratuite, l’IA impose parfois une minute d’attente entre deux passes : laisse tourner, ça reprend tout seul.'));
+      const aAnn = el('div', 'ds-acts');
+      aAnn.appendChild(btn('Annuler', null, function(){
+        mien.demandee = true;
+        t.textContent = 'Annulation…';
+        accueil();
+      }));
+      w.appendChild(aAnn);
+      root.appendChild(w); window.scrollTo(0, 0);
       try {
-        const ds = await generer(cfg, function(m){ t.textContent = m; });
+        const ds = await generer(cfg, function(m){ if (!mien.demandee) t.textContent = m; }, mien);
+        if (mien.demandee) return;                   // annulé pendant la dernière passe : on ne garde rien
         cur = { ds: ds, phase: 'epreuve', checks: {}, answers: {}, elapsed: 0, runningSince: Date.now() }; saveCur();
         const tags = load(K_TAGS, {}); const liste = (tags[cfg.sec] || []).concat(ds.parties.reduce(function(a, p){ return a.concat(p.questions.map(function(q){ return q.tag; })); }, []).filter(Boolean));
         tags[cfg.sec] = liste.slice(-60); save(K_TAGS, tags);
         snd.good(); epreuve();
       } catch(e){
+        if (e.message === 'ANNULE' || mien.demandee) return;   // l'élève a annulé : l'accueil est déjà affiché
         root.textContent = ''; const c = el('div', 'ds-card');
         c.appendChild(el('p', null, '⚠️ ' + (e.message === 'JSON' || e.message === 'SUJET_VIDE' ? 'L’IA a rendu un sujet illisible. Relance : le tirage sera différent.' : e.message === 'AUCUNE_FICHE' ? 'Aucun chapitre trouvé.' : iaErreur(e))));
         const a = el('div', 'ds-acts'); a.appendChild(btn('Réessayer', 'ok', function(){ lancer(cfg); })); a.appendChild(btn('Retour', null, accueil)); c.appendChild(a); root.appendChild(c);
       }
+    }
+
+    /* ================= dictée vocale =================
+       Répondre à la main dans un téléphone est lent : la dictée sert surtout aux réponses rédigées
+       (argumentation, syllogisme). Reconnaissance vocale du navigateur (Web Speech) : disponible sur
+       Chrome, Edge et Safari (iOS 14.5+), absente ailleurs — dans ce cas le bouton n'apparaît pas.
+       ⚠️ L'audio est envoyé au service de reconnaissance du navigateur (Apple ou Google selon
+       l'appareil), pas à nous : c'est dit à l'élève, comme pour l'IA. */
+    const Recon = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let dicteeActive = null;                       // une seule dictée à la fois dans la page
+
+    function dictee(ta, onEtat){
+      let rec = null, arretVoulu = false, dejaDit = '';
+      function stop(){
+        arretVoulu = true;
+        if (rec){ try { rec.stop(); } catch(e){} }
+        if (dicteeActive === api) dicteeActive = null;
+        onEtat({ ecoute: false });
+      }
+      function ajoute(txt){
+        const t = String(txt || '').trim();
+        if (!t) return;
+        let v = ta.value;
+        // « à la ligne » est la seule commande parlée qu'on interprète : le moteur ne l'écrit jamais,
+        // alors que la ponctuation courante (point, virgule) est déjà gérée par la reconnaissance.
+        const morceaux = t.split(/\s*(?:à la ligne|nouvelle ligne|nouveau paragraphe)\s*/i);
+        morceaux.forEach(function(m, i){
+          const bout = m.trim();
+          if (i > 0) v = v.replace(/[ \t]+$/, '') + '\n';
+          if (!bout) return;
+          const besoinEspace = v && !/[\s\n]$/.test(v);
+          const finDePhrase = /[.!?\n]\s*$/.test(v) || !v.trim();
+          v += (besoinEspace ? ' ' : '') + (finDePhrase ? bout.charAt(0).toUpperCase() + bout.slice(1) : bout);
+        });
+        ta.value = v;
+        ta.dispatchEvent(new Event('input'));       // enregistre la réponse comme une saisie normale
+        ta.scrollTop = ta.scrollHeight;
+      }
+      const api = {
+        demarre: function(){
+          if (dicteeActive && dicteeActive !== api) dicteeActive.stop();
+          arretVoulu = false; dejaDit = '';
+          try { rec = new Recon(); } catch(e){ onEtat({ erreur: 'indisponible' }); return; }
+          rec.lang = 'fr-FR'; rec.continuous = true; rec.interimResults = true;
+          rec.onresult = function(ev){
+            let enCours = '';
+            for (let i = ev.resultIndex; i < ev.results.length; i++){
+              const r = ev.results[i];
+              if (r.isFinal) ajoute(r[0].transcript); else enCours += r[0].transcript;
+            }
+            onEtat({ ecoute: true, enCours: enCours });
+          };
+          rec.onerror = function(ev){
+            if (ev.error === 'no-speech' || ev.error === 'aborted') return;   // silence : on continue
+            onEtat({ erreur: ev.error });
+            if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') stop();
+          };
+          // Safari et Chrome coupent après un silence : on relance tant que l'élève n'a pas arrêté.
+          rec.onend = function(){ if (arretVoulu) return; try { rec.start(); } catch(e){ stop(); } };
+          try { rec.start(); dicteeActive = api; onEtat({ ecoute: true, enCours: '' }); }
+          catch(e){ onEtat({ erreur: 'demarrage' }); }
+        },
+        stop: stop,
+        ecoute: function(){ return dicteeActive === api; },
+      };
+      return api;
+    }
+
+    function boutonDictee(ta, q){
+      if (!Recon) return null;
+      const bloc = el('div', 'ds-dictee');
+      const b = btn('🎤 Dicter', 'ds-mini', function(){ d.ecoute() ? d.stop() : d.demarre(); });
+      b.setAttribute('aria-label', 'Dicter la réponse à la question ' + q.id.slice(1));
+      const vu = el('span', 'ds-dictee-vu'); vu.setAttribute('aria-live', 'polite');
+      bloc.appendChild(b); bloc.appendChild(vu);
+      const ERREURS = {
+        'not-allowed': 'Micro refusé : autorise-le dans les réglages du navigateur.',
+        'service-not-allowed': 'Micro refusé : autorise-le dans les réglages du navigateur.',
+        'network': 'La dictée a besoin d’internet.',
+        'audio-capture': 'Aucun micro trouvé sur cet appareil.',
+        indisponible: 'La dictée n’est pas disponible sur ce navigateur.',
+        demarrage: 'La dictée n’a pas pu démarrer. Réessaie.',
+      };
+      let erreurAffichee = false;
+      const d = dictee(ta, function(e){
+        if (e.erreur){
+          erreurAffichee = true;                     // l'arrêt qui suit ne doit pas effacer ce message
+          bloc.classList.remove('ecoute'); b.textContent = '🎤 Dicter';
+          vu.textContent = ERREURS[e.erreur] || 'La dictée s’est arrêtée.';
+          return;
+        }
+        if (e.ecoute) erreurAffichee = false;
+        bloc.classList.toggle('ecoute', !!e.ecoute);
+        b.textContent = e.ecoute ? '⏹ Arrêter' : '🎤 Dicter';
+        if (e.ecoute) vu.textContent = e.enCours ? '… ' + e.enCours : 'Je t’écoute — dis « à la ligne » pour changer de paragraphe.';
+        else if (!erreurAffichee) vu.textContent = '';
+      });
+      bloc._dictee = d;
+      return bloc;
     }
 
     // ---------- épreuve ----------
@@ -6647,7 +6801,9 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
             const ta = el('textarea', 'ds-ans'); ta.placeholder = 'Facultatif : tape ta réponse ici si tu veux que l’IA la corrige. Sinon, compose sur feuille comme au vrai DS.'; ta.value = cur.answers[q.id] || '';
             ta.setAttribute('aria-describedby', 'ds-prev-' + q.id);
             ta.addEventListener('input', function(){ cur.answers[q.id] = ta.value; saveCur(); }); qd.appendChild(ta);
-            const pv = el('p', 'ds-prev', 'Si tu demandes la correction par l’IA, cette réponse part chez notre fournisseur d’IA. N’y mets pas ton nom.');
+            const bd = boutonDictee(ta, q); if (bd) qd.appendChild(bd);
+            const pv = el('p', 'ds-prev', (bd ? 'La dictée passe par le service de reconnaissance vocale de ton navigateur (Apple ou Google selon l’appareil). ' : '')
+              + 'Si tu demandes la correction par l’IA, cette réponse part chez notre fournisseur d’IA. N’y mets pas ton nom.');
             pv.id = 'ds-prev-' + q.id; qd.appendChild(pv);
           } else {
             if (cur.answers[q.id]){ const m = el('div', 'ds-mine'); m.appendChild(el('strong', null, 'Ta réponse')); paras(m, cur.answers[q.id]); qd.appendChild(m); }
@@ -6696,6 +6852,13 @@ const APP_CFG = {"edition": "perso", "coachUrl": "", "echeances": false, "cleMat
         const fin = function(){ document.body.classList.remove('ds-printing'); pr.remove(); window.removeEventListener('afterprint', fin); };
         window.addEventListener('afterprint', fin); try { window.print(); } catch(e){ fin(); info.textContent = 'Impression indisponible ici : utilise « Copier le sujet ».'; } setTimeout(fin, 120000); }));
       a.appendChild(btn('J’ai fini → corrigé et barème', 'ok', function(){ if (!confirm('Afficher le corrigé ? Le chrono s’arrête et tu ne pourras plus composer.')) return; cur.elapsed = elapsed(); cur.runningSince = null; correction(); }));
+      // Abandonner : sans ça, un DS commencé revient à chaque ouverture de l'onglet (reprise après
+      // rechargement), et le seul moyen d'en sortir était d'aller jusqu'au corrigé.
+      a.appendChild(btn('Abandonner ce DS', 'ds-sup', function(){
+        if (!confirm('Abandonner « ' + cur.ds.titre + ' » ?\n\nLe sujet et ce que tu as tapé sont perdus, et rien n’est enregistré dans ton historique.')) return;
+        clearInterval(tick); cur = null; try { localStorage.removeItem(K_CUR); } catch(e){}
+        accueil();
+      }));
       const info = el('p', 'ds-msg'); root.appendChild(a); root.appendChild(info); window.scrollTo(0, 0);
     }
 
