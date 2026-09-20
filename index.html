@@ -5464,6 +5464,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
     const JOURS = ['dim.','lun.','mar.','mer.','jeu.','ven.','sam.'];
     const MOIS = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
     let data = load(K_ECH, null);
+    let besoinCode = false, codeFaux = false;   // planning chiffré : tant qu'on n'a pas le code, rien à afficher
     function dueTs(it){
       const p = String(it.due || '').split('-').map(Number); if (p.length !== 3 || p.some(isNaN)) return NaN;
       const d = new Date(p[0], p[1]-1, p[2]);
@@ -5575,6 +5576,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
     function render(){
       document.querySelectorAll('.f-due, .due-line').forEach(function(n){ n.remove(); });
       box.textContent = '';
+      if (besoinCode){ box.classList.remove('hidden'); champCode(); return; }
       const now = Date.now();
       const up = ((data && Array.isArray(data.items)) ? data.items : [])
         .filter(function(it){ return it && it.title && KIND_L[it.kind] && !it.done && dueTs(it) > now; })
@@ -5637,13 +5639,67 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
       });
     }
     render();
-    // Édition perso : les échéances viennent du tableau de bord (echeances.json poussé par la synchro).
-    // Édition commerciale : aucun fichier distant, l'élève saisit ses échéances lui-même (stockage local).
-    if (CFG.echeances){
-      fetch('./echeances.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
-        if (j && Array.isArray(j.items)){ data = j; save(K_ECH, j); render(); }
+    /* Le planning est publié CHIFFRÉ (organisme/export_echeances.py) : sur GitHub Pages, n'importe qui peut
+       lire le fichier, personne ne peut le comprendre. Le code est demandé une fois, puis gardé sur l'appareil.
+       Déchiffrement : PBKDF2-SHA256 → HMAC-SHA256 en flot, signature vérifiée avant toute lecture. */
+    const K_CODE = 'stmg-code-planning';
+    let paquet = null;
+
+    function champCode(){
+      const h = el('div', 'ag-head'); h.appendChild(el('h2', null, 'Mes prochaines échéances')); box.appendChild(h);
+      box.appendChild(el('p', 'ag-vide', codeFaux ? 'Code incorrect — réessaie.' : 'Ton planning est protégé : entre ton code une fois, cet appareil s’en souviendra.'));
+      const ligne = el('div', 'ech-ligne'), lab = el('label');
+      const i = el('input'); i.type = 'password'; i.autocomplete = 'off'; i.placeholder = 'code du planning';
+      lab.appendChild(el('span', null, 'Code')); lab.appendChild(i); ligne.appendChild(lab);
+      const b = el('button', 'ok', 'Afficher'); b.type = 'button';
+      b.addEventListener('click', function(){
+        const v = i.value.trim(); if (!v) return;
+        ouvrir(v).then(function(ok){
+          codeFaux = !ok;
+          if (ok){ try { localStorage.setItem(K_CODE, v); } catch(e){} besoinCode = false; }
+          render();
+        });
+      });
+      i.addEventListener('keydown', function(e){ if (e.key === 'Enter') b.click(); });
+      ligne.appendChild(b); box.appendChild(ligne);
+    }
+
+    function octets(b64){ const t = atob(b64), u = new Uint8Array(t.length); for (let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i); return u; }
+    function coller(a, b){ const u = new Uint8Array(a.length + b.length); u.set(a); u.set(b, a.length); return u; }
+    async function sceau(cle, donnees){
+      const k = await crypto.subtle.importKey('raw', cle, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+      return new Uint8Array(await crypto.subtle.sign('HMAC', k, donnees));
+    }
+    async function ouvrir(code){
+      try {
+        const sel = octets(paquet.sel), nonce = octets(paquet.nonce), chiffre = octets(paquet.chiffre), signature = octets(paquet.signature);
+        const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(code), 'PBKDF2', false, ['deriveBits']);
+        const bits = new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: sel, iterations: paquet.iter || 200000, hash: 'SHA-256' }, base, 512));
+        const kChiffre = bits.slice(0, 32), kSigne = bits.slice(32);
+        const att = await sceau(kSigne, coller(coller(sel, nonce), chiffre));
+        if (att.length !== signature.length || att.some(function(v, i){ return v !== signature[i]; })) return false;
+        const clair = new Uint8Array(chiffre.length);
+        for (let i = 0; i * 32 < chiffre.length; i++){
+          const cpt = new Uint8Array(4); new DataView(cpt.buffer).setUint32(0, i);
+          const bloc = await sceau(kChiffre, coller(nonce, cpt));
+          for (let j = 0; j < 32 && i * 32 + j < chiffre.length; j++) clair[i * 32 + j] = chiffre[i * 32 + j] ^ bloc[j];
+        }
+        const j = JSON.parse(new TextDecoder().decode(clair));
+        if (!j || !Array.isArray(j.items)) return false;
+        data = j; save(K_ECH, j); return true;
+      } catch(e){ return false; }
+    }
+    function chargerPlanning(){
+      fetch('./echeances.enc.json', { cache: 'no-store' }).then(function(r){ return r.ok ? r.json() : null; }).then(function(j){
+        if (!j || !j.chiffre) return;
+        paquet = j;
+        let code = ''; try { code = localStorage.getItem(K_CODE) || ''; } catch(e){}
+        if (!code){ besoinCode = true; render(); return; }
+        ouvrir(code).then(function(ok){ besoinCode = !ok; codeFaux = !ok; render(); });
       }).catch(function(){});
     }
+    if (CFG.echeances) chargerPlanning();
+
     setInterval(render, 60000);
     document.addEventListener('visibilitychange', function(){ if (!document.hidden) render(); });
   })();
