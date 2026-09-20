@@ -5475,7 +5475,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
 
   let formulaireEcheance = null;   // rempli par le module des échéances, utilisé par l'accueil
 
-  /* ================= échéances : echeances.json est poussé par la synchro de l'organisme =================
+  /* ================= échéances : echeances.enc.json (chiffré) est poussé par la synchro =================
      Format : {maj, tableau, items:[{id,title,matiere,kind,due,time,chapitre:[ids],steps,stepsDone}]}
      chapitre = id de fiche (droit1-2) ou de matière (droit1). Tout raisonne sur l'heure réelle. */
   (function(){
