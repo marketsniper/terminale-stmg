@@ -395,7 +395,8 @@ button:active{transform:translateY(1px) scale(.985)}
 .planjour .pj-prog{font-size:.75rem; color:var(--muted); width:100%}
 .planjour .pj-note{margin:0; padding:0 .9rem .6rem; font-size:.85rem; color:var(--muted); line-height:1.45}
 .planjour ol{list-style:none; margin:0; padding:0; border-top:1px solid var(--line)}
-.planjour li{display:grid; grid-template-columns:4.6rem 1fr auto; gap:.2rem .6rem; padding:.55rem .9rem; border-bottom:1px solid var(--line); align-items:start}
+/* .agenda.planjour : la section porte aussi .agenda, dont « li{display:flex} » (plus bas) écrasait la grille */
+.agenda.planjour li{display:grid; grid-template-columns:4.6rem 1fr auto; gap:.2rem .6rem; padding:.55rem .9rem; border-bottom:1px solid var(--line); align-items:start}
 .planjour li:last-child{border-bottom:0}
 .planjour .pj-h{font-size:.8rem; font-variant-numeric:tabular-nums; color:var(--muted); padding-top:.1rem}
 .planjour .pj-t{font-size:.92rem; font-weight:600; line-height:1.35}
@@ -6321,10 +6322,10 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
     function cocher(cle, v){ const k = load(K_COCHES, {}); k[cle] = !!v; save(K_COCHES, k); }
     let ouverts = {}, toutVoir = false;
     function isoDe(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-    function quand(iso){
+    function quand(iso, fait){   // une étape passée n'est « en retard » que si elle n'est pas faite
       const p = iso.split('-').map(Number), d = new Date(p[0], p[1]-1, p[2]), n = new Date(); n.setHours(0,0,0,0);
       const k = Math.round((d - n) / 864e5), txt = JOURS[d.getDay()] + ' ' + d.getDate();
-      return k < 0 ? 'prévu ' + txt + ' — en retard' : k === 0 ? "aujourd'hui" : k === 1 ? 'demain' : txt;
+      return k < 0 ? (fait ? txt : 'prévu ' + txt + ' — en retard') : k === 0 ? "aujourd'hui" : k === 1 ? 'demain' : txt;
     }
     function stepsTxt(it){
       let t = it.steps | 0, d = it.stepsDone | 0;
@@ -6456,7 +6457,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
             const c = el('input'); c.type = 'checkbox'; c.checked = fait;
             c.addEventListener('change', function(){ cocher(s.cle, c.checked); snd.pop(c.checked); render(); });
             lab.appendChild(c); lab.appendChild(el('span', null, s.label));
-            if (s.when && /^\d{4}-\d{2}-\d{2}$/.test(s.when)) lab.appendChild(el('small', !fait && s.when < isoDe(new Date()) ? 'retard' : null, quand(s.when)));
+            if (s.when && /^\d{4}-\d{2}-\d{2}$/.test(s.when)) lab.appendChild(el('small', !fait && s.when < isoDe(new Date()) ? 'retard' : null, quand(s.when, fait)));
             l.appendChild(lab); ol.appendChild(l);
           });
           d.appendChild(ol); main.appendChild(d);
@@ -6626,7 +6627,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
           c.addEventListener('change', function(){ cocher(b.cle, c.checked); snd.pop(c.checked); render(); });
           li.appendChild(c);
         } else li.appendChild(el('span'));
-        if (b.pour) li.appendChild(el('span', 'pj-pour', 'pour : ' + b.pour + (b.retard ? ' · prévu ' + quand(b.retard).replace(/^prévu | — en retard$/g, '') : '')));
+        if (b.pour) li.appendChild(el('span', 'pj-pour', 'pour : ' + b.pour + (b.retard ? ' · prévu ' + quand(b.retard, true) : '')));
         if (b.detail){
           const d = el('details', 'pj-d'); d.appendChild(el('summary', null, 'Détail'));
           d.appendChild(el('p', null, b.detail)); li.appendChild(d);
