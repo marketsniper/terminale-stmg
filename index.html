@@ -409,6 +409,11 @@ button:active{transform:translateY(1px) scale(.985)}
 .planjour li.pause{background:color-mix(in srgb, var(--line) 35%, var(--card))}
 .planjour li.pause .pj-t{font-weight:400; color:var(--muted); font-style:italic}
 .planjour li.now{box-shadow:inset 3px 0 0 var(--ok)}
+.planjour li.ev{background:color-mix(in srgb, #D8433B 9%, var(--card))}
+.planjour li.ev .pj-h{color:color-mix(in srgb, #D8433B 75%, var(--ink)); font-weight:700}
+.planjour .pj-badge{font-size:.7rem; font-weight:700; padding:.1rem .45rem; border-radius:6px; background:var(--card); color:color-mix(in srgb, #D8433B 75%, var(--ink)); border:1px solid color-mix(in srgb, #D8433B 35%, var(--line)); white-space:nowrap}
+.planjour li.retard .pj-h{color:color-mix(in srgb, #DD8A17 75%, var(--ink)); font-weight:700}
+.planjour .pj-pour{grid-column:2 / 4; font-size:.75rem; color:var(--muted); line-height:1.3}
 .planjour .pj-vide{margin:0; padding:.2rem .9rem .8rem; font-size:.85rem; color:var(--muted)}
 .agenda .ag-head{display:flex; align-items:baseline; gap:.6rem; padding:.7rem .9rem .5rem; flex-wrap:wrap}
 .agenda h2{margin:0; font-size:1rem; font-weight:700}
@@ -421,6 +426,17 @@ button:active{transform:translateY(1px) scale(.985)}
 .agenda .ag-del{margin-left:auto; align-self:center; flex:none; border:1px solid var(--line); background:transparent; color:var(--muted);
   border-radius:99px; width:26px; height:26px; line-height:1; font-size:.8rem; cursor:pointer}
 .agenda .ag-del:hover{border-color:var(--bad,#B23A32); color:var(--bad,#B23A32)}
+.agenda details.ag-et{margin-top:.35rem}
+.agenda details.ag-et summary{cursor:pointer; font-size:.78rem; font-weight:600; color:var(--muted)}
+.agenda details.ag-et ol{list-style:none; margin:.3rem 0 0; padding:0}
+.agenda details.ag-et li{display:block; padding:.25rem 0; border:0}
+.agenda details.ag-et label{display:flex; gap:.5rem; align-items:flex-start; flex-wrap:wrap; cursor:pointer; font-size:.85rem; line-height:1.35}
+.agenda details.ag-et input{width:1.1rem; height:1.1rem; margin:.05rem 0 0; flex:none; accent-color:var(--ok)}
+.agenda details.ag-et label span{flex:1 1 10rem; min-width:0}
+.agenda details.ag-et small{font-size:.72rem; color:var(--muted); white-space:nowrap}
+.agenda details.ag-et small.retard{color:color-mix(in srgb, #DD8A17 75%, var(--ink)); font-weight:700}
+.agenda details.ag-et li.fait span{text-decoration:line-through; color:var(--muted)}
+.agenda .ag-plus{display:block; margin:0 .9rem .7rem; font-size:.8rem; font-weight:600; background:transparent; border:1px solid var(--line); border-radius:99px; padding:.25rem .8rem; color:var(--ink); cursor:pointer; font-family:inherit}
 .agenda button.ag-open{cursor:pointer; background:transparent; font-family:inherit}
 
 /* ---------- saisie d'une échéance ---------- */
@@ -6297,9 +6313,25 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
       if (el.matches('section.matiere')){ const h = el.querySelector('h2'); return h ? h.textContent.trim() : id; }
       return null;
     }
-    function stepsTxt(it){ const t = it.steps | 0, d = it.stepsDone | 0; if (!t) return ''; const r = Math.max(0, t - d); return r ? r + ' étape' + (r > 1 ? 's' : '') + ' restante' + (r > 1 ? 's' : '') + ' sur ' + t : 'préparation terminée (' + t + '/' + t + ')'; }
+    /* Coches faites dans l'app (étapes des échéances et blocs de « Ma journée »), clé « item/étape » :
+       la même étape cochée dans l'une se voit dans l'autre. L'état « fait » exporté sert de départ,
+       la coche locale l'emporte. Demande du 27/09/2026 : « je veux vraiment tout dans l'app ». */
+    const K_COCHES = 'stmg-plan-coches';
+    function estCoche(cle, defaut){ const k = load(K_COCHES, {}); return Object.prototype.hasOwnProperty.call(k, cle) ? !!k[cle] : !!defaut; }
+    function cocher(cle, v){ const k = load(K_COCHES, {}); k[cle] = !!v; save(K_COCHES, k); }
+    let ouverts = {}, toutVoir = false;
+    function isoDe(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function quand(iso){
+      const p = iso.split('-').map(Number), d = new Date(p[0], p[1]-1, p[2]), n = new Date(); n.setHours(0,0,0,0);
+      const k = Math.round((d - n) / 864e5), txt = JOURS[d.getDay()] + ' ' + d.getDate();
+      return k < 0 ? 'prévu ' + txt + ' — en retard' : k === 0 ? "aujourd'hui" : k === 1 ? 'demain' : txt;
+    }
+    function stepsTxt(it){
+      let t = it.steps | 0, d = it.stepsDone | 0;
+      if (Array.isArray(it.etapes) && it.etapes.length){ t = it.etapes.length; d = it.etapes.filter(function(s){ return estCoche(s.cle, s.fait); }).length; }
+      if (!t) return ''; const r = Math.max(0, t - d); return r ? r + ' étape' + (r > 1 ? 's' : '') + ' restante' + (r > 1 ? 's' : '') + ' sur ' + t : 'préparation terminée (' + t + '/' + t + ')';
+    }
     function el(tag, cls, txt){ const e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
-    function dashUrl(){ return data && /^https:\/\/claude\.ai\//.test(data.tableau || '') ? data.tableau : null; }
 
     /* ---- saisie par l'élève (édition sans tableau de bord) : même format, donc le mode DS s'en sert aussi ---- */
     const manuel = !CFG.echeances;
@@ -6403,16 +6435,32 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
 
       const head = el('div', 'ag-head'); head.appendChild(el('h2', null, 'Mes prochaines échéances'));
       if (data && data.maj && !manuel) head.appendChild(el('span', 'ag-maj', 'à jour du ' + String(data.maj).slice(8,10) + '/' + String(data.maj).slice(5,7) + ' à ' + String(data.maj).slice(11,16).replace(':', 'h')));
-      if (dashUrl()){ const a = el('a', 'ag-open', 'Tableau de bord →'); a.href = dashUrl(); a.target = '_blank'; a.rel = 'noopener'; head.appendChild(a); }
       if (manuel){ const b = el('button', 'ag-open', '＋ Ajouter'); b.type = 'button'; b.addEventListener('click', function(){ snd.click(); formulaire(); }); head.appendChild(b); }
       box.appendChild(head);
       if (!up.length){ box.appendChild(el('p', 'ag-vide', 'Note ton prochain DS ou contrôle : l’app te dira ce qu’il te reste à réviser, et te proposera un DS d’entraînement sur les bons chapitres.')); return; }
       const ul = el('ul');
-      up.slice(0, 5).forEach(function(it){
+      up.slice(0, toutVoir ? up.length : 5).forEach(function(it){
         const li = el('li'), w = el('div', 'ag-when ' + sevOf(it));
         w.appendChild(el('b', null, relTxt(dayDiff(it)))); w.appendChild(document.createTextNode(dayTxt(it, false) + (it.time ? ' · ' + it.time.replace(':', 'h') : '')));
         const main = el('div', 'ag-main'); main.appendChild(el('div', 'ag-title', it.title));
-        const sub = [KIND_L[it.kind], it.matiere, stepsTxt(it)].filter(Boolean).join(' · '); main.appendChild(el('div', 'ag-sub', sub));
+        const etapes = Array.isArray(it.etapes) ? it.etapes.filter(function(s){ return s && s.cle && s.label; }) : [];
+        const sub = [KIND_L[it.kind], it.matiere, etapes.length ? '' : stepsTxt(it)].filter(Boolean).join(' · '); main.appendChild(el('div', 'ag-sub', sub));
+        if (etapes.length){
+          // les étapes de préparation, cochables ici même
+          const d = el('details', 'ag-et'); if (ouverts[it.id]) d.open = true;
+          d.addEventListener('toggle', function(){ ouverts[it.id] = d.open; });
+          d.appendChild(el('summary', null, stepsTxt(it)));
+          const ol = el('ol');
+          etapes.forEach(function(s){
+            const fait = estCoche(s.cle, s.fait), l = el('li', fait ? 'fait' : null), lab = el('label');
+            const c = el('input'); c.type = 'checkbox'; c.checked = fait;
+            c.addEventListener('change', function(){ cocher(s.cle, c.checked); snd.pop(c.checked); render(); });
+            lab.appendChild(c); lab.appendChild(el('span', null, s.label));
+            if (s.when && /^\d{4}-\d{2}-\d{2}$/.test(s.when)) lab.appendChild(el('small', !fait && s.when < isoDe(new Date()) ? 'retard' : null, quand(s.when)));
+            l.appendChild(lab); ol.appendChild(l);
+          });
+          d.appendChild(ol); main.appendChild(d);
+        }
         const chips = el('div', 'ag-chips');
         let chaps = (Array.isArray(it.chapitre) ? it.chapitre : []).filter(function(id){ return chapLabel(id); });
         if (chaps.length > 3){   // beaucoup de fiches : une puce par matière suffit
@@ -6434,6 +6482,11 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
         ul.appendChild(li);
       });
       box.appendChild(ul);
+      if (up.length > 5){
+        const plus = el('button', 'ag-plus', toutVoir ? 'Réduire' : 'Voir les ' + (up.length - 5) + ' autres échéances'); plus.type = 'button';
+        plus.addEventListener('click', function(){ toutVoir = !toutVoir; snd.click(); render(); });
+        box.appendChild(plus);
+      }
 
       // repères sur les fiches et les matières : la plus proche échéance seulement
       const seen = {};
@@ -6442,8 +6495,7 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
           if (seen[id]) return; const target = document.getElementById(id); if (!target) return; seen[id] = 1;
           const line = el('p', 'due-line');
           line.appendChild(el('strong', null, 'Prochaine échéance : '));
-          line.appendChild(document.createTextNode(it.title + ' — ' + dayTxt(it, true) + (it.time ? ' à ' + it.time.replace(':', 'h') : '') + ' (' + relTxt(dayDiff(it)) + ')' + (stepsTxt(it) ? ' · ' + stepsTxt(it) : '') + (dashUrl() ? ' · ' : '')));
-          if (dashUrl()){ const a = el('a', null, 'cocher dans le tableau de bord →'); a.href = dashUrl(); a.target = '_blank'; a.rel = 'noopener'; line.appendChild(a); }
+          line.appendChild(document.createTextNode(it.title + ' — ' + dayTxt(it, true) + (it.time ? ' à ' + it.time.replace(':', 'h') : '') + ' (' + relTxt(dayDiff(it)) + ')' + (stepsTxt(it) ? ' · ' + stepsTxt(it) : '')));
           if (target.matches('details.fiche')){
             const sum = target.querySelector('summary'), chip = sum && sum.querySelector('.done-chip');
             const b = el('span', 'f-due ' + (sevOf(it) === 'soon' ? 'soon' : ''), KIND_L[it.kind] + ' ' + dayTxt(it, false));
@@ -6469,9 +6521,8 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
        l'appareil (l'app est publique et ne peut pas écrire dans le tableau de bord) : l'état « fait »
        exporté sert de départ, la coche locale l'emporte. */
     const boxJour = $('planjour');
-    const K_COCHES = 'stmg-plan-coches';
     let jourVu = null;
-    function isoJour(d){ return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function isoJour(d){ return isoDe(d); }
     function jourTxt(iso){
       const p = iso.split('-').map(Number), d = new Date(p[0], p[1] - 1, p[2]);
       const auj = isoJour(new Date()), dem = new Date(); dem.setDate(dem.getDate() + 1);
@@ -6479,20 +6530,60 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
       return pre + JOURS[d.getDay()] + ' ' + d.getDate() + ' ' + MOIS[d.getMonth()];
     }
     function minutes(h){ const m = /^(\d{1,2}):(\d{2})$/.exec(h || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; }
+    /* Les jours affichés : ceux du planning écrit, plus — comme le tableau de bord — les jours sans planning
+       écrit où des étapes sont prévues (27/09 : « je veux tout dans l'app »). Sur chaque jour, les épreuves et
+       les rendus viennent des échéances ; aujourd'hui, les étapes en retard remontent en tête. */
+    function joursDuPlanning(){
+      const auj = isoJour(new Date());
+      const items = (data && Array.isArray(data.items) ? data.items : []).filter(function(it){ return it && it.title && KIND_L[it.kind] && !it.done && String(it.due || '') >= auj; });
+      const parJour = {};
+      (data && Array.isArray(data.plan) ? data.plan : []).forEach(function(j){
+        if (j && /^\d{4}-\d{2}-\d{2}$/.test(j.date || '') && Array.isArray(j.blocs) && j.date >= auj)
+          parJour[j.date] = { date: j.date, note: j.note || '', blocs: j.blocs.slice() };
+      });
+      const d = new Date();
+      for (let n = 0; n < 14; n++){
+        const jour = isoJour(d); d.setDate(d.getDate() + 1);
+        if (!parJour[jour]){
+          const st = [];
+          items.forEach(function(it){ (Array.isArray(it.etapes) ? it.etapes : []).forEach(function(s){
+            if (s && s.cle && s.label && s.when === jour) st.push({ title: s.label, cle: s.cle, fait: s.fait, chap: it.chapitre, pour: it.title });
+          }); });
+          if (st.length) parJour[jour] = { date: jour, note: '', blocs: st };
+        }
+        const j = parJour[jour];
+        const evs = items.filter(function(it){ return it.due === jour; });
+        if (!j && jour === auj && evs.length) parJour[jour] = { date: jour, note: '', blocs: [] };
+        if (parJour[jour]) parJour[jour].evs = evs;
+      }
+      if (parJour[auj]){
+        const deja = {}; parJour[auj].blocs.forEach(function(b){ if (b.cle) deja[b.cle] = 1; });
+        const retard = [];
+        items.forEach(function(it){ (Array.isArray(it.etapes) ? it.etapes : []).forEach(function(s){
+          if (s && s.cle && s.label && s.when && s.when < auj && dueTs(it) > Date.now() && !deja[s.cle] && !estCoche(s.cle, s.fait))
+            retard.push({ title: s.label, cle: s.cle, fait: false, chap: it.chapitre, pour: it.title, retard: s.when });
+        }); });
+        parJour[auj].retard = retard;
+      }
+      return Object.keys(parJour).sort().map(function(k){ return parJour[k]; });
+    }
     function renderJour(){
       if (!boxJour) return;
       boxJour.textContent = '';
-      const jours = (data && Array.isArray(data.plan) ? data.plan : [])
-        .filter(function(j){ return j && /^\d{4}-\d{2}-\d{2}$/.test(j.date || '') && Array.isArray(j.blocs); });
       const auj = isoJour(new Date());
-      const avenir = jours.filter(function(j){ return j.date >= auj; });
-      if (besoinCode || !avenir.length){ boxJour.classList.add('hidden'); return; }
+      const avenir = besoinCode ? [] : joursDuPlanning();
+      if (!avenir.length){ boxJour.classList.add('hidden'); return; }
       boxJour.classList.remove('hidden');
       if (!jourVu || !avenir.some(function(j){ return j.date === jourVu; })) jourVu = avenir[0].date;
       const i = avenir.findIndex(function(j){ return j.date === jourVu; }), j = avenir[i];
-      const coches = load(K_COCHES, {});
-      const estFait = function(b){ return Object.prototype.hasOwnProperty.call(coches, b.cle) ? !!coches[b.cle] : !!b.fait; };
-      const travail = j.blocs.filter(function(b){ return !b.pause; });
+      const estFait = function(b){ return estCoche(b.cle, b.fait); };
+      // ordre : en retard, puis la journée à l'heure, les épreuves à leur heure, les étapes sans heure à la fin
+      const lignes = (j.retard || []).concat(
+        j.blocs.concat((j.evs || []).map(function(it){ return { ev: it, start: it.time || '', title: it.title }; }))
+          .map(function(b, n){ return { b: b, n: n }; })
+          .sort(function(x, y){ const a = minutes(x.b.start), c = minutes(y.b.start); return (a == null ? 1e4 : a) - (c == null ? 1e4 : c) || x.n - y.n; })
+          .map(function(x){ return x.b; }));
+      const travail = lignes.filter(function(b){ return !b.pause && !b.ev; });
       const faits = travail.filter(estFait).length;
 
       const head = el('div', 'ag-head');
@@ -6507,32 +6598,40 @@ const APP_CFG = {"edition": "perso", "coachUrl": "https://claude.ai/project/01a0
       if (travail.length) head.appendChild(el('span', 'pj-prog', faits + ' / ' + travail.length + ' fait' + (faits > 1 ? 's' : '')));
       boxJour.appendChild(head);
       if (j.note) boxJour.appendChild(el('p', 'pj-note', j.note));
-      if (!j.blocs.length){ boxJour.appendChild(el('p', 'pj-vide', 'Rien de prévu ce jour-là.')); return; }
+      if (!lignes.length){ boxJour.appendChild(el('p', 'pj-vide', 'Rien de prévu ce jour-là.')); return; }
 
       const maintenant = j.date === auj ? new Date().getHours() * 60 + new Date().getMinutes() : null;
       const ol = el('ol');
-      j.blocs.forEach(function(b){
+      lignes.forEach(function(b){
         const li = el('li');
+        if (b.ev){
+          // épreuve ou rendu du jour : ça ne se coche pas, ça a lieu
+          const eprv = b.ev.kind === 'ds' || b.ev.kind === 'controle';
+          li.classList.add('ev');
+          li.appendChild(el('span', 'pj-h', b.start ? b.start.replace(':', 'h') : 'dans la journée'));
+          li.appendChild(el('span', 'pj-t', (eprv ? '' : 'À rendre : ') + b.title));
+          li.appendChild(el('span', 'pj-badge', eprv ? 'Épreuve' : KIND_L[b.ev.kind] || 'Rendu'));
+          ol.appendChild(li); return;
+        }
         if (b.pause) li.classList.add('pause');
         if (estFait(b) && !b.pause) li.classList.add('fait');
+        if (b.retard) li.classList.add('retard');
         const d0 = minutes(b.start), d1 = minutes(b.end);
         if (maintenant != null && d0 != null && d1 != null && maintenant >= d0 && maintenant < d1) li.classList.add('now');
-        li.appendChild(el('span', 'pj-h', (b.start || '').replace(':', 'h') + (b.end ? '–' + b.end.replace(':', 'h') : '')));
+        li.appendChild(el('span', 'pj-h', b.retard ? 'en retard' : b.start ? b.start.replace(':', 'h') + (b.end ? '–' + b.end.replace(':', 'h') : '') : 'à caser'));
         li.appendChild(el('span', 'pj-t', b.title || ''));
         if (!b.pause){
           const c = el('input', 'pj-c'); c.type = 'checkbox'; c.checked = estFait(b);
           c.setAttribute('aria-label', 'Fait : ' + (b.title || ''));
-          c.addEventListener('change', function(){
-            const k = load(K_COCHES, {}); k[b.cle] = c.checked; save(K_COCHES, k);
-            snd.pop(c.checked); renderJour();
-          });
+          c.addEventListener('change', function(){ cocher(b.cle, c.checked); snd.pop(c.checked); render(); });
           li.appendChild(c);
         } else li.appendChild(el('span'));
+        if (b.pour) li.appendChild(el('span', 'pj-pour', 'pour : ' + b.pour + (b.retard ? ' · prévu ' + quand(b.retard).replace(/^prévu | — en retard$/g, '') : '')));
         if (b.detail){
           const d = el('details', 'pj-d'); d.appendChild(el('summary', null, 'Détail'));
           d.appendChild(el('p', null, b.detail)); li.appendChild(d);
         }
-        const chaps = (Array.isArray(b.chap) ? b.chap : []).filter(function(id){ return chapLabel(id); });
+        const chaps = (Array.isArray(b.chap) ? b.chap : []).filter(function(id){ return chapLabel(id); }).slice(0, 3);
         if (chaps.length){
           const ch = el('div', 'pj-chips');
           chaps.forEach(function(id){ const a = el('a', null, chapLabel(id) + ' →'); a.href = '#' + id; ch.appendChild(a); });
