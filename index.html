@@ -1172,7 +1172,51 @@ button.ds-sup:hover{border-color:var(--bad,#B23A32);color:var(--bad,#B23A32)}
 <dt>TVA (taxe sur la valeur ajoutée)</dt><dd>Impôt sur la consommation&nbsp;: l’entreprise la collecte sur ses ventes (44571) et la déduit sur ses achats (44566)&nbsp;; la différence, la TVA à décaisser (44551), est reversée à l’État.</dd>
 <dt>Lettrage</dt><dd>Rapprochement, dans un compte de tiers (client ou fournisseur), des écritures qui se correspondent (facture et règlement) pour vérifier qu’elles s’annulent et repérer les impayés.</dd>
 <dt>Rapprochement bancaire</dt><dd>Contrôle qui compare le compte 512 Banque tenu par l’entreprise et le relevé envoyé par la banque, pour expliquer les écarts dus aux délais (chèque non débité, virement non encore reçu) et détecter les erreurs.</dd>
+<dt>PCG (plan comptable général)</dt><dd>Nomenclature officielle des comptes, commune à toutes les entreprises. L’entreprise l’<strong>adopte</strong>, puis l’<strong>adapte</strong> à ses besoins en subdivisant les comptes.</dd>
+<dt>Subdivision d’un compte</dt><dd>Découper un compte du PCG en sous-comptes (701 → 701001, 701002, 701003) pour suivre plus finement une famille de produits, un client, un fournisseur ou une banque.</dd>
+<dt>Compte individuel de tiers</dt><dd>Un compte par fournisseur (radical 401 + lettres tirées de son nom : 401VIC, 401FGV) ou par client (radical 411) : on voit ce que l’on doit à chacun, ou ce que chacun nous doit.</dd>
+<dt>Flux réel / flux monétaire</dt><dd>Flux réel (ou physique) : un bien ou un service qui passe d’une entreprise à l’autre (les matières livrées, les produits vendus). Flux monétaire : l’argent qui passe de l’une à l’autre.</dd>
+<dt>Flux immédiat / flux différé</dt><dd>Immédiat : la somme transite tout de suite. Différé : le flux physique a eu lieu, mais le règlement n’est pas encore fait — il devra l’être. En attendant, une <strong>dette</strong> (401) ou une <strong>créance</strong> (411) existe.</dd>
 </dl>
+<h4>Ton cours du 30/09 — le plan de comptes (cas Chocolat des Lys)</h4>
+<p>Thème 1, « Appliquer les règles comptables ». L’entreprise <strong>adopte</strong> le PCG puis l’<strong>adapte</strong>. Les <mark>classes 1 à 5</mark> sont les comptes du <strong>bilan</strong> ; les <mark>classes 6 et 7</mark> ceux du <strong>compte de résultat</strong> (comptes de gestion).</p>
+<table class="tbl">
+<thead><tr><th>Classe</th><th>Nature</th><th>Comptes de l’extrait (cas)</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Capitaux propres (et emprunts)</td><td>101000 Capital · 164000 Emprunts</td></tr>
+<tr><td>2</td><td>Immobilisations</td><td>213000 · 215400 · 218300 · un autre 218… · 281000 (amortissements)</td></tr>
+<tr><td>3</td><td>Stocks</td><td>311000 · 326000 · 355000</td></tr>
+<tr><td>4</td><td>Tiers</td><td>401VIC · 401FGV · 411000 · 445660 · 445710</td></tr>
+<tr><td>5</td><td>Financiers</td><td>512001 · 512002 · 530000</td></tr>
+<tr><td>6</td><td>Charges</td><td>601004 · 661000</td></tr>
+<tr><td>7</td><td>Produits</td><td>701001 · 701002 · 701003</td></tr>
+</tbody>
+</table>
+<p><strong>Pourquoi plusieurs comptes pour une même nature ?</strong> Le compte 701 est subdivisé en 701001, 701002 et 701003 (confiserie pour le dernier) : le dirigeant suit le chiffre d’affaires de <em>chaque famille de produits</em> et mène ses analyses de coût produit par produit.</p>
+<p><strong>Les deux façons d’adapter le PCG :</strong></p>
+<table class="tbl">
+<thead><tr><th>Façon</th><th>Comment</th><th>Exemple du cas</th></tr></thead>
+<tbody>
+<tr><td>Subdivision chiffrée</td><td>On ajoute des chiffres au numéro du PCG</td><td>701 → 701001, 701002, 701003 ; 512 → 512001, 512002</td></tr>
+<tr><td>Compte individuel de tiers</td><td>Le radical (401 fournisseurs, 411 clients) est suivi de lettres tirées du nom</td><td>401VIC, 401FGV : un compte par fournisseur</td></tr>
+</tbody>
+</table>
+<p><strong>Préconisation pour les trois clients :</strong> faire comme pour les fournisseurs → créer un <mark>compte individuel par client</mark> (subdivision du 411). Double intérêt : suivre le chiffre d’affaires réalisé avec chacun, et repérer un retard de paiement grâce au <strong>lettrage</strong>.</p>
+<p><strong>Intérêt des comptes 512001 et 512002 :</strong> l’entreprise a deux banques. Un compte par banque permet de connaître le solde de chacune et de faire le <strong>rapprochement bancaire</strong> banque par banque.</p>
+<p><strong>Les flux.</strong> Acheter des matières premières à un fournisseur, vendre des produits finis à un client : chaque opération crée un flux <em>réel</em> (le bien) et un flux <em>monétaire</em> (l’argent). Si l’argent ne passe pas tout de suite, le flux monétaire est <em>différé</em> : l’entreprise a contracté une dette (achat de 316,50 € à crédit), qu’elle devra <strong>régler</strong> plus tard (virement de 316,50 € au fournisseur).</p>
+<p>Chaque flux se lit du point de vue de l’entreprise : ce qu’elle reçoit ou ce qui augmente ses avoirs est un <mark>emploi = débit</mark> ; ce qui en est l’origine est une <mark>ressource = crédit</mark>. Ton cours : « vente de produits finis = ressource = crédit = flux sortant ».</p>
+<table class="tbl">
+<thead><tr><th>Flux (cas Chocolat des Lys)</th><th>Emploi / Débit</th><th>Ressource / Crédit</th><th>Compte</th></tr></thead>
+<tbody>
+<tr><td>Entrée de 500 kg de sucre (achat de 316,50 €)</td><td>✓</td><td></td><td>601… Achats de matières premières</td></tr>
+<tr><td>Dette de 316,50 € envers le fournisseur</td><td></td><td>✓</td><td>401… Fournisseur</td></tr>
+<tr><td>Sortie des chocolats vendus 730 €</td><td></td><td>✓</td><td>701… Ventes de produits finis</td></tr>
+<tr><td>Créance de 730 € sur le client</td><td>✓</td><td></td><td>411… Client</td></tr>
+<tr><td>Virement de 316,50 € : la dette disparaît…</td><td>✓</td><td></td><td>401… Fournisseur</td></tr>
+<tr><td>… et l’argent sort de la banque</td><td></td><td>✓</td><td>512… Banque</td></tr>
+</tbody>
+</table>
+<div class="box astuce"><p class="box-t">D’où vient ce passage</p><p>De tes notes du 30/09 (photos). Deux choses à vérifier sur ta feuille de cours : le deuxième compte « 218… » est illisible sur la photo ; et dans tes notes, les comptes n’étaient pas alignés sur leur classe (281000 est un compte de classe 2, 445710 un compte de classe 4) — ils sont remis à leur place ici. Le tableau emploi / ressource est rempli avec la règle « emploi = débit, ressource = crédit » : quelques croix de ta feuille étaient raturées. Compare avec la correction faite en classe : si elle diffère, c’est elle qui compte.</p></div>
 <h4>À comprendre</h4>
 <p>Chaque flux a une double dimension&nbsp;: une ressource (d’où vient la valeur) et un emploi (où va la valeur). Exemple&nbsp;: un règlement fournisseur par banque a pour emploi la diminution de la dette (401) et pour ressource la diminution de la banque (512). C’est cette double lecture qui fonde la <mark>partie double</mark>&nbsp;: dans chaque écriture, total des débits = total des crédits.</p>
 <table class="tbl">
