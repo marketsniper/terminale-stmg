@@ -56,6 +56,15 @@ function _epVal(v){
 function _epPool(){
   return SKILLS.filter(s => { const x = st(s.id); return x.n > 0 || x.mastered; });
 }
+/* Les quatre formats propres aux concours ne demandent que des notions de collège : ils entrent
+   dans le tirage de l'épreuve blanche même s'ils ne sont pas encore ouverts sur le sentier.
+   L'épreuve n'appelle jamais record() : ni altitude ni verrou, la règle des 90 % est intacte. */
+const _epConcours = ['p5-05-suites-logiques', 'p5-06-vitesses', 'p5-07-calcul-rapide', 'p5-08-problemes-qcm'];
+function _epSujet(pool){
+  return pool.concat(SKILLS.filter(s => _epConcours.indexOf(s.id) >= 0 && pool.indexOf(s) < 0));
+}
+/* Dernière correction affichée : le retour depuis une leçon la rouvre au lieu de lancer une épreuve neuve. */
+let _epRevoir = null;
 /* Les cinq derniers résultats, en pastilles datées. */
 function _epBadges(){
   const derniers = (S.epreuves || []).slice(-5).reverse();
@@ -132,6 +141,9 @@ function vEpreuve(){
       '<div class="row"><button class="btn-primary lg" type="button" id="ep-go">' +
         '<span>Commencer l\'épreuve</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button></div>' +
       '<p class="small muted">Une fois lancée : pas de retour en arrière sur le chrono, et le temps ne s\'arrête qu\'à la pause.</p>' +
+      '<p class="small muted" id="ep-sujet">Sujet tiré de tes ' + pool.length + ' compétences travaillées' +
+        (_epSujet(pool).length > pool.length ? ', plus les formats de concours (suites logiques, vitesses, calcul astucieux, mini-problèmes).' : '.') +
+        ' Les chapitres que tu n\'as pas encore ouverts n\'y sont pas.</p>' +
       (badges ? '<section><p class="overline">Tes cinq dernières épreuves</p>' + badges + '</section>' : '') +
     '</section>';
 
@@ -161,8 +173,12 @@ function runEpreuve(params){
   const pool = _epPool();
 
   if (pool.length < _epPoolMin){ vEpreuve(); return; }
+  /* Retour par l'historique (flèche de la leçon, geste iOS) : jamais d'épreuve neuve.
+     On rouvre la dernière correction si elle est encore là, sinon l'écran « Prêt ? ». */
+  if (params && params.retour){ if (_epRevoir) _epRevoir(); else vEpreuve(); return; }
+  _epRevoir = null;
 
-  const suite = _epTirage(pool, F.n);
+  const suite = _epTirage(_epSujet(pool), F.n);
   const N = suite.length;
   const exos = suite.map(s => genFor(s, 2));
   const rep = new Array(N).fill(null);        // null : jamais ouverte · '' : vue et laissée vide
@@ -449,7 +465,7 @@ function runEpreuve(params){
     S.epreuves.push({date: Date.now(), fmt: F.nom, note: note, just: just, faux: faux, vide: vide,
                      n: N, parQ: parQ, hasard: nHasard, rythme: rythme});
     if (S.epreuves.length > 40) S.epreuves.shift();
-    jToday().seance = true;
+    _seanceValiderJour(N - vide, N);        // une copie rendue presque vide ne valide pas la journée
     save();
 
     /* ---- analyse de stratégie (PRODUCT-SPEC S8) ---- */
@@ -503,16 +519,16 @@ function runEpreuve(params){
           '</article>').join('') + '</section>';
     });
 
-    const emoji = note >= 18 ? '<span class="emoji" aria-hidden="true">🎉</span> '
-                : note >= 14 ? '<span class="emoji" aria-hidden="true">💪</span> ' : '';
-
+    const ajoutes = {};
+    /* L'affichage est rejouable : le retour depuis « La leçon » rouvre cette correction. */
+    const afficher = () => {
     setCtx('plein');
     app().dataset.density = 'lecture';
     app().innerHTML =
       '<section class="fin-card" data-kind="serie">' +
         '<p class="overline">Épreuve ' + esc(F.nom) + (tempsEcoule ? ' · temps écoulé' : '') + ' · ' + esc(_epJour(Date.now())) + '</p>' +
         '<h2 class="display-l">' + esc(fv(note, 1)) + ' / 20</h2>' +
-        '<p class="small muted">' + emoji + just + ' sur ' + N + ' en ' + minutes + ' min.</p>' +
+        '<p class="small muted">' + just + ' sur ' + N + ' en ' + minutes + ' min.</p>' +
         '<div class="figures display">' +
           '<div class="figure"><b class="num">' + just + '</b><span class="overline">justes</span></div>' +
           '<div class="figure"><b class="num">' + faux + '</b><span class="overline">fausses</span></div>' +
@@ -530,7 +546,6 @@ function runEpreuve(params){
       '</section>' +
       (corr ? '<section class="view"><p class="overline">Correction par compétence</p>' + corr + '</section>' : '');
 
-    const ajoutes = {};
     const ajouter = k => {
       if (ajoutes[k]) return false;
       const f = fautes.find(x => x.k === k);
@@ -544,15 +559,18 @@ function runEpreuve(params){
       return true;
     };
 
-    document.querySelectorAll('[data-ajout]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-ajout]').forEach(b => {
+      const dedans = () => { b.disabled = true; b.innerHTML = ic('check', 'ic-20') + 'Dans le cahier'; };
+      if (ajoutes[Number(b.dataset.ajout)]) dedans();
+      b.addEventListener('click', () => {
       snd.click();
       if (ajouter(Number(b.dataset.ajout))){
         save();
-        b.disabled = true;
-        b.innerHTML = ic('check', 'ic-20') + 'Dans le cahier';
+        dedans();
         toast('Ajoutée au cahier. Elle reviendra demain.', {tone: 'ok', icon: 'book-bookmark'});
       }
-    }));
+      });
+    });
     document.querySelectorAll('[data-lecon]').forEach(b =>
       b.addEventListener('click', () => { snd.click(); nav('skill', {id: b.dataset.lecon}); }));
 
@@ -569,6 +587,9 @@ function runEpreuve(params){
     const bt = $('ep-travailler');
     if (bt && pire) bt.addEventListener('click', () => { snd.click(); nav('skill', {id: pire.id}); });
     $('ep-fini').focus();
+    };
+    afficher();
+    _epRevoir = afficher;
 
     if (note >= 16) celebrer(3, {texte: 'Épreuve ' + F.nom + ' · ' + fv(note, 1) + ' sur 20.', icon: 'trophy'});
     else celebrer(2, {texte: 'Épreuve terminée · ' + fv(note, 1) + ' sur 20.', icon: 'hourglass'});

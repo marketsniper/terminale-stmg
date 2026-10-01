@@ -1,6 +1,6 @@
 /* ===== Maths · De zéro au sommet : thème Aube et Nuit =====
    Script classique : portée globale partagée avec les autres modules.
-   Ce fichier déclare : initTheme, setTheme, themeActuel, sunrise.
+   Ce fichier déclare : initTheme, setTheme, themeActuel, themeSuivant, sunrise.
    Source de vérité : S.prefs.theme parmi 'auto', 'light', 'dark' ; localStorage('mzs-theme') en est le miroir. */
 'use strict';
 
@@ -13,6 +13,17 @@ function themeActuel(){
   const p = (typeof S !== 'undefined' && S.prefs && S.prefs.theme) || 'auto';
   if (p === 'light' || p === 'dark') return p;
   try { return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch(e){ return 'light'; }
+}
+
+/* Préférence à poser quand on bascule depuis le bouton de l'en-tête : le thème affiché change à chaque appui.
+   Si le thème visé est celui de l'appareil, on revient à 'auto' (l'app continue de suivre le système) ;
+   sinon le choix est explicite. Avant, depuis Nuit on posait toujours 'auto' : sur un iPhone en mode sombre
+   le bouton ne faisait plus rien. */
+function themeSuivant(){
+  const vise = themeActuel() === 'dark' ? 'light' : 'dark';
+  let sys = 'light';
+  try { sys = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; } catch(e){}
+  return vise === sys ? 'auto' : vise;
 }
 
 /* Pose l'attribut, le miroir localStorage et la couleur de barre d'état. Aucune transition ici. */

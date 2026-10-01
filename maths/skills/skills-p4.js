@@ -3,7 +3,9 @@
 function fr(x){ return String(x).replace('.', ','); }
 function r2(x){ return Math.round(x*100)/100; }
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
-function par(n){ return n<0 ? '('+n+')' : String(n); }
+function par(n){ return n<0 ? '('+mn(n)+')' : String(n); }
+// Nombre affiché à la française : virgule décimale et vrai signe moins.
+function mn(n){ return String(n).replace('.', ',').replace('-', '−'); }
 function trino(a,b,c){
   var s=(a===1?'':(a===-1?'−':String(a).replace('-','−')))+'x²';
   if(b!==0) s+=(b>0?' + ':' − ')+(Math.abs(b)===1?'':Math.abs(b))+'x';
@@ -44,7 +46,13 @@ SKILLS.push({
 <p>4. Je vérifie : 2² − 5 × 2 + 6 = 4 − 10 + 6 = 0. Ça marche.</p>
 </div>
 <p>Le <mark>signe du trinôme</mark> : quand Δ &gt; 0, f(x) est du <mark>signe de a à l'extérieur</mark> des racines, et du signe contraire entre elles. Ici a = 1 &gt; 0 : positif avant 2, négatif entre 2 et 3, positif après 3.</p>
-<div class="box retenir"><p class="box-t">À retenir</p><p>Δ = b² − 4ac, racines = (−b ± √Δ) ÷ (2a). Signe de a dehors, signe contraire dedans.</p></div>
+<p>Les deux autres cas, à connaître aussi :</p>
+<table class="tbl"><tr><th>Discriminant</th><th>Solutions de f(x) = 0</th><th>Signe de f(x)</th></tr>
+<tr><td>Δ &gt; 0</td><td>deux solutions</td><td>signe de a dehors, contraire dedans</td></tr>
+<tr><td>Δ = 0</td><td>une seule : x = −b ÷ (2a)</td><td>signe de a partout, nul en cette valeur</td></tr>
+<tr><td>Δ &lt; 0</td><td>aucune</td><td>signe de a partout</td></tr></table>
+<p>Exemple avec Δ = 0 : f(x) = x² − 6x + 9 donne Δ = 36 − 36 = 0, une seule solution x = 6 ÷ 2 = 3. Exemple avec Δ &lt; 0 : f(x) = x² + 2x + 5 donne Δ = 4 − 20 = −16, aucune solution, et f(x) est toujours positif car a = 1 &gt; 0.</p>
+<div class="box retenir"><p class="box-t">À retenir</p><p>Δ = b² − 4ac. Si Δ &gt; 0 : deux racines (−b ± √Δ) ÷ (2a), signe de a dehors, signe contraire dedans. Si Δ = 0 : une seule racine −b ÷ (2a). Si Δ &lt; 0 : aucune racine, f(x) garde le signe de a.</p></div>
 <div class="box piege"><p class="box-t">Piège classique</p><p>Si b = −5, alors b² = (−5)² = <mark>+25</mark>, jamais −25. Mets toujours b entre parenthèses avant de le mettre au carré.</p></div>
 <div class="box astuce"><p class="box-t">Astuce</p><p>Une fois tes racines trouvées, remplace x par l'une d'elles dans f(x) : tu dois tomber sur 0. Vérification gratuite en dix secondes.</p></div>`,
   gen(level, R){
@@ -56,7 +64,21 @@ SKILLS.push({
     var D=b*b-4*a*c;
     var f='f(x) = '+trino(a,b,c);
     var petite=Math.min(x1,x2), grande=Math.max(x1,x2);
-    var type=(level===1)?R.int(1,3):R.int(2,4);
+    var type=(level===1)?R.int(1,3):R.int(2,5);
+    if(type===5){
+      // Combien de solutions ? Les trois cas : Δ > 0, Δ = 0, Δ < 0.
+      var cas=R.pick(['deux','une','zero']);
+      var a5=R.pick([1,1,2,-1]), k5=R.int(-4,4), b5, c5;
+      if(cas==='deux'){ b5=b; c5=c; a5=a; }
+      else if(cas==='une'){ b5=-2*a5*k5; c5=a5*k5*k5; }
+      else { b5=-2*a5*k5; c5=a5*k5*k5+a5*R.int(1,5); }
+      var D5=b5*b5-4*a5*c5;
+      var NB=['Aucune solution','Une seule solution','Deux solutions','Une infinité de solutions'];
+      return {q:'On considère f(x) = '+trino(a5,b5,c5)+'.\nCalcule Δ = b² − 4ac. Combien de solutions l\'équation f(x) = 0 possède-t-elle ?',
+        a:(D5>0?NB[2]:(D5===0?NB[1]:NB[0])), accept:null, choix:NB.slice(),
+        expl:'Le nombre de solutions se lit sur le signe de Δ. Ici Δ = '+par(b5)+'² − 4 × '+par(a5)+' × '+par(c5)+' = '+(b5*b5)+' − '+par(4*a5*c5)+' = '+mn(D5)+'. '
+          +(D5>0?'Δ > 0 : deux solutions.':(D5===0?'Δ = 0 : une seule solution, x = −b ÷ (2a) = '+mn(-b5/(2*a5))+'.':'Δ < 0 : aucune solution, et f(x) garde le signe de a.'))};
+    }
     if(type===1){
       var kq=R.pick([['a',a],['b',b],['c',c]]);
       return {q:'On considère '+f+'.\nQue vaut le coefficient '+kq[0]+' ?', a:String(kq[1]), accept:null, choix:null,
@@ -64,19 +86,19 @@ SKILLS.push({
     }
     if(type===2){
       return {q:'On considère '+f+'.\nCalcule le discriminant Δ = b² − 4ac.', a:String(D), accept:null, choix:null,
-        expl:'Ici b² = '+par(b)+'² = '+(b*b)+' et 4ac = 4 × '+par(a)+' × '+par(c)+' = '+(4*a*c)+'. Donc Δ = '+(b*b)+' − '+par(4*a*c)+' = '+D+'.'};
+        expl:'Ici b² = '+par(b)+'² = '+(b*b)+' et 4ac = 4 × '+par(a)+' × '+par(c)+' = '+mn(4*a*c)+'. Donc Δ = '+(b*b)+' − '+par(4*a*c)+' = '+D+'.'};
     }
     if(type===3){
       var which=R.pick(['petite','grande']);
       return {q:'On considère '+f+'. On sait que Δ = '+D+'.\nDonne la plus '+which+' des deux racines.',
         a:String(which==='petite'?petite:grande), accept:null, choix:null,
-        expl:'Avec x = (−b ± √Δ) ÷ (2a) et √Δ = '+Math.sqrt(D)+', on trouve les racines '+petite+' et '+grande+'.'};
+        expl:'Avec x = (−b ± √Δ) ÷ (2a) et √Δ = '+Math.sqrt(D)+', on trouve les racines '+mn(petite)+' et '+mn(grande)+'.'};
     }
     var pos=a>0;
-    return {q:'Le trinôme '+f+' a pour racines '+petite+' et '+grande+'.\nQuel est le signe de f(x) sur l\'intervalle ]'+petite+' ; '+grande+'[ ?',
+    return {q:'Le trinôme '+f+' a pour racines '+mn(petite)+' et '+mn(grande)+'.\nQuel est le signe de f(x) sur l\'intervalle ]'+mn(petite)+' ; '+mn(grande)+'[ ?',
       a:(pos?'négatif':'positif'), accept:null,
       choix:['positif','négatif','nul','positif puis négatif'],
-      expl:'Un trinôme est du signe de a à l\'extérieur des racines et du signe contraire entre les racines. Ici a = '+a+'.'};
+      expl:'Un trinôme est du signe de a à l\'extérieur des racines et du signe contraire entre les racines. Ici a = '+mn(a)+'.'};
   }
 });
 
@@ -112,9 +134,9 @@ SKILLS.push({
       else if(level===2){ a1=R.int(-4,0); b1=a1+R.int(2,6); }
       else { a1=R.int(-6,-1); b1=a1+R.int(1,4); }
       var t=a1+b1;
-      return {q:'On considère f(x) = x².\nCalcule le taux de variation de f entre '+a1+' et '+b1+', c\'est-à-dire (f('+b1+') − f('+par(a1)+')) ÷ ('+b1+' − '+par(a1)+').',
+      return {q:'On considère f(x) = x².\nCalcule le taux de variation de f entre '+mn(a1)+' et '+mn(b1)+', c\'est-à-dire (f('+mn(b1)+') − f('+mn(a1)+')) ÷ ('+mn(b1)+' − '+par(a1)+').',
         a:String(t), accept:null, choix:null,
-        expl:'f('+b1+') = '+(b1*b1)+' et f('+a1+') = '+(a1*a1)+'. Taux = ('+(b1*b1)+' − '+(a1*a1)+') ÷ '+(b1-a1)+' = '+t+'.'};
+        expl:'f('+mn(b1)+') = '+(b1*b1)+' et f('+mn(a1)+') = '+(a1*a1)+'. Taux = ('+(b1*b1)+' − '+(a1*a1)+') ÷ '+(b1-a1)+' = '+mn(t)+'.'};
     }
     if(type===2){
       var x0=R.int(1,4), dx=(level===3?2:R.int(1,3)), m, y0=R.int(-3,5);
@@ -122,9 +144,9 @@ SKILLS.push({
       else if(level===2) m=R.pick([-4,-3,-2,-1,2,3,4,5]);
       else m=R.pick([1,3,5,-1,-3,-5])/2;
       var y2=y0+m*dx;
-      return {q:'La tangente à la courbe de f au point d\'abscisse '+x0+' passe par les points ('+x0+' ; '+y0+') et ('+(x0+dx)+' ; '+y2+').\nQue vaut f\'('+x0+') ?',
+      return {q:'La tangente à la courbe de f au point d\'abscisse '+x0+' passe par les points ('+x0+' ; '+mn(y0)+') et ('+(x0+dx)+' ; '+mn(y2)+').\nQue vaut f\'('+x0+') ?',
         a:String(m), accept:null, choix:null,
-        expl:'f\'('+x0+') est le coefficient directeur de la tangente : ('+y2+' − '+par(y0)+') ÷ ('+(x0+dx)+' − '+x0+') = '+fr(m)+'.'};
+        expl:'f\'('+x0+') est le coefficient directeur de la tangente : ('+mn(y2)+' − '+par(y0)+') ÷ ('+(x0+dx)+' − '+x0+') = '+mn(m)+'.'};
     }
     var a0=R.int(1,5);
     if(level>=2 && R.int(0,1)===1){
@@ -134,11 +156,11 @@ SKILLS.push({
         choix:[bonne0,'La courbe coupe l\'axe des abscisses en x = '+a0,'f('+a0+') = 0','La fonction f est nulle partout'],
         expl:'f\'('+a0+') = 0 signifie que la pente de la tangente est nulle : la tangente est horizontale. Cela ne dit rien sur la valeur de f('+a0+').'};
     }
-    var m3=R.pick([2,3,4,5,-2,-3]);
+    var m3n=R.pick([2,3,4,5,-2,-3]), m3=mn(m3n);
     var bonne='La tangente au point d\'abscisse '+a0+' a pour coefficient directeur '+m3;
     return {q:'On sait que f\'('+a0+') = '+m3+'.\nQue peut-on en déduire ?',
       a:bonne, accept:null,
-      choix:[bonne,'f('+a0+') = '+m3,'La courbe passe par le point ('+a0+' ; '+m3+')',(m3>0?'La fonction f est croissante partout':'La fonction f est décroissante partout')],
+      choix:[bonne,'f('+a0+') = '+m3,'La courbe passe par le point ('+a0+' ; '+m3+')',(m3n>0?'La fonction f est croissante partout':'La fonction f est décroissante partout')],
       expl:'f\'('+a0+') est la pente de la tangente en x = '+a0+', pas la valeur de f. Et cette pente ne vaut que localement, autour de '+a0+'.'};
   }
 });
@@ -191,7 +213,7 @@ SKILLS.push({
       var A=R.int(1,4), B=R.int(-5,5), C=R.int(-9,9), k=R.int(1,4);
       var v=2*A*k+B;
       return {q:'f(x) = '+trino(A,B,C)+'.\nCalcule f\'('+k+').', a:String(v), accept:null, choix:null,
-        expl:'f\'(x) = '+lin(2*A,B)+'. En x = '+k+' : '+(2*A)+' × '+k+' + '+par(B)+' = '+v+'.'};
+        expl:'f\'(x) = '+lin(2*A,B)+'. En x = '+k+' : '+(2*A)+' × '+k+(B===0?'':(B>0?' + '+B:' − '+Math.abs(B)))+' = '+mn(v)+'.'};
     }
     if(R.int(1,3)===3){
       var A3=R.int(1,3), B3=R.int(1,5), D3=R.int(1,9);
@@ -199,12 +221,12 @@ SKILLS.push({
       return {q:'f(x) = '+cube(A3,-B3,0,D3)+'.\nQuelle est l\'expression de f\'(x) ?',
         a:corr, accept:null,
         choix:[corr,(3*A3)+'x² − '+(2*B3)+'x + '+D3,(A3===1?'':A3)+'x² − '+(B3===1?'':B3)+'x',(3*A3)+'x³ − '+(2*B3)+'x²'],
-        expl:'('+A3+'x³)\' = '+(3*A3)+'x², (−'+B3+'x²)\' = −'+(2*B3)+'x, et la constante '+D3+' donne 0.'};
+        expl:'('+(A3===1?'':A3)+'x³)\' = '+(3*A3)+'x², (−'+(B3===1?'':B3)+'x²)\' = −'+(2*B3)+'x, et la constante '+D3+' donne 0.'};
     }
     var A2=R.int(1,2), B2=R.int(-3,3), C2=R.int(-5,5), D2=R.int(-9,9), k2=R.int(1,3);
     var v2=3*A2*k2*k2+2*B2*k2+C2;
     return {q:'f(x) = '+cube(A2,B2,C2,D2)+'.\nCalcule f\'('+k2+').', a:String(v2), accept:null, choix:null,
-      expl:'f\'(x) = '+trino(3*A2,2*B2,C2)+'. En x = '+k2+', cela donne '+v2+'.'};
+      expl:'f\'(x) = '+trino(3*A2,2*B2,C2)+'. En x = '+k2+', cela donne '+mn(v2)+'.'};
   }
 });
 

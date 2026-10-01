@@ -278,4 +278,64 @@ R l'événement « la commande contient au moins un article en promotion ».</p>
   ]
 });
 
+// ============================================================
+// pap-4-06 — Sommes de suites : le dernier salaire ou le total ?
+// ============================================================
+PAPIERS.push({
+  id: 'pap-4-06',
+  phase: 4,
+  titre: "Deux contrats : le dernier salaire ou le total ?",
+  duree: 20,
+  skills: ['p4-06b-sommes-suites', 'p4-05-suites-arithmetiques', 'p4-06-suites-geometriques'],
+  enonce: `<p>Yanis signe un contrat de 6 ans. L'entreprise lui laisse le choix entre deux formules de salaire annuel :</p>
+<p><b>Formule A</b> : 20 000 € la première année, puis 850 € de plus chaque année.<br>
+<b>Formule B</b> : 20 000 € la première année, puis une augmentation de 4 % chaque année.</p>
+<p>On note a(n) le salaire annuel, en euros, de la n-ième année avec la formule A, et b(n) celui de la n-ième année avec la formule B. Ainsi a(1) = b(1) = 20 000.</p>
+<ol>
+<li>Préciser la nature de chacune des deux suites, sa raison et son sens de variation.</li>
+<li>Exprimer a(n) et b(n) en fonction de n. Attention : les deux suites commencent au rang 1.</li>
+<li>Calculer a(6) et b(6). On arrondira à l'euro.</li>
+<li>Calculer le total gagné en 6 ans avec chaque formule : S<sub>A</sub> = a(1) + a(2) + … + a(6) et S<sub>B</sub> = b(1) + b(2) + … + b(6). On arrondira à l'euro.</li>
+<li>Yanis dit : « La formule B donne le meilleur salaire la 6<sup>e</sup> année, donc c'est elle qui rapporte le plus. » A-t-il raison ? Justifier par une phrase.</li>
+</ol>`,
+  corrige: `<div class="etapes">
+<p><b>Question 1.</b> Formule A : on passe d'une année à la suivante en <b>ajoutant</b> toujours 850. La suite (a(n)) est <b>arithmétique de raison r = 850</b>. Comme r &gt; 0, elle est <b>croissante</b>.</p>
+<p>Formule B : augmenter de 4 %, c'est multiplier par 1 + 4 ÷ 100 = 1,04. La suite (b(n)) est <b>géométrique de raison q = 1,04</b>. Son premier terme est positif et q &gt; 1 : elle est <b>croissante</b>.</p>
+</div>
+<div class="etapes">
+<p><b>Question 2.</b> Les suites démarrent au rang 1 : de la 1<sup>re</sup> à la n-ième année, il y a n − 1 augmentations.</p>
+<p><b>a(n) = 20 000 + 850(n − 1)</b>.</p>
+<p><b>b(n) = 20 000 × 1,04<sup>n − 1</sup></b>.</p>
+</div>
+<div class="etapes">
+<p><b>Question 3.</b> a(6) = 20 000 + 850 × 5 = 20 000 + 4 250 = <b>24 250 €</b>.</p>
+<p>b(6) = 20 000 × 1,04<sup>5</sup> = 20 000 × 1,21665… ≈ <b>24 333 €</b>.</p>
+</div>
+<div class="etapes">
+<p><b>Question 4.</b> De a(1) à a(6), il y a 6 termes.</p>
+<p>Somme arithmétique = nombre de termes × (premier terme + dernier terme) ÷ 2.</p>
+<p>S<sub>A</sub> = 6 × (20 000 + 24 250) ÷ 2 = 6 × 44 250 ÷ 2 = <b>132 750 €</b>.</p>
+<p>Somme géométrique = premier terme × (1 − q<sup>nombre de termes</sup>) ÷ (1 − q).</p>
+<p>S<sub>B</sub> = 20 000 × (1 − 1,04<sup>6</sup>) ÷ (1 − 1,04) = 20 000 × (−0,26532…) ÷ (−0,04) = 20 000 × 6,63298… ≈ <b>132 660 €</b>.</p>
+<p>Vérification en additionnant les six salaires de la formule B : 20 000 + 20 800 + 21 632 + 22 497,28 + 23 397,17 + 24 333,06 ≈ 132 659,51 €.</p>
+</div>
+<div class="etapes">
+<p><b>Question 5.</b> Yanis a tort : il confond un terme et une somme.</p>
+<p>La 6<sup>e</sup> année, la formule B paie mieux : 24 333 € contre 24 250 €, soit 83 € de plus.</p>
+<p>Mais sur l'ensemble des 6 ans, c'est la formule A qui rapporte le plus : 132 750 € contre 132 660 €, soit environ 90 € de plus.</p>
+<p><b>Conclusion : le dernier salaire est plus élevé avec la formule B, mais le total gagné en 6 ans est plus élevé avec la formule A. Pour un contrat de 6 ans, Yanis a intérêt à choisir la formule A.</b></p>
+<p>C'est logique : la formule B démarre plus lentement (800 € d'augmentation la 2<sup>e</sup> année contre 850 €) et ne dépasse la formule A que la dernière année.</p>
+</div>
+<div class="box piege"><p class="box-t">Erreur classique</p><p>Trois fautes coûtent cher ici. Écrire a(n) = 20 000 + 850n ou b(n) = 20 000 × 1,04<sup>n</sup> alors que les suites démarrent au rang 1. Mettre l'exposant 5 dans la somme géométrique : l'exposant est le <b>nombre de termes</b>, donc 6. Et répondre à la question 5 avec a(6) et b(6) seulement : « rapporter le plus » sur 6 ans, c'est une somme.</p></div>
+<div class="box astuce"><p class="box-t">Ce que le correcteur attend</p><p>Les deux formules de somme écrites en toutes lettres avant l'application numérique, le nombre de termes annoncé (6), les arrondis à l'euro, et une conclusion qui distingue clairement le salaire de la 6<sup>e</sup> année (un terme) et le total des 6 années (une somme).</p></div>`,
+  criteres: [
+    "J'ai écrit que (a(n)) est arithmétique de raison 850, que (b(n)) est géométrique de raison 1,04, et que les deux sont croissantes.",
+    "J'ai écrit a(n) = 20 000 + 850(n − 1) et b(n) = 20 000 × 1,04 puissance (n − 1).",
+    "J'ai trouvé a(6) = 24 250 € et b(6) ≈ 24 333 €.",
+    "J'ai annoncé 6 termes et trouvé le total de la formule A : 132 750 €.",
+    "J'ai mis l'exposant 6 dans la somme géométrique et trouvé environ 132 660 € pour la formule B.",
+    "J'ai conclu par une phrase qui distingue le salaire de la 6e année (formule B) et le total sur 6 ans (formule A)."
+  ]
+});
+
 })();

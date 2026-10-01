@@ -100,7 +100,6 @@ function vReglages(params){
   if (!cible) return;
   setCtx('outil');
   cible.dataset.density = 'outil';
-  cible.className = 'view view-reglages';
 
   const pr = S.profil, pf = S.prefs;
   const auj = todayKey();
@@ -145,7 +144,7 @@ function vReglages(params){
       _regSwitch('reg-indices', 'Indices dans les exercices', pf.indices !== false)) +
     _regRow('Astuces de calcul mental', 'Auto : elles s\'effacent dès que la famille est fiable.',
       _regSegment('reg-cmi', [['auto', 'Auto'], ['oui', 'Toujours'], ['non', 'Jamais']], pf.cmIndices || 'auto', 'Astuces de calcul mental')) +
-    _regRow('Bouton Le Prof', 'Le bouton rond pendant les exercices et les leçons.',
+    _regRow('Bouton Le Prof', 'L\'accès au Prof pendant les exercices et les leçons.',
       _regSwitch('reg-prof', 'Bouton Le Prof', pf.prof !== false));
 
   /* 5. Données */
@@ -157,7 +156,8 @@ function vReglages(params){
     '</div>' +
     '<input type="file" id="reg-fichier" accept="application/json,.json" hidden>' +
     '<details><summary>Sauvegarde automatique GitHub (avancé)</summary>' +
-      '<p class="small muted">Une copie chiffrée par ton compte, dans un Gist secret. Utile si tu changes d\'appareil.</p>' +
+      '<p class="small muted">Une copie de ta progression dans un Gist secret de ton compte GitHub. Elle n\'est pas chiffrée : ' +
+        '« secret » veut dire non listé, donc lisible par qui en connaît l\'adresse. Utile si tu changes d\'appareil.</p>' +
       _regChampCle('reg-tok', 'Jeton GitHub', '', 'Un jeton personnel avec la seule permission « gist ». Il reste sur cet appareil.') +
       '<div class="row">' +
         '<button class="btn sm" type="button" id="reg-gh-on">Activer la sauvegarde</button>' +
@@ -202,6 +202,7 @@ function vReglages(params){
     '</div>';
 
   cible.innerHTML =
+    '<div class="view view-reglages">' +
     '<h1>Réglages</h1>' +
     _regSec('set-profil', 'Profil', profil) +
     _regSec('set-apparence', 'Apparence', apparence) +
@@ -209,7 +210,8 @@ function vReglages(params){
     _regSec('set-seance', 'La séance', seance) +
     _regSec('set-donnees', 'Tes données', donnees) +
     _regSec('set-prof', 'Le Prof', prof) +
-    _regSec('set-apropos', 'À propos', apropos);
+    _regSec('set-apropos', 'À propos', apropos) +
+    '</div>';
 
   _regBrancher();
 
@@ -309,8 +311,14 @@ function _regBrancher(){
   sur('reg-gh-push', 'click', () => {
     if (!_regLire('mzs-gh-token')){ toast('Ajoute d\'abord ton jeton GitHub.', {tone: 'info', icon: 'key'}); return; }
     save.flush();
-    nuageEnvoyer().then(() => { majCloud(); toast('Sauvegarde envoyée.', {tone: 'ok', icon: 'cloud-check'}); })
-      .catch(err => toast(err.message || 'Envoi impossible.', {tone: 'ko', icon: 'cloud-slash'}));
+    const envoyee = () => { majCloud(); toast('Sauvegarde envoyée.', {tone: 'ok', icon: 'cloud-check'}); };
+    nuageEnvoyer().then(r => {
+      if (r !== 'devant'){ envoyee(); return; }
+      /* la sauvegarde en ligne est plus avancée : on ne l'écrase jamais sans demander */
+      majCloud();
+      return confirmer('Écraser la sauvegarde en ligne ?', 'Elle contient plus de progression que cet appareil. Si tu l\'écrases, elle est perdue.',
+                       {valider: 'Écraser', danger: true}).then(oui => { if (oui) return nuageEnvoyer(true).then(envoyee); });
+    }).catch(err => toast(err.message || 'Envoi impossible.', {tone: 'ko', icon: 'cloud-slash'}));
   });
   sur('reg-gh-pull', 'click', _regGhRecuperer);
   sur('reg-gh-off', 'click', () => {
@@ -343,8 +351,14 @@ function _regBrancher(){
     navigator.serviceWorker.getRegistration().then(reg => {
       if (!reg){ toast('Cette version se met à jour au rechargement.', {tone: 'info'}); return; }
       return reg.update().then(() => {
-        toast(reg.waiting ? 'Nouvelle version prête.' : 'Tu es déjà à jour.',
-              {tone: reg.waiting ? 'glacier' : 'ok', icon: reg.waiting ? 'arrows-clockwise' : 'check-circle'});
+        /* une version en cours de téléchargement n'est pas encore « en attente » : ne pas répondre « à jour » trop tôt */
+        if (reg.installing){ toast('Nouvelle version en cours de téléchargement.', {tone: 'glacier', icon: 'arrows-clockwise'}); return; }
+        if (reg.waiting){
+          if (typeof window.proposerMaj === 'function') window.proposerMaj(reg);
+          else toast('Nouvelle version prête.', {tone: 'glacier', icon: 'arrows-clockwise'});
+          return;
+        }
+        toast('Tu es déjà à jour.', {tone: 'ok', icon: 'check-circle'});
       });
     }).catch(() => toast('Vérification impossible hors ligne.', {tone: 'info', icon: 'wifi-slash'}));
   });
@@ -430,10 +444,18 @@ function _regGhActiver(){
   if (b) b.setAttribute('aria-busy', 'true');
   gh('/user').then(u => {
     save.flush();
-    return nuageEnvoyer().then(() => {
+    return nuageEnvoyer().then(r => {
+      if (champ) champ.value = '';
+      if (r === 'devant'){
+        /* un Gist plus avancé existe déjà (autre appareil) : rien n'est envoyé, on propose de le récupérer */
+        toast('Connecté : ' + (u.login || 'compte GitHub') + '. Une sauvegarde plus avancée existe déjà.', {tone: 'info', icon: 'cloud'});
+        majCloud();
+        vReglages({section: 'donnees'});
+        _regGhRecuperer();
+        return;
+      }
       toast('Connecté : ' + (u.login || 'compte GitHub') + '. Sauvegarde active.', {tone: 'ok', icon: 'cloud-check'});
       majCloud();
-      if (champ) champ.value = '';
       vReglages({section: 'donnees'});
     });
   }).catch(err => {
@@ -487,13 +509,8 @@ function _regReinitialiser(){
       toast('Rien n\'a été effacé : le mot ne correspond pas.', {tone: 'info', icon: 'info'});
       return;
     }
-    try {
-      localStorage.removeItem('mzs-state');
-      localStorage.removeItem('mzs-theme');
-      localStorage.removeItem('mzs-motion');
-      indexedDB.deleteDatabase('mzs');
-    } catch(e){}
-    location.reload();
+    /* effacerTout() gèle les écritures : sans cela, pagehide réécrivait l'état en mémoire et rien n'était effacé */
+    effacerTout().then(() => location.reload(), () => location.reload());
   });
 }
 

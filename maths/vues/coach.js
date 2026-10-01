@@ -25,12 +25,12 @@ const _coCond = {
   'camp-4': 'Termine les compétences du camp 4.',
   'camp-5': 'Termine les compétences du camp 5.',
   'camp-6': 'Termine les compétences du camp 6.',
-  'sommet': 'Atteins le sommet : les 52 compétences.',
+  'sommet': 'Atteins le sommet : les ' + (window.SKILLS || []).length + ' compétences.',
   'semaine-pleine': '7 jours de cordée.',
   'quinzaine': '14 jours de cordée.',
   'mois-de-cordee': '30 jours de cordée.',
   'cent': '100 réponses justes en tout.',
-  'mille': '1 000 réponses justes en tout.',
+  'mille': '1\u202F000 réponses justes en tout.',
   'sans-faute': 'Une série de 10 sans aucune faute.',
   'eclair': 'Un sprint à 18 sur 20, médiane sous 4 s.',
   'reparateur': '10 erreurs réparées.',
@@ -158,17 +158,18 @@ function heatmapSVG(){
       const lvl = niveau(ok);
       if (ok > 0) actifs++;
       const lib = jour.getDate() + ' ' + _coMois[jour.getMonth()] + ' · ' + fv(ok) + ' réponses justes';
-      cases += '<button class="hm" type="button" data-lvl="' + lvl + '" data-d="' + k + '"' +
+      cases += '<span class="hm" data-lvl="' + lvl + '" data-d="' + k + '"' +
         (util.indexOf(k) >= 0 ? ' data-bivouac' : '') +
         (testsJours[k] ? ' data-test' : '') +
         (k === auj ? ' data-today' : '') +
-        ' aria-label="' + esc(lib) + '" data-tip="' + esc(lib) + '"></button>';
+        ' data-tip="' + esc(lib) + '"></span>';
     }
   }
   return '<div class="heatmap" role="img" aria-label="Assiduité sur 12 semaines : ' + actifs + ' jours actifs">' +
     cases + '</div>' +
     '<p class="heatmap-legende small muted"><span>Moins</span><i></i><i data-lvl="1"></i><i data-lvl="2"></i>' +
-    '<i data-lvl="3"></i><i data-lvl="4"></i><span>Plus</span></p>';
+    '<i data-lvl="3"></i><i data-lvl="4"></i><span>Plus</span></p>' +
+    '<p class="small muted heatmap-aide">Touche un jour pour voir son détail.</p>';
 }
 
 /* ============================================================
@@ -195,7 +196,8 @@ function courbeAltitude(){
 
   const lignes = CAMPS.slice(1).map((a, i) =>
     '<line class="camp-line" x1="' + X0 + '" y1="' + y(a).toFixed(1) + '" x2="' + X1 + '" y2="' + y(a).toFixed(1) + '"/>' +
-    '<text x="0" y="' + (y(a) + 3).toFixed(1) + '">' + (i === 6 ? 'S' : 'C' + (i + 1)) + '</text>').join('');
+    /* C5, C6 et S sont à 11 et 14 unités d'écart : on les décale d'un rien pour que leurs étiquettes de 13 px ne se touchent pas */
+    '<text x="0" y="' + (y(a) + (i === 6 ? 1 : i === 5 ? 2 : i === 4 ? 6 : 3)).toFixed(1) + '">' + (i === 6 ? 'S' : 'C' + (i + 1)) + '</text>').join('');
 
   const d = serie.map((a, i) => (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(a).toFixed(1)).join(' ');
   const aire = '<path class="area" d="' + d + ' L' + X1 + ',' + Y1 + ' L' + X0 + ',' + Y1 + ' Z"/>';
@@ -303,17 +305,15 @@ function vCoach(){
   if (!cible) return;
   setCtx('outil');
   cible.dataset.density = 'outil';
-  cible.className = 'view view-coach';
 
   const seances = Object.keys(S.journal).filter(k => S.journal[k] && S.journal[k].seance).length;
   if (seances < 3 && masteredCount() === 0){
-    cible.className = 'view';
-    cible.innerHTML = '<h1>Le coach</h1>' + vide({
+    cible.innerHTML = '<div class="view view-coach"><h1>Le coach</h1>' + vide({
       icone: 'compass',
       titre: 'Après 3 séances, ton profil apparaît ici.',
       texte: 'Il lui faut un peu de matière : ta vitesse, tes erreurs, tes jours travaillés.',
       action: {label: 'Commencer la séance', fn: () => nav('seance')}
-    });
+    }) + '</div>';
     return;
   }
 
@@ -371,11 +371,11 @@ function vCoach(){
 
   /* 6. chiffres */
   const bloc6 = '<section class="coach-sec"><p class="overline">Tes chiffres</p>' +
-    '<div class="figures">' +
+    '<div class="figures duo">' +
       '<div class="figure"><b>' + fv(justes) + '</b><span class="k">Réponses justes</span></div>' +
-      '<div class="figure"><b>' + precision + ' %</b><span class="k">Précision</span></div>' +
+      '<div class="figure"><b>' + precision + '<small class="unit">%</small></b><span class="k">Précision</span></div>' +
       '<div class="figure"><b>' + fv(jours) + '</b><span class="k">Jours travaillés</span></div>' +
-      '<div class="figure"><b>' + recordTest + ' %</b><span class="k">Record au test</span></div>' +
+      '<div class="figure"><b>' + recordTest + '<small class="unit">%</small></b><span class="k">Record au test</span></div>' +
     '</div>' +
     '<p class="small ink-2">' + fv(conso) + ' consolidées · ' + fv(acquises) + ' verrouillées · ' + fv(enCours) + ' en cours</p>' +
     '<p class="small ink-2">' + fv(auto) + ' familles automatisées sur ' + fv((window.CM_FAMS || []).length) +
@@ -449,10 +449,10 @@ function vCoach(){
   const huit = [];
   for (let i = 1; i <= 8; i++){
     const w = _coBilan(i);
-    if (w.jours) huit.push('<div class="figures"><div class="figure"><b>S' + w.n + '</b><span class="k">Semaine</span></div>' +
+    if (w.jours) huit.push('<div class="figures compact"><div class="figure"><b>S' + w.n + '</b><span class="k">Semaine</span></div>' +
       '<div class="figure"><b>' + fv(w.ok) + '</b><span class="k">Justes</span></div>' +
       '<div class="figure"><b>' + fv(w.jours) + '</b><span class="k">Jours</span></div>' +
-      '<div class="figure"><b>' + nf(w.m, 'm') + '</b><span class="k">Montée</span></div></div>');
+      '<div class="figure"><b>' + fv(w.m) + '<small class="unit">m</small></b><span class="k">Montée</span></div></div>');
   }
   const bloc11 = '<section class="coach-sec"><p class="overline">Bilan de la semaine</p>' +
     '<div class="card card-muted">' +
@@ -479,8 +479,8 @@ function vCoach(){
     '<p class="small muted">' + (jc !== null && jc >= 0 ? 'Concours dans ' + fv(jc) + ' jours' : 'Concours passé') +
       ' · ' + (jb !== null && jb >= 0 ? 'Bac dans ' + fv(jb) + ' jours' : 'Bac passé') + '</p></section>';
 
-  cible.innerHTML = '<h1>Le coach</h1>' + bloc2 + bloc3 + bloc4 + bloc5 + bloc6 + bloc7 + bloc8 + bloc9 +
-    bloc10 + bloc11 + bloc12;
+  cible.innerHTML = '<div class="view view-coach"><h1>Le coach</h1>' + bloc2 + bloc3 + bloc4 + bloc5 + bloc6 + bloc7 + bloc8 + bloc9 +
+    bloc10 + bloc11 + bloc12 + '</div>';
 
   _coBrancher();
 }
@@ -543,20 +543,33 @@ function _coBrancher(){
   }));
 
   /* heatmap : info-bulle */
-  const fermerTip = () => { if (_coTip){ _coTip.remove(); _coTip = null; } };
-  zone.querySelectorAll('.hm[data-tip]').forEach(c => c.addEventListener('click', () => {
+  const fermerTip = () => {
+    if (_coTip){ _coTip.remove(); _coTip = null; }
+    zone.querySelectorAll('.hm[data-sel]').forEach(x => x.removeAttribute('data-sel'));
+  };
+  /* Une seule cible : la grille entière. On retrouve la case la plus proche du doigt (colonne, rangée). */
+  const grille = zone.querySelector('.heatmap');
+  if (grille) grille.addEventListener('click', e => {
+    const g = grille.getBoundingClientRect();
+    const col = Math.max(0, Math.min(11, Math.floor((e.clientX - g.left) / (g.width / 12))));
+    const rang = Math.max(0, Math.min(6, Math.floor((e.clientY - g.top) / (g.height / 7))));
+    const c = grille.children[rang * 12 + col];
     fermerTip();
+    if (!c || !c.dataset.tip) return;
+    c.setAttribute('data-sel', '');
     const t = document.createElement('div');
     t.className = 'tip small';
     t.setAttribute('role', 'status');
     t.textContent = c.dataset.tip;
     document.body.appendChild(t);
     const r = c.getBoundingClientRect();
-    t.style.left = Math.round(r.left + scrollX - 60) + 'px';
-    t.style.top = Math.round(r.top + scrollY - 40) + 'px';
+    const larg = t.getBoundingClientRect().width;
+    const gauche = Math.max(8, Math.min(document.documentElement.clientWidth - larg - 8, r.left + r.width / 2 - larg / 2));
+    t.style.left = Math.round(gauche + scrollX) + 'px';
+    t.style.top = Math.round(r.top + scrollY - 44) + 'px';
     _coTip = t;
-    after(2400, fermerTip);
-  }));
+    after(2400, () => { if (_coTip === t) fermerTip(); });
+  });
   surQuitter(fermerTip);
 }
 
@@ -588,12 +601,16 @@ function _coFrise(){
     (f ? '' : '');
 }
 
+function _coReduit(){
+  try { if (document.documentElement.dataset.motion === 'reduit') return true; } catch(e){}
+  return matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 function vMethode(){
   const cible = app();
   if (!cible) return;
   setCtx('lecon', {parent: 'coach', title: 'Comment ça marche'});
   cible.dataset.density = 'lecture';
-  cible.className = 'view view-methode';
 
   const vierge = !Object.keys(S.journal).length && masteredCount() === 0;
   const chez = t => vierge
@@ -623,7 +640,7 @@ function vMethode(){
 
   const s1 = '<section class="coach-sec" id="met-1"><h2>La montagne</h2>' + montagne +
     '<div class="formule"><p>altitude = somme des mètres par compétence · +2 m par bonne réponse, le reste au verrou</p></div>' +
-    '<p class="ink-2">52 compétences, 7 camps, ' + nf(SOMMET, 'm') + '. Rien ne se perd : ce qui est monté reste monté.</p>' +
+    '<p class="ink-2">' + fv(SKILLS.length) + ' compétences, 7 camps, ' + nf(SOMMET, 'm') + '. Rien ne se perd : ce qui est monté reste monté.</p>' +
     chez('Chez toi : ' + nf(alt, 'm') + ', ' + dernierCamp + (f ? ', prochaine compétence : ' + f.titre : '') + '.') + '</section>';
 
   const s2 = '<section class="coach-sec" id="met-2"><h2>La règle des 90 %</h2>' +
@@ -635,7 +652,7 @@ function vMethode(){
 
   const s3 = '<section class="coach-sec" id="met-3"><h2>Les rappels espacés</h2>' + _coFrise() +
     '<p class="ink-2">Une compétence acquise revient à 2, 4, 8, 16, 32 puis 60 jours. ' +
-    'Si elle résiste, l\'écart repart à 2 jours : c\'est l\'oubli qui décide, pas le calendrier.</p>' +
+    'Si elle résiste, l\'écart repart à 2\u00a0jours\u00a0: c\'est l\'oubli qui décide, pas le calendrier.</p>' +
     chez('Chez toi : ' + fv(due) + ' rappels aujourd\'hui, ' + fv(semaine) + ' cette semaine.') + '</section>';
 
   const s4 = '<section class="coach-sec" id="met-4"><h2>On mélange une fois installé</h2>' +
@@ -663,13 +680,25 @@ function vMethode(){
       (domN ? ', surtout de ' + domNom + ' (' + Math.round(100 * domN / Math.max(1, t.types)) + ' %)' : '') + '.') + '</section>';
 
   cible.innerHTML =
+    '<div class="view view-methode">' +
     '<h1>Comment ça marche</h1>' +
     '<div class="row toc-chips">' + sommaire + '</div>' +
     s1 + s2 + s3 + s4 + s5 + s6 +
     '<p class="small muted">Tout fonctionne hors ligne, sans compte, sans serveur. Tes données restent sur cet appareil.</p>' +
     '<div class="row"><button class="btn btn-ghost" type="button" id="met-retour">' + ic('arrow-left') +
-      'Revenir au coach</button></div>';
+      'Revenir au coach</button></div>' +
+    '</div>';
 
   const b = document.getElementById('met-retour');
   if (b) b.addEventListener('click', () => { snd.click(); nav('coach'); });
+
+  cible.querySelectorAll('.toc-chips a[href^="#met-"]').forEach(a => a.addEventListener('click', e => {
+    e.preventDefault();
+    const sec = document.getElementById(a.getAttribute('href').slice(1));
+    if (!sec) return;
+    snd.click();
+    try { sec.scrollIntoView({block: 'start', behavior: _coReduit() ? 'instant' : 'smooth'}); } catch(x){ sec.scrollIntoView(); }
+    const h = sec.querySelector('h2');
+    if (h){ h.tabIndex = -1; try { h.focus({preventScroll: true}); } catch(x){} }
+  }));
 }

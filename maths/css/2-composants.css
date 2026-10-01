@@ -298,7 +298,7 @@ button.small{
 }
 .figure{
   flex: 1 1 40%;
-  min-width: 0;
+  min-width: min-content;
   padding: 0 var(--s-4);
   border-left: 1px solid var(--line);
 }
@@ -312,7 +312,9 @@ button.small{
   letter-spacing: -.01em;
   font-variant-numeric: tabular-nums;
   color: var(--ink);
+  white-space: nowrap;
 }
+.figure > b .unit{ font-size: .6em; font-weight: 500; letter-spacing: 0; margin-left: .2em; }
 .figure > .overline,
 .figure > .k{ display: block; margin-top: var(--s-2); }
 
@@ -396,6 +398,9 @@ button.small{
 .ring .val.glacier{ stroke: var(--glacier); transition-delay: 120ms; }
 .ring .val.ok{ stroke: var(--ok); transition-delay: 240ms; }
 .ring .val.vide{ opacity: .4; }
+/* À 0 %, la terminaison ronde du trait dessinait une pastille isolée : l'arc disparaît. */
+.ring .val{ opacity: min(1, calc(var(--p, 0) * 1000)); }
+.ring .val.vide{ opacity: min(.4, calc(var(--p, 0) * 1000)); }
 
 
 /* ==========================================================================
@@ -455,7 +460,7 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
   position: relative;
   background: var(--sky);
   border-radius: 0 0 var(--r-4) var(--r-4);
-  padding: var(--s-5) var(--gutter) var(--s-6);
+  padding: var(--s-5) var(--gutter) 0;
   margin: calc(-1 * var(--s-5)) calc(-1 * var(--gutter)) 0;
 }
 .hero > .overline,
@@ -483,7 +488,15 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
 .mt-back{ fill: color-mix(in srgb, var(--glacier) 12%, transparent); }
 .mt-mid{ fill: var(--surface-2); }
 .mt-front{ fill: var(--surface-1); }
-.mt-back, .mt-mid, .mt-front{ stroke: var(--line-strong); stroke-width: 1.25; }
+/* Aplats sans contour : le trait fermé (socle et bords verticaux) donnait un graphique, pas un massif.
+   Chaque plan se fond vers le bas par son dégradé ; seule la crête est tracée, en chemin ouvert. */
+.mt-back, .mt-mid, .mt-front{ stroke: none; }
+.mt-st-back{ stop-color: color-mix(in srgb, var(--glacier) 16%, var(--bg)); }
+.mt-st-mid{ stop-color: var(--surface-2); }
+.mt-st-front{ stop-color: var(--surface-1); }
+.mt-st-bas{ stop-opacity: 0; }
+.mt-crete{ fill: none; stroke: var(--line-strong); stroke-width: 1; stroke-linejoin: round; }
+.mt-ombre{ fill: var(--ink); opacity: .045; }
 
 .mt-trail{
   fill: none;
@@ -502,9 +515,18 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
 
 .camp circle{ fill: var(--surface-1); stroke: var(--tint, var(--tint-3)); stroke-width: 2; }
 .camp.done circle{ fill: var(--ok); stroke: var(--ok); }
-.camp text{ font: 500 .6875rem var(--font-text); fill: var(--muted); }
-.camp.sommet text,
-.camp:last-child text{ fill: var(--ink); }
+/* Une seule étiquette (le prochain camp), 13 unités : au moins 12 px à l'écran dès 335 px de large.
+   Le liseré couleur de fond la détache du sentier et des crêtes. */
+.camp text{
+  font: 600 .8125rem var(--font-text);
+  fill: var(--ink);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  stroke-opacity: .72;
+}
+.camp.prochain circle{ stroke: var(--ink); }
 
 .climber .dot{ fill: var(--accent-line); }
 .climber .halo{
@@ -743,8 +765,10 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
 .qtext{
   margin: 0 0 var(--s-4);
   white-space: pre-line;
-  min-height: calc(3 * 1.45em);
+  font: 500 1.25rem/1.45 var(--font-text);
+  min-height: calc(2 * 1.45em);
   color: var(--ink);
+  overflow-wrap: anywhere;
 }
 .q-list{
   margin: var(--s-2) 0 0;
@@ -772,6 +796,7 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
 }
 .hint-line > .ic{ flex: none; color: var(--accent-text); margin-top: .1em; }
 .q-hints{ display: flex; flex-direction: column; gap: var(--s-2); margin-top: var(--s-3); }
+.q-zone > .q-hints{ margin-top: 0; }
 .q-hints .hint-line{ margin: 0; }
 .goal{ margin: 0 0 var(--s-3); }
 
@@ -779,13 +804,14 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
 .q-zone{ display: flex; flex-direction: column; gap: var(--s-3); }
 .answer-row{
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--s-3);
   align-items: stretch;
   margin: 0;
 }
-.answer-row:has(.q-hint:not([hidden])){ grid-template-columns: auto 1fr auto; }
+/* Le champ garde sa largeur dans tous les états : les touches rapides et l'indice passent dessous. */
 .answer-row input{
+  grid-column: 1;
   min-width: 0;
   min-height: 56px;
   padding: 0 var(--s-4);
@@ -797,28 +823,57 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
   box-shadow: var(--field-ring);
   transition: box-shadow var(--dur-1) var(--ease-out);
 }
-.answer-row input::placeholder{ color: var(--muted); font-weight: 400; }
+.answer-row input::placeholder{ color: var(--muted); font: 400 1rem/1.2 var(--font-text); letter-spacing: 0; }
 .answer-row input:focus{ box-shadow: var(--focus-ring); outline: none; }
 .answer-row input:disabled{ opacity: .7; }
 .answer-row .btn-primary,
 .answer-row .primary{ min-height: 56px; width: auto; }
-.answer-row .q-hint{ min-height: 56px; padding: 0 var(--s-3); }
+.answer-row [data-role="validate"]{ grid-column: 2; }
+/* iPhone SE / mini : le champ garde au moins 140 px à côté de Valider. */
+@media (max-width:389px){
+  .answer-row{ column-gap: var(--s-2); }
+  .answer-row [data-role="validate"]{ padding-left: var(--s-4); }
+  .answer-row [data-role="validate"] .ic-wrap{ inline-size: 32px; block-size: 32px; }
+}
+/* 320 px (affichage agrandi) : le champ prend toute la ligne, puis les touches, puis Valider. */
+@media (max-width:359px){
+  .answer-row{ grid-template-columns: minmax(0, 1fr); }
+  .answer-row .quickkeys{ order: 1; gap: var(--s-1); }
+  .answer-row .quickkeys[data-n="6"]{ flex-wrap: wrap; }
+  .answer-row .quickkeys[data-n="6"] button{ flex: 1 0 30%; }
+  .answer-row [data-role="validate"]{ grid-column: 1; order: 2; width: 100%; }
+  .answer-row .q-hint{ order: 3; }
+}
+.answer-row .q-hint{
+  grid-column: 1 / -1;
+  justify-self: start;
+  min-height: 44px;
+  margin-left: calc(-1 * var(--s-3));
+  padding: 0 var(--s-3);
+}
+/* Une fois la réponse donnée, il ne reste que ce qui a été saisi, sur toute la largeur. */
+.exo-card:is([data-state="ok"], [data-state="ko"]) .answer-row :is(.quickkeys, .q-hint){ display: none; }
+.exo-card:is([data-state="ok"], [data-state="ko"]) .answer-row input{ grid-column: 1 / -1; }
+.exo-card:is([data-state="ok"], [data-state="ko"]) .q-fb{ margin-top: var(--s-3); }
 
 /* --- Touches rapides (tactile seulement) --------------------------------- */
 .quickkeys{ display: none; gap: var(--s-2); margin-top: var(--s-3); }
+.answer-row .quickkeys{ grid-column: 1 / -1; margin-top: 0; }
+.quickkeys[data-n="6"]{ gap: var(--s-1); }                  /* six touches : chacune garde 44 px à 375 px */
 @media (pointer:coarse){ .quickkeys{ display: flex; } }
 .exo-card[data-mode="qcm"] .quickkeys{ display: none; }
 .quickkeys button{
   flex: 1;
   min-height: 44px;
   padding: 0;
-  font: 500 1.125rem var(--font-mono);
+  font: 500 1.25rem/1 var(--font-text);
   color: var(--ink-2);
   background: var(--surface-2);
   border: 0;
   border-radius: var(--r-2);
   box-shadow: var(--card-ring);
   cursor: pointer;
+  touch-action: manipulation;
   transition: background-color var(--dur-1) var(--ease-out), transform 80ms var(--ease-out);
 }
 
@@ -882,11 +937,14 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
 
 .verdict{
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--s-2);
+  gap: var(--s-1) var(--s-2);
   margin: var(--s-4) 0 var(--s-2);
   font-weight: 600;
 }
+.verdict > span:not(.given){ flex: 1 1 0; min-width: 0; }
+.verdict.ok > span:not(.answer, .given){ flex: 0 1 auto; }
 .verdict.ok{ color: var(--ok-text); }
 .verdict.ko{ color: var(--ko-text); }
 .verdict > .ic{
@@ -904,8 +962,17 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
   animation: trace var(--dur-3) var(--ease-out-expo) forwards;
 }
 .verdict > .ic path{ animation-delay: 120ms; }
-.verdict .answer{ margin-left: auto; color: var(--ink); font-variant-numeric: tabular-nums; }
-.verdict .given{ flex-basis: 100%; }
+/* La bonne réponse est le texte le plus lisible du bloc. */
+.verdict .answer{
+  margin-left: .2em;
+  font: 600 1.25rem/1.2 var(--font-display);
+  color: var(--ink);
+  font-variant-numeric: tabular-nums lining-nums;
+  overflow-wrap: anywhere;
+}
+.verdict .answer.long{ font-size: 1.0625rem; line-height: 1.35; }
+.verdict .given{ flex-basis: 100%; padding-left: calc(24px + var(--s-2)); font-weight: 500; }
+.verdict .given.forme{ color: var(--ink-2); }
 
 .q-time{ margin: 0 0 var(--s-2); color: var(--muted); }
 .q-time.ok{ color: var(--ok-text); }
@@ -970,6 +1037,9 @@ body[data-ctx="parcours"] .ring-day{ display: none; }
   justify-content: flex-end;
   align-items: center;
 }
+/* Le bouton de suite garde une marge sous lui quand la page défile pour l'amener à l'écran (fusion du 01/10) :
+   la carte finit son animation après le défilement, sans cette réserve il touchait le bord. */
+.q-card .next-row [data-role]{ scroll-margin-bottom:16px }
 .next-row .btn-primary,
 .next-row .primary{ width: auto; }
 
@@ -1129,7 +1199,7 @@ kbd{
 .sheet.palette input[type="search"]{
   width: 100%;
   min-height: 52px;
-  padding: 0 var(--s-4) 0 var(--s-7);
+  padding: 0 var(--s-4);
   font: 400 1rem var(--font-text);
   color: var(--ink);
   background: var(--surface-2);
@@ -1152,12 +1222,12 @@ kbd{
 }
 .pal-item{
   display: grid;
-  grid-template-columns: 20px 1fr auto;
+  grid-template-columns: minmax(0,1fr) auto;
   align-items: center;
   gap: var(--s-3);
   width: 100%;
   min-height: 44px;
-  padding: 0 var(--s-3);
+  padding: var(--s-2) var(--s-3);
   border: 0;
   border-radius: var(--r-2);
   background: transparent;

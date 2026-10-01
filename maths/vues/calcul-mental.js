@@ -88,8 +88,8 @@ function vCalculMental(p){
       '<p class="small muted">' + fv(CM_FAMS.length) + ' familles · un objectif de vitesse par famille</p>' +
     '</header>' +
     '<div class="figures">' +
-      '<div class="figure"><b>' + (best && best.med ? esc(_cmSec(best.med)) : '·') + '</b><span class="k">Meilleure médiane</span></div>' +
-      '<div class="figure"><b>' + (prec === null ? '·' : fv(prec) + ' %') + '</b><span class="k">Précision</span></div>' +
+      '<div class="figure"><b>' + (best && best.med ? fv(Math.round(best.med / 100) / 10, 1) + '<small class="unit">s</small>' : '·') + '</b><span class="k">Meilleure médiane</span></div>' +
+      '<div class="figure"><b>' + (prec === null ? '·' : fv(prec) + '<small class="unit">%</small>') + '</b><span class="k">Précision</span></div>' +
       '<div class="figure"><b>' + fv(auto) + ' / ' + fv(CM_FAMS.length) + '</b><span class="k">Automatisées</span></div>' +
     '</div>' +
     '<div class="segment" id="seg-cm" role="group" aria-label="Longueur du sprint">' +
@@ -338,5 +338,6 @@ function vTechnique(p){
   '</div>';
 
   $('tech-go').addEventListener('click', () => { snd.click(); nav('cm', {run: 1, fam: fam.id, n: 10}); });
+  if (typeof window.espacesInsecables === 'function') window.espacesInsecables(hote.querySelector('.lecon-body'));
   if (typeof _progRevelerCta === 'function') _progRevelerCta();
 }

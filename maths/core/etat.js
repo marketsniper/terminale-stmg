@@ -1,6 +1,7 @@
 /* ===== Maths · De zéro au sommet : état persistant (schéma v2), migration, sauvegarde à trois niveaux =====
    Script classique : portée globale partagée avec les autres modules (ordre de chargement dans index.html).
-   Ce fichier déclare : K, SCHEMA, defState, S, save, st, migrer, exportEtat, importEtat, majCloud
+   Ce fichier déclare : K, SCHEMA, defState, S, save, st, migrer, exportEtat, importEtat, majCloud,
+   etatPoids, estVide, effacerTout, recupererSiVide, nuageDevant
    et tout le bloc de sauvegarde (persistance, miroir IndexedDB, Gist GitHub). */
 'use strict';
 
@@ -59,6 +60,8 @@ function st(id){ return S.skills[id] || (S.skills[id] = {
 
 /* ---------- écriture débouncée : une seule écriture par salve de 300 ms ---------- */
 let _etatTimer = null, _etatSale = false;
+/* Posé par effacerTout() : plus aucune écriture (localStorage, miroir, Gist) jusqu'au rechargement. */
+let _etatGele = false;
 /* Applique les plafonds du modèle avant chaque écriture. */
 function _etatPurger(){
   if (S.erreurs.length > 120) S.erreurs = S.erreurs.slice(-120);
@@ -71,6 +74,7 @@ function _etatPurger(){
 }
 /* Écriture réelle dans localStorage, puis planification de la sauvegarde en ligne. */
 function _etatEcrire(){
+  if (_etatGele) return;
   _etatSale = false;
   try { _etatPurger(); } catch(e){}
   try { localStorage.setItem(K, JSON.stringify(S)); } catch(e){}
@@ -92,6 +96,28 @@ try {
   addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden'){ S.vuLe = Date.now(); _etatSale = true; save.flush(); } });
 } catch(e){}
 
+/* ---------- compétences ajoutées au catalogue après coup ----------
+   Un élève qui avait déjà bouclé la phase ne redescend pas : la nouvelle fiche est validée « à confirmer »
+   et revient tout de suite en révision (un rappel raté la rouvre, comme tout provisoire).
+   Passage unique par compétence, noté dans S.meta.ajouts. Idempotent. */
+const _etatAjouts = ['p4-06b-sommes-suites'];
+function _etatAccueillirAjouts(){
+  if (typeof SKILLS === 'undefined' || !Array.isArray(SKILLS)) return;
+  if (!S.meta.ajouts || typeof S.meta.ajouts !== 'object') S.meta.ajouts = {};
+  _etatAjouts.forEach(id => {
+    const sk = SKILLS.find(s => s.id === id);
+    if (!sk || S.meta.ajouts[id]) return;
+    const now = Date.now();
+    S.meta.ajouts[id] = now;
+    const deja = S.skills[id];
+    if (deja && (deja.mastered || deja.n)) return;                          // déjà travaillée : on n'y touche pas
+    const autres = SKILLS.filter(s => s.phase === sk.phase && s.id !== id);
+    if (!autres.length || !autres.every(s => S.skills[s.id] && S.skills[s.id].mastered)) return;
+    const x = st(id);
+    x.mastered = true; x.provisoire = true; x.masteredAt = now; x.interval = 2; x.fragile = false; x.due = now;
+  });
+}
+
 /* ---------- migration v1 vers v2 ----------
    Idempotente : deux appels de suite donnent exactement le même état.
    Appelée juste après la lecture de localStorage, après importEtat() et après recupererSiVide(). */
@@ -108,6 +134,7 @@ function migrer(etat){
   ['erreurs', 'reparees', 'tests', 'epreuves'].forEach(k => { if (!Array.isArray(S[k])) S[k] = []; });
   ['journal', 'skills', 'papier', 'typErr', 'jalons', 'succes', 'bilans', 'cdj'].forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   if (!Array.isArray(S.serie.utilises)) S.serie.utilises = [];
+  _etatAccueillirAjouts();
 
   if (dejaV2){ S.v = SCHEMA; return S; }
 
@@ -166,7 +193,7 @@ function migrer(etat){
    2. copie miroir en IndexedDB (survit à certains effacements)
    3. sauvegarde automatique dans un Gist GitHub secret (survit à tout)
    ============================================================ */
-const K_TOKEN = 'mzs-gh-token', K_GIST = 'mzs-gh-gist', K_SYNC = 'mzs-sync-le';
+const K_TOKEN = 'mzs-gh-token', K_GIST = 'mzs-gh-gist', K_SYNC = 'mzs-sync-le', K_SIG = 'mzs-sync-sig';
 const GIST_FICHIER = 'maths-de-zero-au-sommet.json';
 const GIST_MARQUE = 'Sauvegarde · Maths De zéro au sommet';
 
@@ -216,7 +243,10 @@ async function idbLire(){
 const ghToken = () => { try { return localStorage.getItem(K_TOKEN) || ''; } catch(e){ return ''; } };
 const gistId  = () => { try { return localStorage.getItem(K_GIST) || ''; } catch(e){ return ''; } };
 /* Écrit ou efface une clé GitHub dans localStorage (jamais dans S : le Gist ne doit pas contenir le jeton). */
-function ghSet(k, v){ try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){} }
+function ghSet(k, v){
+  try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch(e){}
+  if (k === K_TOKEN){ _etatNuageVu = null; nuageDevant = false; }      // autre compte : on ne sait plus rien du Gist
+}
 
 /* Appel authentifié à l'API GitHub, avec messages d'erreur en français. */
 async function gh(url, opt){
@@ -240,9 +270,27 @@ async function trouverGist(){
   if (g){ ghSet(K_GIST, g.id); return g.id; }
   return '';
 }
-/* Envoie l'état complet dans le Gist secret. */
-async function nuageEnvoyer(){
-  if (!ghToken()) return null;
+/* Ce que l'on sait de la sauvegarde en ligne : {le, poids} à la dernière lecture ou au dernier envoi. */
+let _etatNuageVu = null;
+/* Vrai tant que la sauvegarde en ligne contient plus de progression que cet appareil : rien n'est envoyé. */
+let nuageDevant = false;
+/* Envoie l'état complet dans le Gist secret.
+   Sans `force`, on lit d'abord le Gist : une sauvegarde plus avancée que l'état de cet appareil
+   n'est JAMAIS écrasée (nouvel appareil, état vide, état plus ancien). Retourne alors 'devant'. */
+async function nuageEnvoyer(force){
+  if (!ghToken() || _etatGele) return null;
+  const poids = etatPoids(S);
+  if (!force){
+    if (!_etatNuageVu || Date.now() - _etatNuageVu.le > 600000){
+      let d = null;
+      try { d = await nuageRecuperer(); }
+      catch(e){ if (!/introuvable/.test(e.message)) throw e; ghSet(K_GIST, ''); }    // Gist supprimé : on en recréera un
+      _etatNuageVu = {le: Date.now(), poids: d ? etatPoids(d.etat || d) : 0};
+    }
+    if (_etatNuageVu.poids > poids){ nuageDevant = true; return 'devant'; }
+  }
+  nuageDevant = false;
+  const signature = _etatSignature();
   const corps = {description: GIST_MARQUE, files: {}};
   corps.files[GIST_FICHIER] = {content: exportEtat()};
   let id = await trouverGist();
@@ -256,6 +304,8 @@ async function nuageEnvoyer(){
     ghSet(K_GIST, g.id);
   }
   ghSet(K_SYNC, String(Date.now()));
+  ghSet(K_SIG, signature);
+  _etatNuageVu = {le: Date.now(), poids: poids};
   return true;
 }
 /* Récupère l'état depuis le Gist secret. */
@@ -270,11 +320,40 @@ async function nuageRecuperer(){
   try { return JSON.parse(txt); } catch(e){ return null; }
 }
 
+/* --- miroir protégé --- */
+/* Poids de la copie miroir (null tant qu'elle n'a pas été lue), et file d'attente des écritures. */
+let _etatMiroirPoids = null, _etatMiroirForce = false, _etatMiroirFile = Promise.resolve();
+/* Écrit l'état dans le miroir. Une copie qui contient plus de progression que l'état courant
+   n'est jamais écrasée : c'est elle que recupererSiVide() rendra si localStorage est effacé.
+   Seul un remplacement voulu (import, récupération) passe en force. */
+function _etatMiroir(){
+  _etatMiroirFile = _etatMiroirFile.then(async () => {
+    if (_etatGele) return false;
+    if (!_etatMiroirForce){
+      if (_etatMiroirPoids === null){
+        const brut = await avecDelai(idbLire(), 3000, false);
+        if (brut === false) return false;                  // IndexedDB ne répond pas : nouvel essai à la prochaine écriture
+        let o = null;
+        try { o = brut ? JSON.parse(brut) : null; } catch(e){}
+        _etatMiroirPoids = o ? etatPoids(o.etat || o) : 0;
+      }
+      if (etatPoids(S) < _etatMiroirPoids) return false;
+    }
+    if (_etatGele) return false;
+    _etatMiroirForce = false;
+    const poids = etatPoids(S);
+    await avecDelai(idbEcrire(exportEtat()), 5000, null);
+    _etatMiroirPoids = poids;
+    return true;
+  }).catch(() => false);
+  return _etatMiroirFile;
+}
+
 /* --- déclenchement automatique, sans y penser --- */
 let syncTimer = null, syncEnCours = false, dernierEchec = '';
 /* Miroir immédiat, envoi en ligne 20 s après la dernière modification. */
 function planifierSync(){
-  avecDelai(idbEcrire(exportEtat()), 5000, null);
+  _etatMiroir();
   majCloud();
   if (!ghToken()) return;
   clearTimeout(syncTimer);
@@ -282,7 +361,8 @@ function planifierSync(){
 }
 /* Envoie la sauvegarde en ligne si le réseau et le jeton le permettent. */
 async function lancerSync(){
-  if (syncEnCours || !ghToken() || navigator.onLine === false) return;
+  if (syncEnCours || _etatGele || !ghToken() || navigator.onLine === false) return;
+  if (_etatSignature() === lire0(K_SIG)) return;          // rien de nouveau depuis le dernier envoi
   syncEnCours = true;
   try { await nuageEnvoyer(); dernierEchec = ''; }
   catch(e){ dernierEchec = e.message || String(e); }
@@ -294,6 +374,7 @@ function majCloud(){
   if (b){
     const le = +lire0(K_SYNC);
     const etat = !ghToken() ? ['cloud', 'Sauvegarde locale seulement. Toucher pour configurer.']
+      : nuageDevant ? ['cloud-slash', 'La sauvegarde GitHub est plus avancée que cet appareil. Toucher pour choisir.']
       : dernierEchec ? ['cloud-slash', 'Sauvegarde GitHub en erreur : ' + dernierEchec]
       : ['cloud-check', 'Sauvegarde GitHub à jour, ' + depuis(le)];
     const u = b.querySelector('use');
@@ -318,6 +399,7 @@ function depuis(ts){
 function etatSyncHTML(){
   const le = +lire0(K_SYNC);
   if (!ghToken()) return '<p class="small muted">Sauvegarde locale uniquement. Ta progression n\'existe que sur cet appareil.</p>';
+  if (nuageDevant) return '<p class="small" style="color:var(--ko-text)">Ta sauvegarde GitHub contient plus de progression que cet appareil. Rien n\'est envoyé tant que tu n\'as pas choisi : « Récupérer ma sauvegarde » ou « Envoyer maintenant ».</p>';
   if (dernierEchec) return '<p class="small" style="color:var(--ko-text)">Dernière sauvegarde en ligne bloquée : ' + esc(dernierEchec) + '</p>';
   return '<p class="small" style="color:var(--ok-text)">Sauvegarde GitHub active. Dernière : <strong>' + esc(depuis(le)) + '</strong>.</p>';
 }
@@ -327,6 +409,13 @@ function lire0(k){ try { return localStorage.getItem(k) || ''; } catch(e){ retur
 /* ---------- export et import ---------- */
 /* Fichier de sauvegarde : {v, app, etat}. */
 function exportEtat(){ return JSON.stringify({v: SCHEMA, app: 'mzs', etat: S}); }
+/* Empreinte courte de l'état, sans l'heure du dernier passage : dit si quelque chose a changé depuis le dernier envoi. */
+function _etatSignature(){
+  const t = exportEtat().replace(/"vuLe":\d+/, '"vuLe":0');
+  let h = 5381;
+  for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
+  return t.length + ':' + (h >>> 0).toString(36);
+}
 /* Remplace l'état courant par celui d'un fichier de sauvegarde. Retourne true, ou lève un message lisible. */
 function importEtat(txt){
   let d = null;
@@ -335,22 +424,70 @@ function importEtat(txt){
   if (!brut || d.app && d.app !== 'mzs') throw new Error("Ce fichier n'est pas une sauvegarde de l'app.");
   migrer(_etatAdopter(brut));
   if (typeof marquerJalonsPasses === 'function') marquerJalonsPasses();
+  _etatMiroirForce = true;                                 // remplacement voulu : le miroir suit
+  nuageDevant = false; _etatNuageVu = null;
   save(); save.flush();
   return true;
 }
 
 /* --- récupération au démarrage si l'appareil a tout effacé --- */
-/* Un état est vide s'il ne contient aucune compétence travaillée. */
-function estVide(e){ return !e || !e.skills || Object.keys(e.skills).length === 0; }
-/* Restaure depuis le miroir puis depuis le Gist, seulement si l'état local est vide. */
+/* Quantité de travail contenue dans un état. Elle dit quelle copie est la plus avancée, donc elle ne compte
+   que ce qui ne peut QUE croître à l'usage : réponses du journal, calcul mental, leçons lues, tests, épreuves,
+   papiers, jalons, succès, erreurs réparées. Ni l'altitude ni les compétences acquises n'y entrent : un rappel
+   raté peut les faire reculer, et l'envoi automatique se bloquerait à tort. */
+function etatPoids(e){
+  if (!e || typeof e !== 'object') return 0;
+  let p = 0;
+  try {
+    Object.values(e.journal || {}).forEach(j => { if (j) p += (j.a || 0) + (j.seance ? 1 : 0); });
+    Object.values((e.cm && e.cm.fam) || {}).forEach(f => { if (f) p += f.n || 0; });
+    Object.values(e.skills || {}).forEach(s => { if (s && s.lu) p++; });
+    p += 5 * ((e.tests || []).length + (e.epreuves || []).length + Object.keys(e.papier || {}).length);
+    p += Object.keys(e.jalons || {}).length + Object.keys(e.succes || {}).length + ((e.compteurs && e.compteurs.reparees) || 0);
+  } catch(x){}
+  return p;
+}
+/* Un état est vide s'il ne contient aucun travail : ni réponse, ni compétence travaillée, acquise ou lue.
+   st() crée une fiche vide à la simple lecture : le nombre de clés de skills ne prouve rien. */
+function estVide(e){
+  if (etatPoids(e) > 0) return false;
+  try { return !Object.values((e && e.skills) || {}).some(s => s && (s.n > 0 || s.mastered)); } catch(x){ return true; }
+}
+/* Restaure depuis le miroir puis depuis le Gist, seulement si l'état local est vide.
+   À appeler AVANT le premier rendu : une fois l'élève reparti de zéro, on ne remplace plus rien. */
 async function recupererSiVide(){
   if (!estVide(S)) return null;
+  const adopter = brut => {
+    if (!estVide(S) || estVide(brut)) return false;
+    migrer(_etatAdopter(brut));
+    if (typeof marquerJalonsPasses === 'function') marquerJalonsPasses();
+    save();
+    return true;
+  };
   const local = await avecDelai(idbLire(), 3000, null);
   if (local){
-    try { const o = JSON.parse(local); if (!estVide(o.etat || o)){ migrer(_etatAdopter(o.etat || o)); if (typeof marquerJalonsPasses === 'function') marquerJalonsPasses(); save(); return 'miroir'; } } catch(e){}
+    try { const o = JSON.parse(local); if (adopter(o.etat || o)) return 'miroir'; } catch(e){}
   }
-  try { const d = await nuageRecuperer(); if (d && !estVide(d.etat || d)){ migrer(_etatAdopter(d.etat || d)); if (typeof marquerJalonsPasses === 'function') marquerJalonsPasses(); save(); return 'nuage'; } } catch(e){}
+  if (!ghToken() || navigator.onLine === false) return null;
+  try { const d = await nuageRecuperer(); if (d && adopter(d.etat || d)) return 'nuage'; } catch(e){}
   return null;
+}
+
+/* --- réinitialisation --- */
+/* Efface tout ce que l'app a écrit sur cet appareil (progression, miroir, réglages d'affichage, lien GitHub).
+   Les écritures sont gelées jusqu'au rechargement : sans cela, pagehide réécrirait l'état encore en mémoire.
+   Le Gist en ligne n'est pas touché. */
+async function effacerTout(){
+  _etatGele = true;
+  if (_etatTimer){ clearTimeout(_etatTimer); _etatTimer = null; }
+  clearTimeout(syncTimer);
+  try { [K, 'mzs-theme', 'mzs-motion', K_TOKEN, K_GIST, K_SYNC, K_SIG].forEach(k => localStorage.removeItem(k)); } catch(e){}
+  await avecDelai(_etatMiroirFile, 2000, null);
+  await avecDelai(new Promise(res => {
+    try { const r = indexedDB.deleteDatabase('mzs'); r.onsuccess = r.onerror = r.onblocked = () => res(true); }
+    catch(e){ res(false); }
+  }), 2000, false);
+  return true;
 }
 
 /* ---------- migration au chargement ---------- */

@@ -15,7 +15,9 @@ function fmt(n){
   var r=Math.round(n*100)/100;
   return String(r);
 }
-function fr(n){return fmt(n).replace('.',',');}
+function fr(n){return fmt(n).replace('.',',').replace('-','−');}
+/* Terme en x sans coefficient 1 apparent : coefx(1) = « x », coefx(4) = « 4x ». */
+function coefx(k){return (k===1?'':k)+'x';}
 var SUP={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
 function sup(n){return String(n).split('').map(function(c){return SUP[c]||c;}).join('');}
 function acceptFor(a){
@@ -117,7 +119,7 @@ SKILLS.push({
       var p2=(sB<0?'(−'+c5+')':String(c5))+' × '+d5;
       var ans5=String(tot);
       return {q:'Calcule : '+p1+' + '+p2,a:ans5,accept:acceptFor(ans5),choix:null,
-        expl:'Les multiplications d’abord : '+p1+' = '+fr(v1)+' et '+p2+' = '+fr(v2)+'. Puis '+fr(v1)+' + '+fr(v2)+' = '+fr(tot)+'.'};
+        expl:'Les multiplications d’abord : '+p1+' = '+fr(v1)+' et '+p2+' = '+fr(v2)+'. Puis '+fr(v1)+' + '+(v2<0?'('+fr(v2)+')':fr(v2))+' = '+fr(tot)+'.'};
     }
     var e6=R.int(1,10),f6=R.int(2,6),g6=R.int(2,6),sg=R.pick([1,-1]);
     var prod6=f6*(sg*g6),val6=e6-prod6;
@@ -439,12 +441,11 @@ SKILLS.push({
       var t=R.int(1,2);
       if(t===1){
         var a=R.int(2,9),b=R.int(2,9),minus=R.int(0,1)===1;
-        if(minus&&b>=a)b=a-1;
-        if(minus&&b===0){minus=false;b=R.int(2,9);}
+        if(minus&&b>=a)b=R.int(1,a-1);
         var coef=minus?(a-b):(a+b);
-        var ansA=coef+'x';
-        return {q:'Réduis : '+a+'x '+(minus?'−':'+')+' '+b+'x',a:ansA,accept:[coef+' x'],choix:null,
-          expl:a+'x '+(minus?'−':'+')+' '+b+'x = ('+a+' '+(minus?'−':'+')+' '+b+')x = '+ansA+'.'};
+        var ansA=coefx(coef);
+        return {q:'Réduis : '+a+'x '+(minus?'−':'+')+' '+coefx(b),a:ansA,accept:coef===1?['1x','1 x']:[coef+' x'],choix:null,
+          expl:a+'x '+(minus?'−':'+')+' '+coefx(b)+' = ('+a+' '+(minus?'−':'+')+' '+b+')x = '+ansA+'.'+(coef===1?' Le coefficient 1 ne s’écrit pas.':'')};
       }
       var a2=R.int(2,6),c2=R.int(2,6),b2=R.int(1,9),d2=R.int(1,9);
       var cx=a2+c2,ct=b2+d2;
@@ -475,13 +476,13 @@ SKILLS.push({
       var s5=a5+b5,p5=a5*b5;
       var good='x² + '+s5+'x + '+p5;
       return {q:'Développe et réduis : (x + '+a5+')(x + '+b5+')',a:good,accept:null,
-        choix:qcm(good,['x² + '+p5+'x + '+s5,'x² + '+p5,'x² + '+s5+'x + '+s5,'2x + '+s5]),
-        expl:'x × x = x², puis '+b5+'x + '+a5+'x = '+s5+'x, et '+a5+' × '+b5+' = '+p5+'. D’où x² + '+s5+'x + '+p5+'.'};
+        choix:qcm(good,['x² + '+coefx(p5)+' + '+s5,'x² + '+p5,'x² + '+s5+'x + '+s5,'2x + '+s5]),
+        expl:'x × x = x², puis '+coefx(b5)+' + '+coefx(a5)+' = '+s5+'x, et '+a5+' × '+b5+' = '+p5+'. D’où x² + '+s5+'x + '+p5+'.'};
     }
     if(t3===2){
       var c6=R.int(1,5),x6=-R.int(2,5),s6=R.pick([1,-1]);
       var v6=x6*x6+s6*c6*x6,ans6=String(v6);
-      return {q:'Calcule la valeur de x² '+(s6<0?'−':'+')+' '+c6+'x pour x = −'+(-x6)+'.',a:ans6,accept:acceptFor(ans6),choix:null,
+      return {q:'Calcule la valeur de x² '+(s6<0?'−':'+')+' '+coefx(c6)+' pour x = −'+(-x6)+'.',a:ans6,accept:acceptFor(ans6),choix:null,
         expl:'On remplace avec des parenthèses : (−'+(-x6)+')² = '+(x6*x6)+', et '+(s6<0?'−':'+')+' '+c6+' × (−'+(-x6)+') = '+fr(s6*c6*x6)+'. Total : '+fr(v6)+'.'};
     }
     var k7=R.int(2,5),a7=R.int(2,6),b7=R.int(1,9);
@@ -525,10 +526,10 @@ SKILLS.push({
     if(level===2){
       var x1=R.int(-6,8),a1=R.int(3,9),c1=R.int(1,a1-1),b1=R.int(1,15);
       var d1=(a1-c1)*x1+b1;
-      var rhs=c1+'x '+(d1<0?'− ':'+ ')+Math.abs(d1);
+      var rhs=coefx(c1)+(d1===0?'':' '+(d1<0?'− ':'+ ')+Math.abs(d1));
       var ans1=String(x1);
       return {q:'Résous : '+a1+'x + '+b1+' = '+rhs,a:ans1,accept:(acceptFor(ans1)||[]).concat(['x='+x1,'x = '+x1]),choix:null,
-        expl:'On retire '+c1+'x des deux côtés : '+(a1-c1)+'x + '+b1+' = '+fr(d1)+'. Puis '+(a1-c1)+'x = '+fr(d1-b1)+', donc x = '+fr(x1)+'.'};
+        expl:'On retire '+coefx(c1)+' des deux côtés : '+coefx(a1-c1)+' + '+b1+' = '+fr(d1)+'. Puis '+coefx(a1-c1)+' = '+fr(d1-b1)+(a1-c1===1?'.':', donc x = '+fr(x1)+'.')};
     }
     var t=R.int(1,4);
     if(t===1){

@@ -45,6 +45,16 @@ const _rtParent = {
 /* Routes qu'un rechargement ne doit jamais restaurer (un parcours ne reprend pas à froid). */
 const _rtVolatiles = ['seance', 'epreuveRun', 'bilan', 'onboarding', 'ds', 'micro'];
 
+/* Parcours qui démarrent dès leur rendu : l'historique (retour, avance) ne les relance jamais,
+   il rend leur écran de départ. Les autres vues reçoivent params.retour et décident
+   (épreuve et DS rouvrent leur dernière correction). */
+const _rtRetour = {seance: 'accueil', micro: 'accueil'};
+
+/* Feuille de sortie : le nom du parcours en cours (la série d'une leçon par défaut). */
+const _rtSortie = {seance: 'la séance', micro: 'les 5 minutes', cm: 'le sprint', test: 'le test', ds: 'le DS',
+                   epreuveRun: 'l\'épreuve', erreurs: 'le cahier', accueil: 'le rappel', papierEx: 'l\'exercice',
+                   bilan: 'le bilan', onboarding: 'le bilan'};
+
 /* État de la vue courante : une vue pose sa garde et son drapeau « parcours en cours ».
    Propriété de window (jamais de déclaration lexicale) pour rester accessible partout. */
 window.vueCourante = {v: 'accueil', garde: null, enCours: false};
@@ -86,9 +96,11 @@ async function nav(v, params){
   /* 1. garde de sortie du parcours en cours */
   const vc = window.vueCourante;
   if (vc && typeof vc.garde === 'function' && !vc.garde()){
+    const copie = vc.v === 'ds' || vc.v === 'epreuveRun';       // correction différée : rien n'est compté avant la fin
     const i = await ouvrirFeuille({
-      titre: 'Quitter la séance ?',
-      texte: 'Ton étape en cours est perdue, les réponses déjà données sont gardées.',
+      titre: 'Quitter ' + (_rtSortie[vc.v] || 'la série') + ' ?',
+      texte: copie ? 'Ta copie ne sera pas corrigée : aucune réponse n\'est comptée.'
+                   : 'Ton étape en cours est perdue, les réponses déjà données sont gardées.',
       boutons: [{label: 'Rester'}, {label: 'Quitter', style: 'danger'}]
     });
     if (i !== 1) return false;
@@ -152,9 +164,11 @@ function quitterParcours(){ return nav('accueil'); }
 /* Bouton retour du navigateur / geste iOS. */
 addEventListener('popstate', e => {
   const s = e.state;
-  const v = (s && s.v) || window.routeDepuisHash() || 'accueil';
+  let v = (s && s.v) || window.routeDepuisHash() || 'accueil';
   const avant = currentView;
-  const params = Object.assign({}, (s && s.params) || {}, {remplace: true});
+  const params = Object.assign({}, (s && s.params) || {}, {remplace: true, retour: true});
+  if (_rtRetour[v]) v = _rtRetour[v];                          // jamais de séance relancée par l'historique
+  if (v === 'cm'){ delete params.run; delete params.fam; }     // ni de sprint : retour à l'écran du calcul mental
   Promise.resolve(nav(v, params)).then(ok => {
     if (ok === false){
       /* garde refusée : on rejoue l'état courant pour ne pas quitter l'écran */

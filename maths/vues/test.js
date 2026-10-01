@@ -202,7 +202,10 @@ function _tsRun(pool, n){
     window.vueCourante.garde = null;
     teardownChrono();
 
-    const poses = Math.max(1, i);
+    /* La note porte sur tout le test : une question sans réponse compte fausse.
+       (Avant : le dénominateur était le nombre de questions vues, 3 réponses suffisaient à « valider la semaine ».) */
+    const poses = Math.max(1, N);
+    const sansReponse = Math.max(0, N - i);
     const p = ok / poses;
     const minutes = Math.max(1, Math.round((Date.now() - t0) / 60000));
     const precedent = (S.tests || []).slice(-1)[0] || null;
@@ -223,14 +226,16 @@ function _tsRun(pool, n){
     const pourcent = Math.round(p * 100);
     const nouveauRecord = poses >= 10 && pourcent > record0;
     if (nouveauRecord) S.records.precision = pourcent;
-    jToday().seance = true;
+    _seanceValiderJour(i, N);          // un test abandonné par le chrono après 3 réponses ne valide pas la journée
     save();
 
     /* le bilan situe le résultat dans la semaine */
     const jours = _tsJoursSemaine();
     const lignes = [];
+    if (sansReponse) lignes.push('Temps écoulé : ' + sansReponse +
+      (sansReponse > 1 ? ' questions sans réponse, comptées fausses.' : ' question sans réponse, comptée fausse.'));
     lignes.push(jours > 1 ? jours + ' jours travaillés cette semaine.' : 'Premier jour travaillé de la semaine.');
-    if (precedent) lignes.push('Test précédent : ' + precedent.ok + ' sur ' + precedent.n + ' le ' + _tsJour(precedent.date) + '.');
+    if (precedent) lignes.push('Test précédent : ' + precedent.ok + ' sur ' + precedent.n + ' le ' + _tsJour(precedent.date).replace(/\.$/, '') + '.');
     if (flanchent.length) lignes.push((flanchent.length > 1 ? 'Ces compétences repassent en rappel : ' : 'Cette compétence repasse en rappel : ') + flanchent.slice(0, 3).join(', ') + '.');
 
     const coach = p >= .9
@@ -239,23 +244,20 @@ function _tsRun(pool, n){
         ? 'Bon test. Les compétences en dessous de 60 % reviennent en rappel dès demain.'
         : 'Le test a fait son travail : il montre exactement où appuyer cette semaine.';
 
-    const emoji = p >= .9 ? '<span class="emoji" aria-hidden="true">🎉</span> '
-                : p >= .7 ? '<span class="emoji" aria-hidden="true">💪</span> ' : '';
-
     setCtx('plein');
     app().dataset.density = 'lecture';
     app().innerHTML =
       '<section class="fin-card" data-kind="serie">' +
         '<p class="overline">Test de la semaine · ' + esc(_tsJour(Date.now())) + (tempsEcoule ? ' · temps écoulé' : '') + '</p>' +
         '<h2 class="display-l">' + ok + ' / ' + poses + '</h2>' +
-        '<p class="small muted">' + emoji + pourcent + ' % de précision.</p>' +
+        '<p class="small muted">' + pourcent + ' % de précision.</p>' +
         '<div class="figures display">' +
           '<div class="figure"><b class="num">' + ok + '</b><span class="overline">justes</span></div>' +
           '<div class="figure"><b class="num">' + pourcent + ' %</b><span class="overline">précision</span></div>' +
           '<div class="figure"><b class="num">' + minutes + ' min</b><span class="overline">temps</span></div>' +
         '</div>' +
         (nouveauRecord ? '<p class="record">' + ic('crown-simple', 'ic-20') +
-          '<span class="emoji" aria-hidden="true">🏆</span> Record personnel · précision ' + pourcent + ' %</p>' : '') +
+          'Record personnel · précision ' + pourcent + ' %</p>' : '') +
         '<p class="msg">' + esc(lignes.join(' ')) + '</p>' +
         '<blockquote class="coach-msg"><p>' + esc(coach) + '</p></blockquote>' +
         _tsBadges() +

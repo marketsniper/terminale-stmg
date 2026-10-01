@@ -73,7 +73,13 @@
 }
 
 /* Les chiffres se posent l'un apres l'autre. */
-.fin-card .figures{ justify-content:center; margin-inline:auto }
+.fin-card .figures{ justify-content:center; margin-inline:auto; width:100%; flex-wrap:nowrap }
+/* Pleine largeur et un seul rang : la boite ne se retrecit plus autour des chiffres (« + 68 / m », « a / revoir »),
+   et le troisieme chiffre ne tombe plus seul sous les deux autres. Chaque colonne prend la place de son contenu. */
+.fin-card .figure{ flex:1 1 auto; padding-inline:var(--s-3) }
+.fin-card .figure:first-child{ padding-left:0 }
+.fin-card .figure:last-child{ padding-right:0 }
+.fin-card .figures.display .figure > b{ font-size:clamp(1.5rem, 7vw, 1.75rem) }
 .fin-card .figure{
   animation:rise var(--dur-2) var(--ease-out) both;
   animation-delay:calc(var(--i, 0) * 120ms);
@@ -114,6 +120,7 @@
   margin-inline:auto;
   animation:slide-left var(--dur-3) var(--ease-out-expo) both;
 }
+.fin-card .record .ic + .emoji{ display:none }
 
 .fin-card .next-row{
   margin-top:var(--s-2);
@@ -138,6 +145,7 @@ dialog.fin-card{
   z-index:var(--z-celebration);
   color:var(--ink);
 }
+dialog.fin-card[data-kind]{ margin:0; height:100%; overflow-y:auto }
 dialog.fin-card::backdrop{ background:var(--bg) }
 .fin-card[data-kind="camp"]{
   background:
@@ -149,8 +157,9 @@ dialog.fin-card::backdrop{ background:var(--bg) }
 .fin-card[data-kind="camp"] .flag{ animation:plant 480ms var(--ease-spring) both; transform-box:fill-box; transform-origin:bottom left }
 
 /* Verrouillage a 90 % : encart dans la carte question, jamais plein ecran. */
-.fin-card[data-kind="lock"]{ text-align:left; gap:var(--s-3); padding:var(--s-5) var(--card-pad) }
-.fin-card[data-kind="lock"] .ring{ margin:0 }
+.fin-card[data-kind="lock"]{ text-align:center; gap:var(--s-3); padding:var(--s-5) var(--card-pad) }
+.fin-card[data-kind="lock"] .ring{ margin:0 auto }
+.fin-card[data-kind="lock"] p{ margin:0 }
 .fin-card[data-kind="lock"] h2{ margin:0 }
 .fin-card[data-kind="lock"] .gain{
   position:static;
@@ -182,6 +191,7 @@ dialog.fin-card::backdrop{ background:var(--bg) }
   background:var(--bg);
   z-index:var(--z-sticky);
   padding:var(--s-2) 0;
+  min-height:44px;
   cursor:pointer;
 }
 .phase-head::-webkit-details-marker{ display:none }
@@ -198,6 +208,12 @@ details.phase[open] > .phase-head .caret{ transform:rotate(90deg) }
 .phase.locked h2{ color:var(--muted) }
 .phase > .pbar{ margin:var(--s-2) 0 var(--s-3) }
 .phase-note{ color:var(--muted); margin:var(--s-2) 0 0 }
+/* Carte « Continuer ici » / « Re-test programme » en tete du sentier : un rythme vertical au lieu de lignes collees. */
+#sentier-zone > .card{ display:flex; flex-direction:column; gap:var(--s-2); margin-bottom:var(--s-4) }
+#sentier-zone > .card > h2{ margin:0 }
+#sentier-zone > .card > .row{ margin-top:var(--s-2) }
+/* Texte d'introduction des onglets Papier et Techniques : il ne touche plus la carte ou la grille qui suit. */
+#sentier-zone > p.small{ margin:0 0 var(--s-4) }
 
 /* La corde : un trait vertical derriere les noeuds. */
 .skills{ position:relative; display:flex; flex-direction:column; gap:0 }
@@ -311,6 +327,9 @@ details.phase[open] > .phase-head .caret{ transform:rotate(90deg) }
 .lecon-head h1{ margin:0 0 var(--s-3) }
 .lecon-head .body-l{ margin:0 0 var(--s-3) }
 .lecon-state{ display:flex; align-items:center; gap:var(--s-2); margin:0; flex-wrap:wrap }
+.lecon-state .lecon-reste{ flex-basis:100% }
+.lecon-head > .small{ margin:var(--s-2) 0 0 }
+.lecon-repli{ margin:var(--s-4) 0 0 }
 
 p.lede,
 .lecon .lede{ font-size:1.125rem; font-weight:500; color:var(--ink) }
@@ -428,6 +447,15 @@ p.lede,
 
 .lecon ol,
 .lecon ul{ padding-left:1.25em; margin:0 0 1.25em }
+/* Le socle retire les puces de toutes les listes : la lecon et les enonces papier les retrouvent.
+   Les corriges renvoient aux questions par leur numero (« 1. », « Question 2 »). */
+.lecon ol{ list-style:decimal; padding-left:1.6em }
+.lecon ul,
+ul.lecon{ list-style:disc }
+ul.lecon{ padding-left:1.25em }
+.lecon ol > li::marker{ color:var(--ink); font-weight:600; font-variant-numeric:tabular-nums lining-nums }
+.lecon ul > li::marker,
+ul.lecon > li::marker{ color:var(--muted) }
 .lecon li{ margin:.25em 0 }
 .lecon mark{
   background:var(--hl);
@@ -531,22 +559,29 @@ p.lede,
 .spark text,
 .spark .ax{
   font-family:var(--font-mono);
-  font-size:.6875rem;
+  font-size:.8125rem;
   fill:var(--muted);
   font-variant-numeric:tabular-nums lining-nums;
 }
 
 /* Heatmap d'assiduite : 12 semaines. */
-.heatmap{
-  display:grid;
-  grid-template-columns:repeat(12, 14px);
-  grid-auto-rows:14px;
-  gap:3px;
+.heatmap,
+.heatmap-legende{
   --lvl0:var(--surface-3);
   --lvl1:color-mix(in srgb, var(--accent) 30%, var(--surface-3));
   --lvl2:color-mix(in srgb, var(--accent) 55%, var(--surface-3));
   --lvl3:color-mix(in srgb, var(--accent) 80%, var(--surface-3));
   --lvl4:var(--accent-line);
+}
+.heatmap{
+  display:grid;
+  grid-template-columns:repeat(12, 20px);
+  grid-auto-rows:20px;
+  gap:4px;
+  width:max-content;
+  max-width:100%;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
 }
 .hm{
   width:100%;
@@ -556,8 +591,11 @@ p.lede,
   padding:0;
   background:var(--lvl0);
   position:relative;
-  cursor:pointer;
+  display:block;
 }
+.hm[data-sel]{ outline:2px solid var(--ink); outline-offset:1px }
+/* Les cases ne sont plus des cibles : le mode presentation ne les gonfle plus a 56 px. */
+html[data-presentation] .hm{ min-height:0 }
 .hm[data-lvl="1"]{ background:var(--lvl1) }
 .hm[data-lvl="2"]{ background:var(--lvl2) }
 .hm[data-lvl="3"]{ background:var(--lvl3) }
@@ -575,7 +613,8 @@ p.lede,
 .hm[data-test]{ box-shadow:0 0 0 1px var(--glacier) }
 .hm[data-today]{ box-shadow:0 0 0 1.5px var(--ink) }
 .hm[data-today][data-lvl="4"]{ animation:pop-in var(--dur-4) var(--ease-spring) both }
-.heatmap-legende{ display:flex; align-items:center; gap:var(--s-2); margin-top:var(--s-2) }
+.heatmap-legende{ display:flex; align-items:center; gap:var(--s-2); margin:0 }
+.heatmap-aide{ margin:0 }
 .heatmap-legende i{ width:12px; height:12px; border-radius:3px; background:var(--lvl0); display:block }
 .heatmap-legende i[data-lvl="1"]{ background:var(--lvl1) }
 .heatmap-legende i[data-lvl="2"]{ background:var(--lvl2) }
@@ -614,14 +653,14 @@ p.lede,
 .altline .pt{ fill:var(--accent-line) }
 .altline text{
   font-family:var(--font-mono);
-  font-size:.6875rem;
+  font-size:.8125rem;
   fill:var(--muted);
   font-variant-numeric:tabular-nums lining-nums;
 }
 .altline text.cur{ fill:var(--ink) }
 
 /* Profil d'erreurs : pentagone. */
-.radar{ width:160px; height:160px; display:block; margin-inline:auto; overflow:visible }
+.radar{ width:200px; height:176px; display:block; margin-inline:auto; overflow:visible }
 .radar .grid{ fill:none; stroke:var(--line); stroke-width:1 }
 .radar .axis{ stroke:var(--line); stroke-width:1 }
 .radar .area{ fill:var(--ko); fill-opacity:.2; stroke:var(--ko); stroke-width:1.5; stroke-linejoin:round }
@@ -637,7 +676,7 @@ p.lede,
 .ring.triple .val.gold{ stroke:var(--accent-line) }
 .ring.triple .val.glacier{ stroke:var(--glacier); transition-delay:120ms }
 .ring.triple .val.ok{ stroke:var(--ok); transition-delay:240ms }
-.ring.triple .val.vide{ opacity:.4 }
+.ring.triple .val.vide{ opacity:min(.4, calc(var(--p, 0) * 1000)) }
 .ring.over .val.gold{ stroke:var(--ok) }
 .ring-legende{ display:flex; flex-direction:column; gap:var(--s-1); margin:0; padding:0; list-style:none }
 .ring-legende li{ display:flex; align-items:center; gap:var(--s-2); color:var(--ink-2); font-size:.875rem }
@@ -653,6 +692,19 @@ p.lede,
   color:var(--ink);
   font-variant-numeric:tabular-nums lining-nums;
 }
+/* Accueil : le chiffre du jour vit hors du SVG, centré dans le trou de l'anneau (40 px). */
+.ring-wrap{ position:relative; inline-size:120px; block-size:120px; flex:none }
+.ring-wrap > .ring-centre{
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+  font-size:1.5rem;
+  white-space:nowrap;
+  pointer-events:none;
+}
+.ring-wrap > .ring-centre[data-l="3"]{ font-size:1.125rem }
+.ring-wrap > .ring-centre[data-l="4"]{ font-size:.875rem }
 
 
 /* =============================================================================
@@ -752,6 +804,9 @@ p.lede,
   margin-top:var(--s-5);
 }
 .sheet-actions > *{ width:100% }
+.sheet-actions > :only-child{ grid-column:1 / -1 }
+/* Action principale d'une feuille : or, libellé centré (elle n'a pas de pastille d'icône). */
+.sheet-actions .btn-primary{ display:inline-flex; align-items:center; justify-content:center; min-height:52px; padding:0 var(--s-5); font-size:1rem; text-align:center }
 
 /* Ouverture et fermeture (§8 #14). */
 .sheet[open]{ animation:sheet-in 260ms var(--ease-out-expo) both }
@@ -770,7 +825,16 @@ p.lede,
 
 /* Palette et feuille d'aide : .pal-list et .pal-item viennent de 2-composants.css. */
 .pal-input{ width:100% }
-.pal-res{ list-style:none; margin:var(--s-2) 0 0; padding:0; display:flex; flex-direction:column; overflow-y:auto }
+.pal-res{ list-style:none; margin:var(--s-2) 0 0; padding:0; display:flex; flex-direction:column; overflow-y:auto; flex:1 1 auto; min-height:0 }
+/* Un seul defilement (.pal-res) : les groupes gardent leur hauteur, ils ne s'ecrasent plus les uns sur les autres. */
+.pal-res > *{ flex:none }
+.pal-res > .k{ margin:var(--s-2) 0 0 }
+.pal-res .pal-list{ max-height:none; overflow:visible; margin:var(--s-1) 0 var(--s-2) }
+/* 2 px de marge interne : l'anneau de focus du champ n'est plus rogne sur les cotes. */
+.sheet.palette .sheet-body{ overflow:hidden; padding:2px; margin:-2px }
+.sheet.palette .pal-input{ flex:none }
+.pal-list > .pal-titre{ margin:var(--s-3) 0 var(--s-1); padding-inline:var(--s-3) }
+.pal-list > .pal-titre:first-child{ margin-top:0 }
 .kbd-list{ list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr; gap:var(--s-1) }
 .kbd-list li{ display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); min-height:36px; font-size:.9375rem }
 
@@ -947,6 +1011,12 @@ p.lede,
   box-shadow:var(--card-ring), var(--shadow-1);
 }
 .segment input:focus-visible + span{ box-shadow:var(--focus-ring) }
+/* Sous-lignes d'une option (« 25 réponses », « 12 min ») : du texte, pas un second bouton de 44 px. */
+.segment label span > span{ display:block; min-height:0; padding:0; border-radius:0; font-weight:400 }
+.segment label span:has(> span){ padding-block:var(--s-2); gap:2px }
+/* Segment en grille 2 x 2 : quatre options qui ne tiennent pas sur une ligne de telephone. */
+.segment.grille{ grid-auto-flow:row; grid-template-columns:1fr 1fr; border-radius:var(--r-3) }
+.segment.grille label span{ border-radius:calc(var(--r-3) - 4px) }
 /* Segment revele : « Suivre le theme de l'appareil » decoche. */
 .segment-reveal{
   display:grid;
@@ -1046,12 +1116,35 @@ p.lede,
   place-items:center;
   cursor:pointer;
 }
-body[data-ctx="parcours"] .fab-prof,
+/* En parcours, plus de bouton flottant : il recouvrait les touches rapides, le champ et « Continuer ».
+   Le Prof y passe par l'en-tete (#btn-prof-top, 1-socle.css §5.1). */
 body[data-ctx="lecon"] .fab-prof{ display:grid }
-body[data-ctx="parcours"] .fab-prof{ bottom:calc(24px + env(safe-area-inset-bottom)) }
+/* En lecon, il ne recouvre aucune commande (assistant.js, placerFab) : --prof-leve le pose
+   au-dessus de la barre d'action collante, data-cede l'efface quand un bouton passe dessous. */
+.fab-prof{
+  transform:translateY(calc(-1 * var(--prof-leve, 0px)));
+  transition:transform var(--dur-3) var(--ease-out-expo), opacity var(--dur-2) var(--ease-out), visibility 0s;
+}
+.fab-prof[data-cede]{ opacity:0; visibility:hidden; pointer-events:none; transition-delay:0s, 0s, var(--dur-2) }
+/* Clavier ouvert : le bouton laisse la place au champ. Evaluation en cours : pas de Prof.
+   (Deux regles : un navigateur sans :has() ne doit pas perdre la seconde.) */
+body:has(input:focus, textarea:focus) .fab-prof{ display:none }
+body[data-prof="pause"][data-ctx] .fab-prof{ display:none }
+/* Fin de page : la derniere ligne s'arrete au-dessus du bouton, qu'il y ait une barre d'action ou non. */
+@media (max-width:899.98px){
+  body[data-ctx="lecon"]:has(#assist-fab:not([hidden])) main#app:not(:has(.lecon-cta)){
+    padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 24px + 52px + var(--s-3));
+  }
+  body[data-ctx="lecon"]:has(#assist-fab:not([hidden])) .lecon-cta{ margin-top:calc(52px + var(--s-3)) }
+}
 
 .sheet-prof{ height:min(85svh, 640px); max-height:min(85svh, 640px) }
 .sheet-prof[open]{ display:flex; flex-direction:column }
+/* Clavier ouvert sur un petit ecran (assistant.js, majViewport) : le fil garde la place. */
+.sheet-prof[data-serre] .sheet-grip,
+.sheet-prof[data-serre] .assist-ctx,
+.sheet-prof[data-serre] .assist-chips{ display:none }
+.sheet-prof[data-serre] .assist-head{ padding:0 0 var(--s-2) }
 .assist-head{
   display:flex;
   align-items:center;
@@ -1299,7 +1392,10 @@ body[data-ctx="parcours"] .fab-prof{ bottom:calc(24px + env(safe-area-inset-bott
 .onb-plan .ic{ color:var(--muted) }
 .onb-form{ display:flex; flex-direction:column; gap:var(--s-4); text-align:left; max-width:420px; margin-inline:auto; width:100% }
 .onb-choix{ display:flex; flex-direction:column; gap:var(--s-3); max-width:420px; margin-inline:auto; width:100% }
-.onb-choix .card-link{ min-height:72px; text-align:left }
+.onb-choix .card-link{ min-height:72px; text-align:left; display:flex; flex-direction:column; justify-content:center; gap:var(--s-1) }
+.onb-choix .card-link .label{ color:var(--ink); font-weight:600; font-size:1.0625rem; letter-spacing:0 }
+.onb-choix .card-link[aria-checked="true"]{ box-shadow:0 0 0 2px var(--accent-line), var(--shadow-1); background:var(--accent-soft) }
+.onb-form .switch{ justify-content:space-between }
 .serie-bar.lg i,
 .crampons.lg i{ width:20px; height:20px }
 .serie-bar.lg,
@@ -1376,15 +1472,15 @@ html[data-presentation] .head{ top:32px }
 
 .q-nav{
   display:grid;
-  grid-template-columns:repeat(10, 1fr);
+  grid-template-columns:repeat(auto-fill, minmax(44px, 1fr));   /* cibles tactiles de 44 px au moins */
   gap:4px;
   list-style:none;
   padding:0;
-  margin:0;
+  margin:0 0 var(--s-3);
 }
 .q-nav-cell{
   width:100%;
-  min-height:36px;
+  min-height:44px;
   border:0;
   border-radius:var(--r-1);
   background:var(--surface-2);
@@ -1399,6 +1495,28 @@ html[data-presentation] .head{ top:32px }
 .q-nav-cell[data-state="skipped"]{ color:var(--warn-text); box-shadow:0 0 0 1px var(--warn) }
 .q-nav-cell[data-state="marked"]{ color:var(--glacier-text); box-shadow:0 0 0 1px var(--glacier) }
 .q-nav-cell[data-state="current"]{ background:var(--accent); color:var(--accent-ink); box-shadow:0 0 0 1px var(--accent-line) }
+
+/* DS en vue : tout le programme en liste, lancement colle en bas (au-dessus des onglets). */
+.ds-liste{ display:flex; flex-direction:column }
+.ds-liste .phase{ content-visibility:visible }
+.ds-cta{
+  --ds-bas:calc(var(--nav-h) + max(12px, env(safe-area-inset-bottom)) + 8px);   /* 8 px au-dessus de la barre d'onglets */
+  position:sticky;
+  bottom:var(--ds-bas);
+  z-index:var(--z-sticky);
+  padding-top:var(--s-4);
+  background:linear-gradient(transparent, var(--bg) 45%);
+}
+/* fond plein sous le bouton : la liste ne transparaît plus entre le bouton et les onglets */
+.ds-cta::after{
+  content:"";
+  position:absolute;
+  left:-4px; right:-4px; top:100%;
+  height:var(--ds-bas);
+  background:var(--bg);
+}
+.ds-cta > .btn-primary{ flex:1 }
+@media (min-width:900px){ .ds-cta{ --ds-bas:24px } }
 
 
 /* =============================================================================
@@ -1425,6 +1543,17 @@ html[data-presentation] .head{ top:32px }
 /* =============================================================================
    §7 · Classes propres aux ecrans (accueil, sentier, coach, reglages, methode)
    ============================================================================= */
+
+/* 7.1 · action principale : le bouton et le détail de la séance, sous le hero */
+.go-bloc{ display:flex; flex-direction:column; gap:var(--s-2) }
+.go-bloc > p{ margin:0; padding-inline:var(--s-2) }
+.hero .montagne{ margin-top:var(--s-2) }
+/* Téléphone : le massif va d'un bord de l'écran à l'autre, sans fondu latéral.
+   Sa brume de pied (16 px, presque transparente) passe sous le bouton : moins de vide au-dessus de l'action. */
+@media (max-width:559.98px){
+  .hero .montagne{ margin-inline:calc(-1 * var(--gutter)); margin-bottom:calc(-1 * var(--s-4)) }
+  .hero .mt-massif{ mask:none }
+}
 
 /* 7.1 · carte du jour */
 .day-card{ display:grid; grid-template-columns:auto 1fr; gap:var(--s-4); align-items:center }
@@ -1461,7 +1590,7 @@ html[data-presentation] .head{ top:32px }
   padding:0;
   list-style:none;
   font-family:var(--font-mono);
-  font-size:.6875rem;
+  font-size:.75rem;
   color:var(--muted);
 }
 .week-jours li{ width:12px; text-align:center }
@@ -1475,6 +1604,8 @@ html[data-presentation] .head{ top:32px }
 .tech-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:var(--s-3) }
 .tech-grid .card{ display:flex; flex-direction:column; gap:var(--s-2); text-align:left }
 .tech-grid .card .small{ color:var(--muted) }
+/* L'etat (« En apprentissage ») reste une pastille d'une ligne, a la largeur de son texte. */
+.tech-grid .card .chip{ align-self:flex-start; white-space:nowrap }
 
 /* 7.3 · sommaire collant de la lecon (desktop) */
 .toc{ display:none }
@@ -1489,6 +1620,24 @@ html[data-presentation] .head{ top:32px }
 /* 7.9 · sections du coach */
 .coach-sec{ display:flex; flex-direction:column; gap:var(--s-3) }
 .coach-sec > .overline{ margin:0 }
+.coach-sec > .medals + .overline{ margin-top:var(--s-3) }
+/* Un libelle de chiffre sur deux lignes garde un interligne lisible. */
+.figure > .k,
+.figure > .overline{ line-height:1.3 }
+/* Quatre chiffres sur un telephone : grille 2 x 2 plutot que quatre colonnes de 80 px. */
+.figures.duo{ display:grid; grid-template-columns:1fr 1fr; gap:var(--s-4) 0 }
+.figures.duo > .figure:nth-child(odd){ border-left:0; padding-left:0 }
+@media (min-width:720px){ .figures.duo{ grid-template-columns:repeat(4, 1fr) } .figures.duo > .figure:nth-child(odd):not(:first-child){ border-left:1px solid var(--line); padding-left:var(--s-4) } }
+/* Lignes compactes (les 8 dernieres semaines). */
+.figures.compact{ flex-wrap:nowrap; padding-block:var(--s-2); border-bottom:1px solid var(--line) }
+.figures.compact > .figure{ padding-inline:var(--s-2) }
+.figures.compact > .figure:first-child{ padding-left:0 }
+.figures.compact > .figure > b{ font-size:1.125rem }
+/* Sommaire de « Comment ca marche » : des liens, pas des etats (ni point de couleur, ni soulignement). */
+.toc-chips a.chip{ text-decoration:none; color:var(--ink) }
+.toc-chips a.chip::before{ display:none }
+/* pas de scroll-margin-top ici : html{scroll-padding-top} (1-socle.css) compense déjà l'en-tête collant ;
+   les deux ensemble décalaient la section de 96 px (fusion du 01/10). */
 
 /* 7.16 · lignes de reglages */
 .set-row{
@@ -1503,9 +1652,42 @@ html[data-presentation] .head{ top:32px }
 .set-row .label{ color:var(--ink) }
 .set-row .small{ color:var(--muted); display:block }
 .set-row .segment{ min-width:min(280px, 60vw) }
+@media (max-width:519.98px){
+  .set-row:has(.segment){ grid-template-columns:minmax(0, 1fr); gap:var(--s-2); padding-block:var(--s-3) }
+  .set-row .segment{ min-width:0; width:100% }
+}
 .set-sec{ display:flex; flex-direction:column; gap:var(--s-1) }
 .set-sec > h2{ margin:0 0 var(--s-2); display:flex; align-items:center; gap:var(--s-3) }
+.set-sec > .row,
+.set-sec > details,
+.set-sec > #sync-etat{ margin-block:var(--s-2) }
+/* Champ de cle : l'oeil reste a droite du champ au lieu de tomber dessous. */
+/* Sauvegarde GitHub depliee : texte, champ et boutons ne se touchent plus. */
+.set-sec details > :not(summary){ margin-top:var(--s-3) }
+.set-sec .field > .row{ flex-wrap:nowrap }
+.set-sec .field > .row > .input{ flex:1 1 auto; min-width:0; width:auto }
 .view-reglages{ max-width:640px; margin-inline:auto; width:100% }
+/* Coach, Reglages, Methode : des sections sans carte, separees par un blanc plus net que l'ecart interne. */
+.view-coach,
+.view-reglages,
+.view-methode{ gap:var(--s-6) }
+.view-coach > h1,
+.view-reglages > h1,
+.view-erreurs > h1{ margin:0 }
+.err-suite{ justify-content:space-between }
+/* Titre de page et sous-titre (Sentier, Calcul mental, Papier) : un souffle entre les deux au lieu de lignes collees. */
+.view > header:not([class]) > h1{ margin:0 }
+.view > header:not([class]) > h1 + p{ margin:var(--s-2) 0 0 }
+.view > header:not([class]) > .overline{ margin:0 0 var(--s-2) }
+/* « Competences » touchait les bords de sa pastille a 390 px. */
+#seg-sentier label span{ font-size:.9375rem }
+/* Cibles tactiles (44 px) : resumes repliables et petits boutons. :where() garde la specificite de .lecon summary. */
+:where(.view details:not(.phase)) > summary{ min-height:44px; padding-block:10px; cursor:pointer; color:var(--ink-2); font-weight:500 }
+@media (pointer:coarse), (max-width:899.98px){
+  .btn.sm,
+  button.small{ min-height:44px }
+  .toc-chips a.chip{ min-height:44px; padding-inline:var(--s-4) }
+}
 
 /* 7.21 · frise des rappels espaces */
 .frise{ width:100%; max-width:520px; height:auto; aspect-ratio:360 / 64; display:block; overflow:visible }
@@ -1514,7 +1696,7 @@ html[data-presentation] .head{ top:32px }
 .frise .pt.cur{ fill:var(--accent-line) }
 .frise text{
   font-family:var(--font-mono);
-  font-size:.6875rem;
+  font-size:.8125rem;
   fill:var(--muted);
   font-variant-numeric:tabular-nums lining-nums;
 }
@@ -1708,7 +1890,7 @@ html[data-motion="reduit"] .assist-think::after{ animation:none }
   .view-coach{
     display:grid;
     grid-template-columns:repeat(6, 1fr);
-    gap:var(--s-block) var(--s-5);
+    gap:var(--s-6) var(--s-5);
     align-items:start;
   }
   .view-coach > *{ grid-column:span 6 }

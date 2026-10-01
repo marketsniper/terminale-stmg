@@ -31,7 +31,8 @@ function _seanceErreursDues(max){
   return dues.concat(reste).slice(0, max);
 }
 
-/* Échéancier d'une erreur reprise (M10). Retourne 'reparee', 'tot' ou 'revoir'. */
+/* Échéancier d'une erreur reprise (M10). Le cahier (vues/erreurs.js) renvoie {etat, texte} ;
+   le repli ci-dessous renvoie l'état seul : 'reparee', 'tot', 'reprise' ou 'revoir'. */
 function _seanceReparer(e, ok){
   if (typeof window.reparer === 'function'){
     try { return window.reparer(e, ok); } catch(x){}
@@ -52,6 +53,27 @@ function _seanceReparer(e, ok){
   return 'tot';
 }
 
+/* Une activité hors séance guidée (5 minutes, test, DS, épreuve) ne valide la journée que si
+   elle représente un vrai travail : au moins la moitié des questions prévues ont reçu une réponse,
+   avec un plancher de 5. Elle pose j.seance (jour validé), jamais j.guidee : seule la séance guidée
+   pose j.guidee, et c'est j.guidee qui fait passer la séance du jour en « bonus ». */
+function _seanceValiderJour(repondues, prevues){
+  const j = jToday();
+  const n = Math.max(0, prevues || 0);
+  if (n > 0 && (repondues || 0) >= Math.min(n, Math.max(5, Math.ceil(n / 2)))) j.seance = true;
+  return !!j.seance;
+}
+window.validerJour = _seanceValiderJour;
+
+/* Avance la corde à chaque réponse d'une série (runSerie), sans dépasser les n questions annoncées.
+   Retourne la fonction à appeler en fin de série : elle complète le compte et coupe l'écoute. */
+function _seanceSuivre(n, pas){
+  let vus = 0;
+  const off = ecouter('reponse', () => { if (vus < n){ vus++; pas(); } });
+  surQuitter(off);
+  return () => { off(); while (vus < n){ vus++; pas(); } };
+}
+
 /* ============================================================
    1. planSeance : le plan annoncé (PRODUCT-SPEC M7)
    ============================================================ */
@@ -70,6 +92,8 @@ function _seancePlan(mode){
     etapes.push({cle: 'echauffement', t: 'Échauffement', n: 8, min: 2, ic: 'timer'});
     if (rev.length) etapes.push({cle: 'rappels', t: 'Rappels', n: rev.length, min: 1 + rev.length, ic: 'arrows-clockwise', skills: rev, parSkill: 2, level: 1});
   } else if (m === 'bonus'){
+    const rev = due.slice(0, 4);
+    if (rev.length) etapes.push({cle: 'rappels', t: 'Rappels', n: rev.length, min: 1 + rev.length, ic: 'arrows-clockwise', skills: rev, parSkill: 3, level: 2});
     if (f) etapes.push({cle: 'skill', t: f.titre, n: 10, min: 12, ic: 'flag-banner', skill: f, lecon: !s.lu && s.n === 0});
     const errs = _seanceErreursDues(4);
     if (errs.length) etapes.push({cle: 'erreurs', t: 'Erreurs', n: errs.length, min: 3, ic: 'book-bookmark', erreurs: errs});
@@ -147,7 +171,7 @@ function vSeance(params){
   let mode = p.mode;
   if (!mode){
     const abs = (typeof window.joursDepuisActivite === 'function') ? window.joursDepuisActivite() : 0;
-    mode = j.seance ? 'bonus' : (abs >= 3 && masteredCount() > 0) ? 'reprise' : 'normale';
+    mode = j.guidee ? 'bonus' : (abs >= 3 && masteredCount() > 0) ? 'reprise' : 'normale';
   }
   const plan = _seancePlan(mode);
 
@@ -297,13 +321,14 @@ function _seanceRappels(box, etape, bilan, mode, pas, fini){
     box.innerHTML = '<div class="rev-band">' + ic('arrows-clockwise') +
       '<span>Rappel · ' + esc(sk.titre) + '</span></div><div data-q></div>';
     const hote = box.querySelector('[data-q]');
+    const finSuivi = _seanceSuivre(etape.parSkill || 3, pas);
     runSerie(hote, sk, etape.parSkill || 3, {
       level: niveau, adapt: false, recordSkill: false, reprise: false,
       revision: true, indices: false, sansType: true, chrono: true
     }, ({res}) => {
       const ok = res.reduce((a, b) => a + b, 0);
       totOk += ok; totN += res.length;
-      for (let x = 0; x < res.length; x++) pas();
+      finSuivi();
       bilan.res = bilan.res.concat(res);
       reviewResult(sk.id, ok, res.length, {mode: mode === 'reprise' ? 'reprise' : retard ? 'retard' : ''});
       try { const j = jToday(); j.rev = (j.rev || 0) + 1; save(); } catch(e){}
@@ -339,21 +364,23 @@ function _seanceCompetence(box, etape, bilan, pas, fini){
 
   function serie(){
     const taux = tauxRecent(sk.id);
-    let verrou = false;
+    let verrou = false, gainVerrou = 0;
+    const finSuivi = _seanceSuivre(etape.n, pas);
     runSerie(box, sk, etape.n, {
       level: taux !== null && taux >= .8 ? 2 : 1,
       mix: true,
       onMastered(){
         verrou = true;
+        try { gainVerrou = window.metresGagnes(); } catch(e){}
         bilan.verrous.push(sk.titre);
         celebrer(4, {texte: 'Verrouillé à 90 %. ' + sk.titre + ' : c\'est acquis.'});
       }
     }, ({res}) => {
       const ok = res.reduce((a, b) => a + b, 0);
-      for (let x = 0; x < res.length; x++) pas();
+      finSuivi();
       bilan.res = bilan.res.concat(res);
       bilan.etapes.push({cle: 'skill', t: sk.titre, ic: 'flag-banner', ok: ok, n: res.length, res: res});
-      if (verrou) _seanceEncartVerrou(box, sk, () => _seanceTransition(box, {
+      if (verrou) _seanceEncartVerrou(box, sk, gainVerrou, () => _seanceTransition(box, {
         icone: 'flag-banner', titre: sk.titre, chiffre: ok + ' / ' + res.length,
         sous: 'Ensuite : ' + _seanceProchaine()}, fini));
       else _seanceTransition(box, {
@@ -402,8 +429,9 @@ function _seanceCompetence(box, etape, bilan, pas, fini){
 }
 
 /* Encart de verrouillage (DESIGN-SPEC §6.15, data-kind="lock") : jamais plein écran. */
-function _seanceEncartVerrou(box, sk, apres){
-  const m = (typeof window.mSkill === 'function') ? Math.round(window.mSkill(sk.id)) : 0;
+function _seanceEncartVerrou(box, sk, gain, apres){
+  /* le gain affiché est celui du verrou lui-même, pas la valeur totale de la compétence */
+  const m = Math.round(gain || 0);
   box.innerHTML =
     '<section class="fin-card" data-kind="lock">' +
       '<span class="lock-ic">' +
@@ -413,7 +441,7 @@ function _seanceEncartVerrou(box, sk, apres){
       ringSVG({val: 9, max: 10, taille: 48, texte: false, libelle: '9 réussies sur 10'}) +
       '<h2>Verrouillé à 90 %.</h2>' +
       '<p class="ink-2">' + esc(sk.titre) + ' : c\'est acquis.</p>' +
-      '<p class="gain num">+ ' + nf(m, 'm') + '</p>' +
+      (m ? '<p class="gain num">+ ' + nf(m, 'm') + '</p>' : '') +
       '<div class="next-row"><button class="btn-primary" type="button" data-suite disabled>' +
         '<span>Continuer</span><span class="ic-wrap">' + ic('arrow-right') + '</span></button></div>' +
     '</section>';
@@ -434,7 +462,8 @@ function _seanceErreurs(box, etape, bilan, pas, fini){
   const res = [];
   (function un(){
     if (i >= errs.length){
-      bilan.etapes.push({cle: 'erreurs', t: 'Erreurs', ic: 'book-bookmark', ok: ok, n: errs.length, res: res});
+      bilan.etapes.push({cle: 'erreurs', t: 'Erreurs', ic: 'book-bookmark', ok: ok, n: errs.length, res: res,
+                         note: reparees ? nf(reparees) + (reparees > 1 ? ' réparées' : ' réparée') : ''});
       bilan.res = bilan.res.concat(res);
       bilan.reparees = reparees; bilan.revoir = revoir;
       _seanceTransition(box, {
@@ -458,17 +487,17 @@ function _seanceErreurs(box, etape, bilan, pas, fini){
     }, r => {
       logAnswer(r.ok, r.ms);
       res.push(r.ok ? 1 : 0);
-      const etat = _seanceReparer(e, r.ok);
+      const rr = _seanceReparer(e, r.ok);
+      const etat = (rr && typeof rr === 'object') ? rr.etat : rr;      // le cahier renvoie {etat, texte}
       if (r.ok){
         ok++;
         if (etat === 'reparee'){
           reparees++;
-          celebrer(2, {texte: 'Erreur réparée. ' + nf(S.compteurs.reparees || 0) + ' au total.',
+          celebrer(2, {texte: (rr && rr.texte) || ('Erreur réparée. ' + nf(S.compteurs.reparees || 0) + ' au total.'),
                        tone: 'ok', icon: 'wrench'});
         } else if (etat === 'tot'){
           celebrer(2, {texte: 'Réussie, mais trop tôt pour être sûre : on la revoit dans 3 jours.',
                        tone: 'glacier', icon: 'clock-countdown'});
-          revoir++;
         }
       } else revoir++;
       i++; pas(); un();
@@ -602,6 +631,7 @@ function _seanceRecords(bilan, precision, questions){
 function _seanceFin(plan, bilan){
   const j = jToday();
   j.seance = true;
+  j.guidee = true;                 // la séance guidée est faite : la suivante sera un bonus
   save();
 
   const res = bilan.res;
@@ -630,14 +660,14 @@ function _seanceCarteFin(plan, bilan, k){
   const date = new Date().toLocaleDateString('fr-FR', {weekday: 'long', day: 'numeric', month: 'short'});
   const titre = k.precision >= 90 ? 'Belle marche.' : k.precision >= 70 ? 'Du terrain gagné.' : 'Tu es venu, c\'est l\'essentiel.';
   let humeur = '';
-  if (k.precision >= 90) humeur = '<span class="emoji" aria-hidden="true">🎉</span> ' + nf(k.precision, '%') + ' de précision.';
-  else if (k.precision >= 70) humeur = '<span class="emoji" aria-hidden="true">💪</span> ' + nf(k.precision, '%') + ' de précision.';
+  if (k.precision >= 70) humeur = nf(k.precision, '%') + ' de précision.';
   else humeur = nf(k.precision, '%') + ' de précision. On consolide demain.';
 
   const lignes = bilan.etapes.map(e => {
     return '<li>' + ic(e.ic) + '<span>' + esc(e.t) + '</span>' +
       '<b class="num">' + e.ok + ' / ' + e.n + '</b>' +
-      (e.dans ? '<span class="recall num">dans ' + nf(e.dans, 'j') + '</span>' : '<span></span>') + '</li>';
+      (e.dans ? '<span class="recall num">dans ' + nf(e.dans, 'j') + '</span>'
+        : e.note ? '<span class="recall">' + esc(e.note) + '</span>' : '<span></span>') + '</li>';
   }).join('');
 
   const prog = progresJour();

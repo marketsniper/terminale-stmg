@@ -2,7 +2,11 @@
    Hors-ligne complet, mise à jour annoncée (jamais de skipWaiting silencieux). */
 'use strict';
 
-const CACHE = 'mzs-v9';
+const CACHE = 'mzs-ae76ad4dfd';
+/* Plusieurs apps vivent sur le même domaine (l'app STMG à la racine, celle-ci dans /maths/).
+   Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier. */
+const PREFIXE = 'mzs-';
+const PORTEE = new URL('./', self.location).pathname;
 
 const ASSETS = [
   './', './index.html', './manifest.webmanifest',
@@ -22,17 +26,22 @@ const ASSETS = [
 ];
 
 /* Mise en cache une par une : un fichier optionnel absent (illus.svg, grain.png)
-   ne doit jamais faire échouer l'installation entière. */
+   ne doit jamais faire échouer l'installation entière.
+   cache:'no-cache' est indispensable : sans lui, le cache HTTP du navigateur (10 min sur GitHub Pages)
+   peut rendre les anciens fichiers, que l'on figerait dans le cache de la nouvelle version.
+   'no-cache' (et pas 'reload') fait valider chaque fichier auprès du serveur : réponse 304 pour ceux que
+   la page vient de charger, donc rien n'est téléchargé deux fois au premier lancement. */
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c =>
-    Promise.all(ASSETS.map(u => c.add(u).catch(() => null)))
+    Promise.all(ASSETS.map(u =>
+      fetch(new Request(u, {cache: 'no-cache'})).then(r => r.ok ? c.put(u, r) : null).catch(() => null)))
   ));
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .then(keys => Promise.all(keys.filter(k => k !== CACHE && k.startsWith(PREFIXE)).map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -42,18 +51,35 @@ self.addEventListener('message', e => {
   if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
+/* Rafraîchit le cache en tâche de fond. e.waitUntil n'est pas décoratif : sans lui, le service worker
+   peut être arrêté avant la fin de l'écriture (iOS), et le cache ne se rafraîchit alors jamais.
+   cache:'no-cache' fait valider le fichier auprès du serveur (réponse 304 le plus souvent) au lieu de
+   relire le cache HTTP : une correction publiée arrive au lancement suivant, pas dix minutes plus tard. */
+function revalider(e, url, cle, cache){
+  const p = fetch(new Request(url, {cache: 'no-cache', credentials: 'same-origin'})).then(res => {
+    if (!res.ok) return res;
+    return cache.put(cle, res.clone()).then(() => res);
+  });
+  e.waitUntil(p.catch(() => {}));
+  return p;
+}
+
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
-  const key = e.request.mode === 'navigate' ? './index.html' : e.request;
-  e.respondWith(
-    caches.match(key).then(hit => {
-      const fetched = fetch(e.request).then(res => {
-        if (res.ok) caches.open(CACHE).then(c => c.put(key, res.clone()));
-        return res;
-      }).catch(() => hit);
-      return hit || fetched;
+  if (!url.pathname.startsWith(PORTEE)) return;
+  /* Seule la page de l'app est servie sous la clé './index.html'. Ouvrir un autre fichier du dossier
+     (manifeste, icons.svg…) ne doit ni recevoir la page, ni la remplacer dans le cache. */
+  const navigation = e.request.mode === 'navigate';
+  if (navigation && url.pathname !== PORTEE && url.pathname !== PORTEE + 'index.html') return;
+  const cle = navigation ? './index.html' : e.request;
+  /* Cache d'abord (toute l'app vient de la même version), rafraîchi derrière pour le lancement suivant. */
+  e.respondWith(caches.open(CACHE).then(cache =>
+    cache.match(cle).then(hit => {
+      const reseau = revalider(e, e.request.url, cle, cache);
+      if (hit){ reseau.catch(() => {}); return hit; }
+      return reseau.catch(() => Response.error());
     })
-  );
+  ));
 });

@@ -9,6 +9,9 @@
    ============================================================ */
 let _errFiltres = ['toutes'];          // multi-sélection : 'toutes' | 'jour' | id de type | 'nonclassee'
 let _errGroupe = 'jour';               // 'jour' | 'skill'
+/* Pagination : 120 erreurs d'un bloc font 30 écrans de défilement. On en montre 15, puis 20 de plus à la demande. */
+const _errPAGE = 15, _errPAGE_PLUS = 20;
+let _errVisibles = _errPAGE;
 
 /* ============================================================
    1. Petits utilitaires
@@ -193,20 +196,20 @@ function _errCarte(e, i){
 /* ============================================================
    6. La vue
    ============================================================ */
-function vErreurs(){
+function vErreurs(params){
   const cible = app();
   if (!cible) return;
+  if (params) _errVisibles = _errPAGE;          // arrivée par le routeur : on repart de la première page
   setCtx('outil');
   cible.dataset.density = 'outil';
 
   if (!S.erreurs.length && !(S.reparees || []).length){
-    cible.className = 'view view-erreurs';
-    cible.innerHTML = '<h1>Le cahier</h1>' + vide({
+    cible.innerHTML = '<div class="view view-erreurs"><h1>Le cahier</h1>' + vide({
       illus: 'il-vide',
       titre: 'Aucune erreur en attente.',
       texte: "C'est ici que les progrès se fabriquent : chaque erreur revient jusqu'à être réparée.",
       action: {label: 'Lancer une séance', fn: () => nav('seance')}
-    });
+    }) + '</div>';
     return;
   }
 
@@ -231,20 +234,22 @@ function vErreurs(){
   TYPES_ERR.forEach(t => { if (c[t.id]) chips += chip(t.id, t.nom, c[t.id]); });
   if (c.nonclassee) chips += chip('nonclassee', 'Non classées', c.nonclassee);
 
-  /* groupes */
+  /* groupes : seules les erreurs de la page courante sont rendues (triées par échéance, les plus urgentes d'abord) */
+  const visibles = liste.slice(0, _errVisibles);
+  const reste = liste.length - visibles.length;
   let corps = '';
   if (!liste.length){
     corps = '<p class="small muted">Aucune erreur ne correspond à ce filtre.</p>';
   } else if (_errGroupe === 'skill'){
     const parSkill = {};
-    liste.forEach(e => { (parSkill[e.sid] = parSkill[e.sid] || []).push(e); });
+    visibles.forEach(e => { (parSkill[e.sid] = parSkill[e.sid] || []).push(e); });
     Object.keys(parSkill).forEach(sid => {
       corps += '<section class="err-group"><p class="overline">' + esc(_errTitre(sid)) + '</p>' +
         parSkill[sid].map(e => _errCarte(e, S.erreurs.indexOf(e))).join('') + '</section>';
     });
   } else {
     let titre = '';
-    liste.forEach(e => {
+    visibles.forEach(e => {
       const g = _errGroupeTitre(e.ts);
       if (g !== titre){
         if (titre) corps += '</section>';
@@ -268,12 +273,12 @@ function vErreurs(){
 
   const aRefaire = Math.min(5, liste.length);
 
-  cible.className = 'view view-erreurs';
   cible.innerHTML =
+    '<div class="view view-erreurs">' +
     '<h1>Le cahier</h1>' +
     '<div class="figures">' +
       '<div class="figure"><b>' + fv(c.toutes) + '</b><span class="k">En attente</span></div>' +
-      '<div class="figure"><b>' + fv(semaine) + '</b><span class="k">Réparées · 7 j</span></div>' +
+      '<div class="figure"><b>' + fv(semaine) + '</b><span class="k">Réparées en\u00a07\u00a0j</span></div>' +
       '<div class="figure"><b>' + esc(dominant) + '</b><span class="k">Type dominant</span></div>' +
     '</div>' +
     (diag ? '<p class="coach-msg">' + esc(diag) + '</p>' : '') +
@@ -285,9 +290,13 @@ function vErreurs(){
     (aRefaire ? '<button class="btn-primary" type="button" id="err-go"><span>Refaire ' + aRefaire +
       (aRefaire > 1 ? ' erreurs' : ' erreur') + '</span><span class="ic-wrap">' + ic('arrow-right') + '</span></button>' : '') +
     '<div id="err-liste">' + corps + '</div>' +
+    (reste > 0 ? '<div class="row err-suite"><button class="btn" type="button" id="err-plus">' + ic('plus') +
+      'Voir ' + Math.min(_errPAGE_PLUS, reste) + ' de plus</button>' +
+      '<span class="small muted num">' + visibles.length + ' sur ' + liste.length + '</span></div>' : '') +
     '<div class="row"><button class="btn btn-ghost" type="button" id="err-add">' + ic('plus') +
       'Ajouter une erreur</button></div>' +
-    pied;
+    pied +
+    '</div>';
 
   _errBrancher(liste);
 }
@@ -309,12 +318,26 @@ function _errBrancher(liste){
       if (i >= 0) _errFiltres.splice(i, 1); else _errFiltres.push(f);
       if (!_errFiltres.length) _errFiltres = ['toutes'];
     }
+    _errVisibles = _errPAGE;
     vErreurs();
   }));
 
   zone.querySelectorAll('input[name="err-grp"]').forEach(r => r.addEventListener('change', () => {
-    _errGroupe = r.value; snd.click(); vErreurs();
+    _errGroupe = r.value; _errVisibles = _errPAGE; snd.click(); vErreurs();
   }));
+
+  const plus = document.getElementById('err-plus');
+  if (plus) plus.addEventListener('click', () => {
+    snd.click();
+    const y = scrollY, avant = _errVisibles;
+    _errVisibles += _errPAGE_PLUS;
+    vErreurs();
+    try { scrollTo({top: y, behavior: 'instant'}); } catch(e){ scrollTo(0, y); }
+    /* le lecteur d'écran et le clavier reprennent à la première carte ajoutée */
+    const carte = document.querySelectorAll('#err-liste .err')[avant];
+    const b = carte && carte.querySelector('[data-refaire]');
+    if (b) try { b.focus({preventScroll: true}); } catch(e){}
+  });
 
   zone.querySelectorAll('[data-lecon]').forEach(b => b.addEventListener('click', () => {
     const e = S.erreurs[Number(b.dataset.lecon)];
@@ -403,7 +426,7 @@ function _errFeuilleAjout(){
     titre: 'Ajouter une erreur',
     texte: 'Pour une erreur faite sur papier. Elle reviendra comme les autres.',
     contenu: contenu,
-    boutons: [{label: 'Annuler'}, {label: 'Ajouter au cahier', style: 'primaire'}],
+    boutons: [{label: 'Annuler'}, {label: 'Ajouter', style: 'primaire'}],
     apres(dlg){
       champQ = dlg.querySelector('#err-a-q');
       champA = dlg.querySelector('#err-a-a');
@@ -444,8 +467,7 @@ function _errParcours(file){
   window.vueCourante.garde = () => fini;
   setCtx('parcours', {title: 'Cahier', count: '1 / ' + total});
 
-  cible.className = 'view view-erreurs';
-  cible.innerHTML = '<div id="err-zone"></div>';
+  cible.innerHTML = '<div class="view view-erreurs"><div id="err-zone"></div></div>';
   const zone = document.getElementById('err-zone');
 
   function suivant(){
@@ -465,7 +487,8 @@ function _errParcours(file){
       tagCourt: _errTitre(e.sid),
       overline: 'À réparer',
       count: (i + 1) + ' / ' + total,
-      chrono: false, indices: false, reprise: false, sansType: true, serie: false
+      chrono: false, indices: false, reprise: false, sansType: true, serie: false,
+      gain: false                      /* refaire une erreur ne crédite aucun mètre */
     }, r => {
       logAnswer(r.ok, r.ms);
       if (r.ok) justes++;

@@ -17,11 +17,13 @@ function _onbSon(nom){ try { if (window.snd && typeof snd[nom] === 'function') s
    1. vOnboarding : quatre écrans plein cadre (PRODUCT-SPEC M4)
    ============================================================ */
 
-function vOnboarding(){
+function vOnboarding(params){
   setCtx('plein');
   /* Un état déjà rempli (import, migration v1) : deux écrans de découverte, pas de bilan. */
   let dejaLa = false, alt = 0;
-  try { alt = altitude(); dejaLa = masteredCount() > 0 || Object.keys(S.skills || {}).length > 0; } catch(e){}
+  /* On regarde le travail réellement fait, pas le nombre de fiches : st() crée toutes les fiches
+     dès qu'on lit l'altitude, un élève neuf en a donc toujours, toutes à zéro. */
+  try { alt = altitude(); dejaLa = masteredCount() > 0 || !estVide(S) || !!(S.profil && S.profil.bilanFait); } catch(e){}
 
   /* Choix en cours, écrits en une seule fois à la sortie. */
   const choix = {
@@ -36,7 +38,7 @@ function vOnboarding(){
   } catch(e){}
 
   const dernier = dejaLa ? 3 : 4;
-  let etape = 1;
+  let etape = (params && params.etape === 4 && !dejaLa) ? 4 : 1;
 
   function pointes(){
     let h = '';
@@ -75,7 +77,7 @@ function vOnboarding(){
         : 'De la 6e au bac, une compétence à la fois.') + '</h2>' +
       '<p class="body-l ink-2">' + (dejaLa
         ? 'Deux écrans pour découvrir les nouveautés. Rien n\'est perdu.'
-        : '52 compétences, 7 camps, 4 810 mètres. Chaque bonne réponse te fait monter.') + '</p>' +
+        : ((window.SKILLS || []).length || 53) + ' compétences, 7 camps, 4\u202F810 mètres. Chaque bonne réponse te fait monter.') + '</p>' +
       '<div class="montagne">' + montagneSVG({anime: true}) + '</div>';
     bouton(actions, 'Voir comment ça marche', () => { etape = 2; rendre(); });
   }
@@ -120,7 +122,7 @@ function vOnboarding(){
       '<h2 class="display-l">Ta cordée, à ta main.</h2>' +
       '<div class="onb-form">' +
         '<label class="field"><span class="label">Ton prénom (facultatif)</span>' +
-          '<input id="onb-prenom" type="text" maxlength="24" autocomplete="given-name" autocorrect="off"' +
+          '<input class="input" id="onb-prenom" type="text" maxlength="24" autocomplete="given-name" autocorrect="off"' +
           ' spellcheck="false" placeholder="Ilan" value="' + esc(choix.prenom) + '"></label>' +
         '<div class="field"><span class="label" id="onb-obj-l">Ton objectif chaque jour</span>' +
           '<div class="segment" role="radiogroup" aria-labelledby="onb-obj-l">' +
@@ -278,7 +280,7 @@ function vBilanAltitude(params){
       _onbSon('click');
       let onboarde = true;
       try { onboarde = !!(S.profil && S.profil.onboard); } catch(e){}
-      nav(onboarde ? 'accueil' : 'onboarding', {remplace: true});
+      nav(onboarde ? 'accueil' : 'onboarding', {remplace: true, etape: 4});
     });
   }
 
@@ -417,7 +419,7 @@ function vBilanAltitude(params){
       '<p class="overline k-gold">' + (camp ? 'Test de camp' : 'Bilan d\'altitude') + '</p>' +
       '<h2 class="display-l">' + esc(titre) + '</h2>' +
       '<div class="figures display">' +
-        '<div class="figure" style="--i:0"><b class="num"><span data-cpt="' + alt + '">0</span> m</b>' +
+        '<div class="figure" style="--i:0"><b class="num"><span data-cpt="' + alt + '">0</span><small class="unit">m</small></b>' +
           '<span class="overline">altitude</span></div>' +
         '<div class="figure" style="--i:1"><b class="num"><span data-cpt="' + camps + '">0</span></b>' +
           '<span class="overline">' + (camps > 1 ? 'camps validés' : 'camp validé') + '</span></div>' +

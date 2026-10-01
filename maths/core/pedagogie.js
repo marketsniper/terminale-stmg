@@ -6,23 +6,123 @@
 'use strict';
 
 /* ---------- réponses : normalisation ---------- */
+/* Tous les signes « moins » qu'un clavier, une touche rapide ou un copier-coller peut produire
+   (U+2212, tirets, demi-cadratin, moins pleine chasse) valent le tiret ASCII des générateurs. */
+const _pedMoins = /[−‐‑‒–—―﹣－]/g;
 /* Met une réponse sous forme comparable : sans espaces, en minuscules, virgule en point. */
-function normStr(s){ return String(s).trim().toLowerCase().replace(/\s+/g, '').replace(/,/g, '.').replace(/[€%]/g, ''); }
-/* Convertit une saisie en nombre, en acceptant les fractions « 3/4 ». */
+function normStr(s){ return String(s).trim().toLowerCase().replace(_pedMoins, '-').replace(/\s+/g, '').replace(/,/g, '.').replace(/[€%]/g, ''); }
+/* Convertit une saisie en nombre, en acceptant les fractions « 3/4 » et un « + » devant (« +10 »). */
 function parseVal(s){
-  s = normStr(s);
+  s = normStr(s).replace(/^\+(?=[\d.])/, '');
   const fr = s.match(/^(-?\d+(?:\.\d+)?)\/(-?\d+(?:\.\d+)?)$/);
   if (fr) { const d = parseFloat(fr[2]); return d === 0 ? NaN : parseFloat(fr[1]) / d; }
   const n = parseFloat(s);
-  return /^-?\d+(\.\d+)?$/.test(s) ? n : NaN;
+  return /^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(s) ? n : NaN;
 }
-/* Une réponse est juste si elle correspond au texte attendu ou à sa valeur numérique. */
+
+/* Unités et noms qu'un élève écrit après un nombre, comme sur une copie (« 240 km », « 50 km/h », « 12 ans »).
+   La chaîne est déjà passée par normStr : minuscules, sans espaces, sans € ni %.
+   Un mot qui change la valeur (« 3 mille », « 3 quarts », « 2 fois ») n'est pas une unité. */
+const _pedUnite = '(?:km|hm|dam|dm|cm|mm|m|hl|dl|cl|ml|l|kg|mg|g|h|min|mn|sec|s|j|ans?|cts?|pts?|°c?|' +
+  '(?!(?:mille|milliers?|millions?|milliards?|cents?|centaines?|dizaines?|douzaines?|demie?s?|tiers|quarts?|dixièmes?|centièmes?|millièmes?|fois)(?![a-zà-ÿ]))' +
+  '[a-zàâçéèêëîïôöûùüœ]{3,})';
+const _pedNombre = '[-+]?(?:\\d+(?:\\.\\d*)?|\\.\\d+)(?:\\/\\d+(?:\\.\\d+)?)?';
+const _pedAvecUnite = new RegExp('^(' + _pedNombre + ')(?:' + _pedUnite + '[²³23]?(?:\\/' + _pedUnite + ')?|\\/' + _pedUnite + ')$');
+const _pedEntreParentheses = new RegExp('^\\((' + _pedNombre + ')\\)$');
+const _pedIneqGauche = new RegExp('^([a-z])(<=|>=|<|>)(' + _pedNombre + ')$');
+const _pedIneqDroite = new RegExp('^(' + _pedNombre + ')(<=|>=|<|>)([a-z])$');
+
+/* « x = », « u3 = », « u(3) = », « f'(2) = », « Δ = » devant la réponse : un nom d'une seule lettre, jamais une phrase
+   (« f admet un maximum en x = −1 » doit rester entière). */
+const _pedPrefixe = /^[a-zα-ω](?:\d{1,2}|_[a-z0-9]|['’])?(?:\([^()=]*\))?=(?![<>=])/;
+/* Retire l'habillage d'une réponse déjà normalisée : « x = 6 », « u(3) = 16 », « (−3) », « +10 », « 1x »,
+   et l'unité (« 240 km ») quand avecUnite est vrai, c'est-à-dire quand on attend un nombre. */
+function _pedEpure(n, avecUnite){
+  let s = String(n);
+  s = s.replace(_pedPrefixe, '').replace(/^[=≈](?![<>=])/, '');
+  for (let k = 0; k < 2; k++){
+    s = s.replace(_pedEntreParentheses, '$1');
+    if (avecUnite) s = s.replace(_pedAvecUnite, '$1');
+  }
+  s = s.replace(/^\+(?=[\d.])/, '');
+  if (/[a-z]/.test(s)) s = s.replace(/(\d)[*×·](?=[a-z(])/g, '$1').replace(/(^|[^\d.])1(?=[a-z])/g, '$1');
+  return s;
+}
+/* Lit « x > −5 » ou « −5 < x » (même inégalité). Rend {v, op, val}, ou null. */
+function _pedInegalite(n){
+  const s = String(n).replace(/[≤⩽]|=</g, '<=').replace(/[≥⩾]|=>/g, '>=');
+  let m = _pedIneqGauche.exec(s);
+  if (m) return {v: m[1], op: m[2], val: parseVal(m[3])};
+  m = _pedIneqDroite.exec(s);
+  if (m) return {v: m[3], op: {'<': '>', '>': '<', '<=': '>=', '>=': '<='}[m[2]], val: parseVal(m[1])};
+  return null;
+}
+/* Somme de termes sans parenthèses (« 12x+12 », « 35-25x ») : les mêmes termes dans un autre ordre sont la même
+   réponse. Rend la forme triée, ou '' si la chaîne n'est pas une simple somme en x. */
+function _pedTermes(s){
+  s = String(s);
+  if (!/[a-z]/.test(s) || /[a-zà-ÿ]{2}/.test(s) || /[()<>=^]|[*×·\/÷:][-+]|[-+]$/.test(s)) return '';
+  const t = s.match(/[-+]?[^-+]+/g);
+  if (!t || t.length < 2 || t.join('') !== s) return '';
+  return t.map(x => /^[-+]/.test(x) ? x : '+' + x).sort().join('');
+}
+function _pedPgcd(a, b){ a = Math.abs(a); b = Math.abs(b); while (b){ const t = a % b; a = b; b = t; } return a; }
+/* Fraction d'entiers « n/d » (chaîne épurée), ou null. */
+function _pedFraction(s){
+  const m = /^([-+]?\d+)\/([-+]?\d+)$/.exec(String(s));
+  return m ? {n: parseInt(m[1], 10), d: parseInt(m[2], 10)} : null;
+}
+/* La question exige-t-elle une fraction irréductible ? Drapeau du générateur (ex.irreductible, ex.forme)
+   ou, à défaut, la consigne elle-même (« fraction irréductible », « Simplifie au maximum »). */
+function _pedIrreductible(ex){
+  if (!ex) return false;
+  if (ex.irreductible === true || ex.forme === 'irreductible') return true;
+  if (ex.irreductible === false) return false;
+  return /irr[ée]ductible|simplifie au maximum/i.test(String(ex.q || ''));
+}
+/* Quand la valeur est bonne mais la forme refusée, la phrase à montrer à l'élève ; '' sinon. */
+function _pedForme(input, ex){
+  if (!_pedIrreductible(ex)) return '';
+  const e = _pedEpure(normStr(input), true), vi = parseVal(e), va = parseVal(_pedEpure(normStr(ex.a)));
+  if (isNaN(vi) || isNaN(va) || Math.abs(vi - va) >= 1e-9) return '';
+  return _pedFraction(e) ? 'Bonne valeur, mais la fraction peut encore se simplifier.' : 'Bonne valeur, mais on attend une fraction.';
+}
+/* Une réponse est juste si elle correspond au texte attendu ou à sa valeur numérique.
+   L'habillage d'une copie (x = …, unité, parenthèses, signe +) ne compte pas ; la forme demandée, si. */
 function isRight(input, ex){
-  const cands = [ex.a].concat(ex.accept || []);
-  const ni = normStr(input);
-  if (cands.some(c => normStr(c) === ni)) return true;
-  const vi = parseVal(input);
-  if (!isNaN(vi)) return cands.some(c => { const v = parseVal(c); return !isNaN(v) && Math.abs(v - vi) < 1e-9; });
+  /* QCM (carte, épreuve, DS) : la réponse donnée est le texte d'une option, comparé tel quel */
+  if (ex.choix && ex.choix.length){
+    const no = normStr(input);
+    return [ex.a].concat(ex.accept || []).some(c => c !== null && c !== undefined && normStr(c) === no);
+  }
+  const pctSaisi = /%/.test(String(input));
+  const va = parseVal(_pedEpure(normStr(ex.a)));
+  const nombre = !isNaN(va);                           // on attend un nombre : l'unité écrite après ne compte pas
+  /* « 40 % » toléré pour 0,4 n'autorise pas « 40 » tout court */
+  const cands = [ex.a].concat(ex.accept || []).filter(c => {
+    if (c === null || c === undefined) return false;
+    if (!nombre) return true;
+    if (pctSaisi) return !ex.pct || /%/.test(String(c));        // proportion (ex.pct) : « 0,4 % » ne vaut pas 0,4
+    if (!/%/.test(String(c))) return true;
+    const v = parseVal(_pedEpure(normStr(c), true));
+    return isNaN(v) || Math.abs(v - va) < 1e-9;
+  }).map(c => normStr(c));
+  const ni = normStr(input), ne = _pedEpure(ni, nombre);
+  const irr = _pedIrreductible(ex), fi = _pedFraction(ne);
+  if (irr && fi && fi.d !== 0 && _pedPgcd(fi.n, fi.d) !== 1) return false;
+  const epures = cands.map(c => _pedEpure(c, nombre));
+  if (cands.some((c, k) => c === ni || c === ne || epures[k] === ne)) return true;
+  const ti = _pedTermes(ne);
+  if (ti && epures.some(c => _pedTermes(c) === ti)) return true;      // « 12 + 12x » pour « 12x + 12 »
+  const vi = parseVal(ne);
+  if (!isNaN(vi)) return epures.some(c => {
+    const v = parseVal(c);
+    if (isNaN(v)) return false;
+    if (irr && !fi && c.indexOf('/') >= 0) return false;          // un décimal ne remplace pas la fraction demandée
+    return Math.abs(v - vi) < 1e-9;
+  }) || (pctSaisi && nombre && !!ex.pct && Math.abs(va - vi / 100) < 1e-9);   // proportion : « 40 % » vaut 0,4
+  const ii = _pedInegalite(ne);
+  if (ii) return cands.some(c => { const k = _pedInegalite(c); return !!k && k.v === ii.v && k.op === ii.op && Math.abs(k.val - ii.val) < 1e-9; });
   return false;
 }
 
@@ -163,9 +263,23 @@ function niveauMaitrise(id){
 function _pedNomPalier(n){ return n <= 10 ? 'Balade' : n <= 25 ? 'Marche' : 'Ascension'; }
 window.nomPalier = _pedNomPalier;
 
+/* Jour de référence d'un parcours. Une séance commencée avant minuit compte pour le jour où elle a commencé :
+   sinon ses réponses partent sur deux jours, elle valide le lendemain et la série perd un jour.
+   Posé par setCtx('parcours'), levé à la sortie du parcours (core/ui.js). */
+let _pedJourFige = null;
+function figerJour(k){
+  if (!k){ _pedJourFige = null; return; }
+  if (!_pedJourFige) _pedJourFige = {k: k, t: Date.now()};
+}
+/* Clé du journal à utiliser maintenant : le jour figé tant que le parcours dure (3 h au plus), sinon aujourd'hui. */
+function _pedCleJour(){
+  if (_pedJourFige && Date.now() - _pedJourFige.t < 3 * 3600000) return _pedJourFige.k;
+  return todayKey();
+}
+
 /* Journal du jour, créé avec l'objectif en vigueur. */
 function jToday(){
-  const k = todayKey();
+  const k = _pedCleJour();
   return S.journal[k] || (S.journal[k] = {a:0, ok:0, cm:0, seance:false, ms:0,
     obj: (S.profil && S.profil.objectif) || 25, rev:0, revTot:null, cmMs:0, m:0, abs:false});
 }
@@ -178,7 +292,7 @@ function dayDone(k){ const j = S.journal[k]; return !!j && (j.seance || (j.obj ?
 
 /* Objectif du jour : nombre visé et nom du palier. */
 function objectifJour(){
-  const j = S.journal[todayKey()];
+  const j = S.journal[_pedCleJour()];
   const n = (j && j.obj) || (S.profil && S.profil.objectif) || 25;
   return {n: n, nom: _pedNomPalier(n)};
 }
@@ -194,7 +308,7 @@ function progresJour(){
     p2: revTot ? Math.min(1, rev / revTot) : null,
     cmMs: cmMs, p3: Math.min(1, cmMs / 180000),
     m: j.m || 0, seance: !!j.seance,
-    fait: dayDone(todayKey()),
+    fait: dayDone(_pedCleJour()),
     depasse: o.n ? (j.ok || 0) > o.n : false,
     trois: (o.n ? (j.ok || 0) >= o.n : false) && (revTot ? rev >= revTot : false) && cmMs >= 180000
   };
@@ -257,18 +371,23 @@ function bivouacs(){
   const couverts = [];
   if (cles.length){
     const debut = cles[0];
+    /* On mesure d'abord le trou : les jours manqués d'affilée depuis la veille.
+       Un bivouac ne part que si le stock couvre TOUT le trou et qu'il reste une série derrière.
+       Sinon la série est déjà perdue : on ne brûle rien. */
     const d = new Date(); d.setDate(d.getDate() - 1);
-    let garde = 0;
+    const trou = [];
+    let garde = 0, serieDerriere = false;
     while (garde++ < 400){
       const k = todayKey(d);
       if (k < debut) break;
-      if (dayDone(k) || ser.utilises.indexOf(k) >= 0){ d.setDate(d.getDate() - 1); continue; }
-      if (ser.bivouacs > 0){
-        ser.bivouacs--; ser.utilises.push(k); couverts.push(k);
-        if (ser.utilises.length > 60) ser.utilises = ser.utilises.slice(-60);
-        d.setDate(d.getDate() - 1); continue;
-      }
-      break;
+      if (dayDone(k) || ser.utilises.indexOf(k) >= 0){ serieDerriere = true; break; }
+      trou.push(k);
+      if (trou.length > ser.bivouacs) break;
+      d.setDate(d.getDate() - 1);
+    }
+    if (serieDerriere && trou.length && trou.length <= ser.bivouacs){
+      trou.forEach(k => { ser.bivouacs--; ser.utilises.push(k); couverts.push(k); });
+      if (ser.utilises.length > 60) ser.utilises = ser.utilises.slice(-60);
     }
   }
   const dus = Math.floor(streak() / 7);

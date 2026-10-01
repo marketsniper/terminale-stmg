@@ -14,7 +14,23 @@ const _qJustes = ['Exact.', 'Oui.', 'Juste.', 'Propre.'];
 
 function _qEsc(s){ return (typeof esc === 'function') ? esc(s) : String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function _qIc(nom, taille){ return '<svg class="ic ic-' + (taille || 20) + '" aria-hidden="true" focusable="false"><use href="#i-' + nom + '"/></svg>'; }
-function _qFv(v){ try { return (typeof fv === 'function') ? fv(v) : String(v); } catch(e){ return String(v); } }
+/* Réponse affichée comme sur une copie, jamais tronquée : un nombre seul passe par fv() (virgule, espace des
+   milliers, vrai moins) ; une fraction, une expression en x ou un texte restent entiers (5/9, 7x + 10). */
+function _qFv(v){
+  const s = String(v == null ? '' : v).trim();
+  try {
+    if (/^[-−]?(?:\d{1,3}(?:[\s\u00a0\u202f]\d{3})+|\d+)(?:[.,]\d+)?$/.test(s) && typeof fv === 'function') return fv(s.replace('−', '-'));
+  } catch(e){}
+  return _qExpr(s);
+}
+/* Typographie d'une expression : virgule décimale, vrai signe moins, espaces autour des opérateurs.
+   Un texte (deux lettres qui se suivent) garde ses traits d'union. */
+function _qExpr(s){
+  let t = String(s).replace(/(\d)\.(?=\d)/g, '$1,');
+  if (/[a-zà-ÿ]{2}/i.test(t)) return t.replace(/(^|[\s(=<>;:×÷+*\/^\[])-(?=[\d(a-z])/gi, '$1−');
+  t = t.replace(/-/g, '−').replace(/<=/g, '≤').replace(/>=/g, '≥');
+  return t.replace(/([\da-z)²³%])\s*([+−<>≤≥=])\s*(?=[\d(a-z√−+])/gi, '$1 $2 ');
+}
 function _qSon(nom, arg){ try { if (window.snd && typeof snd[nom] === 'function') snd[nom](arg); } catch(e){} }
 function _qSt(id){ try { return id ? st(id) : null; } catch(e){ return null; } }
 function _qPrefs(){ try { return (typeof S !== 'undefined' && S.prefs) || {}; } catch(e){ return {}; } }
@@ -24,14 +40,28 @@ function _qReduit(){
   return matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/* Opérateurs typographiques : × − ÷ dans l'énoncé quand ce sont bien des opérateurs.
-   Le « / » n'est jamais touché quand la réponse attendue est une fraction. */
+/* Le chrono d'une question ne tourne pas pendant qu'une feuille est ouverte (« Séance en pause »,
+   « Quitter ? ») ni quand l'app est en arrière-plan. Le panneau du Prof ne l'arrête pas. */
+function _qEnPause(){
+  try { return document.hidden === true || !!document.querySelector('dialog.sheet[open]:not(.sheet-prof)'); } catch(e){ return false; }
+}
+function _qMajPause(){
+  try { if (window.question && typeof window.question.majPause === 'function') window.question.majPause(); } catch(e){}
+}
+try {
+  document.addEventListener('visibilitychange', _qMajPause);
+  /* une feuille s'ouvre ou se ferme toujours sur un geste : la carte sans chrono affiché le voit aussi */
+  ['click', 'keydown', 'cancel', 'close'].forEach(t => document.addEventListener(t, () => { if (window.question) setTimeout(_qMajPause, 0); }, true));
+} catch(e){}
+
+/* Opérateurs typographiques : × et − dans l'énoncé quand ce sont bien des opérateurs.
+   Le « / » n'est jamais touché : 3/4 est une fraction, et les générateurs écrivent ÷ pour une division. */
 function _qMath(html, ex){
   let s = html;
   s = s.replace(/(\d)\s*[x*]\s*(\d)/g, '$1 × $2');
   s = s.replace(/(\d)\s*-\s*(\d)/g, '$1 − $2');
-  const aFraction = ex && typeof ex.a === 'string' && ex.a.indexOf('/') >= 0;
-  if (!aFraction) s = s.replace(/(\d)\s*\/\s*(\d)/g, '$1 ÷ $2');
+  /* le signe d'un nombre ou d'une lettre : (-10) × 2 s'écrit (−10) × 2, jamais avec un trait d'union */
+  s = s.replace(/(^|[\s(=;:×÷+*\/^\[\],−])-(?=[\d(a-z√])/gi, '$1−');
   return s;
 }
 
@@ -58,13 +88,25 @@ function _qEnonce(texte, ex){
   return html.replace(/\n+$/, '');
 }
 
-/* inputmode : « decimal » quand la réponse attendue n'est faite que de chiffres,
-   virgule, point et signe ; « text » sinon (fractions, littéral). C'est ce détail
-   qui rendait la saisie pénible sur iPhone. */
+/* Type de la réponse attendue, lu sur ex.a seul (les tolérances de ex.accept ne changent ni le clavier
+   ni les touches) : 'nombre' (nombre ou fraction), 'inegalite', 'litteral' (expression en x) ou 'texte'. */
+function _qTypeReponse(ex){
+  const a = String(ex && ex.a != null ? ex.a : '');
+  if (/^[\s\d.,+\-−\/%€°]*$/.test(a)) return 'nombre';
+  if (/[a-zà-ÿ]{2}/i.test(a)) return 'texte';
+  if (/[<>≤≥]/.test(a)) return 'inegalite';
+  return 'litteral';
+}
+/* inputmode : pavé numérique (« decimal ») pour un nombre ou une fraction, le signe moins et la barre
+   de fraction venant des touches rapides. Pour une expression en x ou une inégalité, le pavé reste
+   si les touches rapides donnent tout le reste (x, <, >, parenthèses) ; clavier complet (« text ») sinon. */
 function _qInputmode(ex){
-  const morceaux = [ex.a].concat(Array.isArray(ex.accept) ? ex.accept : (ex.accept ? [ex.accept] : []));
-  const numerique = morceaux.every(v => v == null || /^[\s\d.,+\-−]*$/.test(String(v)));
-  return numerique ? 'decimal' : 'text';
+  const type = _qTypeReponse(ex);
+  if (type === 'nombre') return 'decimal';
+  if (type === 'texte') return 'text';
+  const touches = _qTouches(ex).map(t => t.k).join('');
+  const reste = String(ex.a).toLowerCase().replace(/<=/g, '≤').replace(/>=/g, '≥').replace(/−/g, '-').replace(/[\s\d.,]/g, '');
+  return Array.from(reste).every(c => touches.indexOf(c) >= 0) ? 'decimal' : 'text';
 }
 
 /* Première étape d'une explication : première phrase, la réponse masquée. */
@@ -74,7 +116,7 @@ function _qPremiereEtape(ex){
   let phrase = t;
   const i = t.indexOf('. ');
   if (i >= 24) phrase = t.slice(0, i + 1);
-  if (ex.a) phrase = phrase.split(String(ex.a)).join('…');
+  if (ex.a) phrase = phrase.split(String(ex.a)).join('…').split(String(ex.a).replace(/-/g, '−').replace('.', ',')).join('…');
   return phrase;
 }
 
@@ -124,10 +166,33 @@ function crampons(source, o){
 /* ------------------------------------------------------------
    Barre de touches rapides (44 px, écrans tactiles)
    ------------------------------------------------------------ */
-function touchesRapides(){
-  const touches = ['−', '/', ',', 'x', '²', '%', '√'];
-  return '<div class="quickkeys" aria-label="Touches rapides">' +
-    touches.map(k => '<button type="button" data-k="' + _qEsc(k) + '" aria-label="Insérer ' + _qEsc(k) + '">' + _qEsc(k) + '</button>').join('') +
+/* Les touches dépendent du type de réponse, jamais de sa valeur (aucun indice sur le signe ou la forme).
+   La touche « − » insère le tiret ASCII, celui que tout le correcteur connaît. */
+function _qTouches(ex){
+  const moins = {k: '-', t: '−', nom: 'le signe moins'}, plus = {k: '+', nom: 'le signe plus'},
+        virgule = {k: ',', nom: 'la virgule'}, barre = {k: '/', nom: 'la barre de fraction'}, pct = {k: '%', nom: 'pour cent'};
+  const type = _qTypeReponse(ex);
+  if (type === 'nombre') return [moins, plus, virgule, barre, pct];
+  const tout = [ex.a].concat(ex.accept || []).join(' ');
+  const m = /[a-z]/i.exec(String(ex.a).replace(/[a-zà-ÿ]{2,}/gi, ' '));
+  const lettre = {k: m ? m[0] : 'x'};
+  if (type === 'inegalite'){
+    return /[≤≥]|[<>]=/.test(tout)
+      ? [lettre, {k: '<', nom: 'inférieur'}, {k: '>', nom: 'supérieur'}, {k: '≤', nom: 'inférieur ou égal'}, {k: '≥', nom: 'supérieur ou égal'}, moins]
+      : [lettre, {k: '<', nom: 'inférieur'}, {k: '>', nom: 'supérieur'}, moins, virgule];
+  }
+  if (type === 'litteral'){
+    const t = [lettre, moins, plus, {k: '(', nom: 'la parenthèse ouvrante'}, {k: ')', nom: 'la parenthèse fermante'}];
+    if (/²/.test(tout)) t.push({k: '²', nom: 'au carré'});
+    return t;
+  }
+  return [moins, virgule, barre, {k: 'x'}, pct];
+}
+function touchesRapides(ex){
+  const touches = _qTouches(ex || {a: 'texte libre'});
+  return '<div class="quickkeys" role="group" aria-label="Touches rapides" data-n="' + touches.length + '">' +
+    touches.map(t =>'<button type="button" data-k="' + _qEsc(t.k) + '" aria-label="Insérer ' + _qEsc(t.nom || t.k) + '">' +
+      _qEsc(t.t || t.k) + '</button>').join('') +
     '</div>';
 }
 
@@ -190,17 +255,17 @@ function askQuestion(box, opts, cb){
       (modeQcm
         ? '<div class="opts" role="group" aria-label="Réponses">' + choix.map((c, i) =>
             '<button class="opt" type="button" data-c="' + _qEsc(c) + '"><span class="letter num">' + lettres[i] +
-            '</span><span class="opt-txt">' + _qEsc(c) + '</span><kbd>' + (i + 1) + '</kbd></button>').join('') + '</div>'
+            '</span><span class="opt-txt">' + _qEsc(_qExpr(c)) + '</span><kbd>' + (i + 1) + '</kbd></button>').join('') + '</div>'
         : '<form class="answer-row" autocomplete="off">' +
-            '<button class="btn btn-ghost q-hint" type="button" data-hint' + (indicesOk ? '' : ' hidden') + '>' +
-              _qIc('lightbulb', 20) + '<span>Indice</span></button>' +
-            '<input type="text" inputmode="' + inputmode + '" enterkeyhint="done" autocorrect="off" spellcheck="false" placeholder="Ta réponse" aria-label="Réponse">' +
+            '<input type="text" inputmode="' + inputmode + '" enterkeyhint="done" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Ta réponse" aria-label="Réponse">' +
             '<button class="btn-primary sm" type="submit" data-role="validate"><span>' + (differe ? 'Suivante' : 'Valider') +
               '</span><span class="ic-wrap">' + _qIc(differe ? 'arrow-right' : 'check', 20) + '</span></button>' +
+            touchesRapides(ex) +
+            '<button class="btn btn-ghost q-hint" type="button" data-hint' + (indicesOk ? '' : ' hidden') + '>' +
+              _qIc('lightbulb', 20) + '<span>Indice</span></button>' +
           '</form>') +
       '<div class="q-hints" data-hints hidden></div>' +
       (o.skip ? '<button class="btn btn-ghost q-skip" type="button" data-skip>Je ne sais pas</button>' : '') +
-      (modeQcm ? '' : touchesRapides()) +
     '</div>' +
     '<div class="q-fb" data-fb></div>' +
   '</article>';
@@ -210,15 +275,33 @@ function askQuestion(box, opts, cb){
   const fb = box.querySelector('[data-fb]');
   const t0 = performance.now();
   let aide = 0, typeErr = '', repondu = false, chEl = box.querySelector('[data-ch]');
+  let donneeFin = '';                                  // la réponse donnée à CETTE carte (reprise par variante)
+  let pauseMs = 0, pauseDebut = 0, pauseManuelle = false, tic = null;
+  /* temps de réflexion réel : les pauses n'en font pas partie */
+  const ecoule = () => (pauseDebut || performance.now()) - t0 - pauseMs;
+  function majPause(){
+    const p = pauseManuelle || _qEnPause();
+    if (p && !pauseDebut) pauseDebut = performance.now();
+    else if (!p && pauseDebut){ pauseMs += performance.now() - pauseDebut; pauseDebut = 0; }
+    if (chEl) chEl.classList.toggle('pause', !!pauseDebut && !repondu);
+    return !!pauseDebut;
+  }
+  function arreterTic(){
+    if (tic === null) return;
+    clearInterval(tic);
+    try { TIMERS.delete(tic); } catch(e){}
+    tic = null;
+  }
 
   window.ASSIST_CTX = {ex: ex, skillId: o.skillId || null, famId: o.famId || null, level: o.lvl || null,
                        aide: 0, repondu: false, juste: false, donnee: '', variante: varianteN};
 
   /* ---------- chrono (registre de minuteries : plus de chrono fantôme) ---------- */
   if (avecChrono && chEl){
-    every(100, () => {
-      if (repondu || qSeq !== myId) return;
-      const s = (performance.now() - t0) / 1000;
+    tic = every(100, () => {
+      if (repondu || qSeq !== myId){ arreterTic(); return; }
+      if (majPause()) return;
+      const s = ecoule() / 1000;
       chEl.textContent = s.toFixed(1).replace('.', ',') + ' s';
       chEl.classList.toggle('warn', s >= 4 && s < 8);
       chEl.classList.toggle('late', s >= 8);
@@ -261,8 +344,11 @@ function askQuestion(box, opts, cb){
   function finish(ok, donnee, saute){
     if (repondu || qSeq !== myId) return;
     repondu = true;
-    const dt = performance.now() - t0;
-    if (chEl){ chEl.classList.remove('warn', 'late'); if (dt < 4000) chEl.classList.add('ok'); }
+    majPause();
+    const dt = Math.max(0, ecoule());
+    arreterTic();
+    donneeFin = donnee;
+    if (chEl){ chEl.classList.remove('warn', 'late', 'pause'); if (dt < 4000) chEl.classList.add('ok'); }
     if (window.ASSIST_CTX && window.ASSIST_CTX.ex === ex)
       Object.assign(window.ASSIST_CTX, {repondu: true, juste: ok, donnee: donnee, aide: aide});
 
@@ -279,14 +365,18 @@ function askQuestion(box, opts, cb){
         (dt > 2 * o.cibleMs && ok ? '<p class="small muted">Juste, mais la technique est à relire.</p>' : '')
       : '';
 
+    const attendue = _qFv(ex.a), clsRep = 'answer num' + (attendue.length > 18 ? ' long' : '');
+    let forme = '';
+    try { if (!ok && donnee && !modeQcm && typeof _pedForme === 'function') forme = _pedForme(donnee, ex); } catch(e){}
     fb.innerHTML =
       (ex.expl ? '<div class="explain"><div>' + _qEnonce(ex.expl, ex) + '</div></div>' : '') +
       '<p class="verdict ' + (ok ? 'ok' : 'ko') + '">' +
         _qIc(ok ? 'check-draw' : 'x-draw', 24) +
         (ok
-          ? '<span>' + _qEsc(varianteN ? 'Repris. On continue.' : R.pick(_qJustes)) + '</span><span class="answer num">' + _qEsc(_qFv(ex.a)) + '</span>'
-          : '<span>Réponse attendue : <b class="answer num">' + _qEsc(_qFv(ex.a)) + '</b></span>' +
-            (donnee ? '<span class="given small muted">Ta réponse : ' + _qEsc(donnee) + '</span>' : '')) +
+          ? '<span>' + _qEsc(varianteN ? 'Repris. On continue.' : R.pick(_qJustes)) + '</span><span class="' + clsRep + '">' + _qEsc(attendue) + '</span>'
+          : '<span>Réponse attendue : <b class="' + clsRep + '">' + _qEsc(attendue) + '</b></span>' +
+            (donnee ? '<span class="given small muted">Ta réponse : ' + _qEsc(donnee) + '</span>' : '') +
+            (forme ? '<span class="given small forme">' + _qEsc(forme) + '</span>' : '')) +
       '</p>' +
       tempsHtml +
       (aide >= 2 ? '<p class="q-aide small muted">Avec indice : compte pour la séance, pas pour le verrou.</p>' : '') +
@@ -325,7 +415,7 @@ function askQuestion(box, opts, cb){
 
     /* le bouton primaire est un objet unique : Valider devient Continuer */
     const rangee = fb.querySelector('.next-row');
-    const peutReprendre = !ok && !varianteN && o.reprise !== false && typeof o.variante === 'function';
+    const peutReprendre = !ok && varianteN < 2 && o.reprise !== false && typeof o.variante === 'function';
     if (peutReprendre){
       rangee.insertAdjacentHTML('afterbegin',
         '<button class="btn btn-ghost" type="button" data-continue>Continuer</button>');
@@ -345,8 +435,9 @@ function askQuestion(box, opts, cb){
     try { primaire.focus({preventScroll: true}); primaire.scrollIntoView({block: 'nearest'}); } catch(e){ primaire.focus(); }
 
     /* gain d'altitude, crête et anneau du jour */
-    if (ok && aide < 3 && o.gain !== false){
-      carte.insertAdjacentHTML('beforeend', '<span class="gain num" aria-hidden="true">+2 m</span>');
+    const gainM = ok ? _qGainPrevu(o, aide) : 0;       // les mètres que cette réponse crédite vraiment
+    if (gainM > 0){
+      carte.insertAdjacentHTML('beforeend', '<span class="gain num" aria-hidden="true">+' + gainM + ' m</span>');
       try { majCrete(); } catch(e){}
     }
     try { majAnneauJour(); } catch(e){}
@@ -357,28 +448,35 @@ function askQuestion(box, opts, cb){
       : 'Réponse attendue : ' + _qFv(ex.a) + '.' + (ex.expl ? ' ' + ex.expl : ''));
   }
 
-  /* une variante à chaud, jusqu'à deux fois (boucle de reprise M8) */
+  /* une variante à chaud, jusqu'à deux fois (boucle de reprise M8).
+     Le rappel de la variante conclut TOUJOURS la carte d'origine : jamais d'impasse.
+     - variante réussie (celle-ci ou la suivante) : variante = son rang (1 ou 2) ;
+     - variante ratée, ou « Continuer » sans réessayer : variante = 0 (reprise à froid en fin de série).
+     La réponse rapportée reste celle donnée à la question d'origine (voir terminer). */
   function _qVariante(){
     let nouvel = null;
     try { nouvel = o.variante(); } catch(e){ nouvel = null; }
+    if (!o.tagCourt) o.tagCourt = o.tag || '';                // la 2e variante ne redouble pas « Variante · »
     if (!nouvel){ terminer({ok: false, ms: 0, given: '', ex, type: typeErr, aide, variante: 0}); return; }
     const suite = Object.assign({}, o, {
       ex: nouvel, _var: varianteN + 1, indices: false, sansType: true, reprise: varianteN + 1 < 2,
-      tag: 'Variante · ' + (o.tagCourt || o.tag || ''), overline: null, hint: null, serie: false
+      tag: 'Variante · ' + (o.tagCourt || o.tag || ''), overline: null, hint: null, serie: false,
+      gain: false
     });
     askQuestion(box, suite, r => {
       if (r.ok){ terminer({ok: false, ms: r.ms, given: r.given, ex, type: typeErr || 'etourderie', aide, variante: suite._var}); return; }
-      if (suite._var >= 2){
-        toast('On y reviendra dans le cahier, avec une reprise à froid.', {tone: 'info', icon: 'book-bookmark'});
-        terminer({ok: false, ms: r.ms, given: r.given, ex, type: typeErr || 'methode', aide, variante: 0});
-      }
-      /* sinon la carte a déjà relancé une variante d'elle-même */
+      /* la variante suivante a été réussie : son rang remonte jusqu'à la carte d'origine */
+      if (r.variante > suite._var){ terminer({ok: false, ms: r.ms, given: r.given, ex, type: typeErr || 'etourderie', aide, variante: r.variante}); return; }
+      /* variante ratée (ou « Continuer » sans réessayer) : la carte d'origine se conclut, reprise à froid en fin de série */
+      if (suite._var >= 2) toast('On y reviendra dans le cahier, avec une reprise à froid.', {tone: 'info', icon: 'book-bookmark'});
+      terminer({ok: false, ms: r.ms, given: r.given, ex, type: typeErr || 'methode', aide, variante: 0});
     });
   }
 
   function terminer(r){
     window.question = null;
     if (varianteN && typeof cb === 'function'){ cb(r); return; }
+    if (repondu && r && r.ex === ex) r.given = donneeFin;      // jamais la réponse d'une variante sous l'énoncé d'origine
     try { if (typeof emettre === 'function') emettre('reponse', {ok: r.ok, skillId: o.skillId || null, famId: o.famId || null,
                                                                  ms: r.ms, aide: r.aide, variante: r.variante, mix: !!o.mix}); } catch(e){}
     if (typeof cb === 'function') cb(r);
@@ -432,9 +530,31 @@ function askQuestion(box, opts, cb){
     valider(){ const f = zone.querySelector('form'); if (f && !repondu) f.requestSubmit ? f.requestSubmit() : f.dispatchEvent(new Event('submit', {cancelable: true})); },
     continuer(){ const p = box.querySelector('.next-row [data-role]'); if (p) p.click(); },
     choisir(i){ const b = zone.querySelectorAll('.opt')[i]; if (b && !b.disabled) b.click(); },
+    /* le chrono s'arrête : la durée de la pause ne compte pas dans le temps de réponse */
+    pause(){ if (!repondu){ pauseManuelle = true; majPause(); } },
+    reprendre(){ pauseManuelle = false; majPause(); },
+    majPause(){ if (!repondu && qSeq === myId) majPause(); },
+    enPause(){ return !!pauseDebut; },
     indice(){ if (btnIndice && !btnIndice.disabled && !btnIndice.hidden) btnIndice.click(); },
     repondu(){ return repondu; }
   };
+}
+
+/* Mètres que la bonne réponse en cours va créditer à l'enregistrement (record() de core/pedagogie.js) :
+   2 m jusqu'à la moitié de la compétence, le reste au verrou, rien si elle est déjà acquise.
+   Zéro quand l'appelant n'enregistre pas (gain:false : rappels, cahier, épreuve) ou après deux indices. */
+function _qGainPrevu(o, aide){
+  if (o.gain === false || !o.skillId || aide >= 2) return 0;
+  try {
+    const s = _qSt(o.skillId);
+    if (!s || s.mastered || s.provisoire) return 0;
+    const total = window.mSkill(o.skillId), avant = window.metres(o.skillId);
+    const seuil = (typeof _pedSeuils !== 'undefined') ? _pedSeuils : {last: 10, ok: 9, min: 12};
+    const dern = (s.hist || []).concat([1]).slice(-seuil.last);
+    const verrou = s.n + 1 >= seuil.min && dern.length >= seuil.last && dern.reduce((a, b) => a + b, 0) >= seuil.ok;
+    const apres = verrou ? total : Math.min(2 * ((s.ok || 0) + 1), Math.floor(total / 2));
+    return Math.max(0, Math.round(apres - avant));
+  } catch(e){ return 0; }
 }
 
 /* Le bouton primaire de la carte : celui de la saisie est déplacé dans la rangée
@@ -518,6 +638,7 @@ function runSerie(box, skill, n, opts, done){
       sansType: o.sansType,
       revision: o.revision,
       prof: o.prof,
+      gain: o.recordSkill === false ? false : undefined,
       variante: (o.reprise === false || melange) ? null : (() => genFor(cible, niv))
     }, r => {
       marques.push({cls: r.ok ? 'ok' : 'ko'});
@@ -567,7 +688,7 @@ function runSerie(box, skill, n, opts, done){
         ex: genFor(c.skill, c.level), skill: c.skill, skillId: c.skill.id,
         tag: 'Reprise · ' + c.skill.titre, tagCourt: c.skill.titre, lvl: c.level,
         chrono: o.chrono !== false, count: k + ' / ' + file.length,
-        indices: false, reprise: false, sansType: true, serie: false
+        indices: false, reprise: false, sansType: true, serie: false, gain: false
       }, r => { logAnswer(r.ok, r.ms); suite(); });
     })();
   }

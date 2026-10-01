@@ -140,6 +140,8 @@ function vPapierEx(p){
     '<div id="pap-z"></div>' +
   '</div>';
 
+  if (typeof window.espacesInsecables === 'function') window.espacesInsecables(hote.querySelector('.lecon'));
+
   /* ---------- chrono : une seule minuterie, tenue par le registre du cœur ---------- */
   let base = Date.now(), acc = 0, enPause = false, arrete = false;
   const ecoule = () => acc + (enPause || arrete ? 0 : Date.now() - base);
@@ -202,6 +204,7 @@ function _papCorrige(x, minutes){
       '<div class="row"><button class="btn-primary" type="button" id="pap-ok">' +
         '<span>Valider mon auto-évaluation</span><span class="ic-wrap">' + ic('check', 'ic-20') + '</span></button></div>' +
     '</div>';
+  if (typeof window.espacesInsecables === 'function') window.espacesInsecables(z);
   try { z.scrollIntoView({block: 'start'}); } catch(e){}
 
   $('pap-ok').addEventListener('click', () => {
@@ -252,10 +255,10 @@ function _papEnregistrer(x, n, tot, coches, minutes){
       '<p class="overline">Copie évaluée</p>' +
       '<h2>' + fv(n) + ' critères sur ' + fv(tot) + '</h2>' +
       '<p class="msg">' + esc(msg) + '</p>' +
-      '<div class="figures">' +
-        '<div class="figure"><b>' + fv(Math.round(score * 100)) + ' %</b><span class="k">Rédaction</span></div>' +
-        '<div class="figure"><b>' + nf(minutes, 'min') + '</b><span class="k">Temps passé</span></div>' +
-        '<div class="figure"><b>' + nf(jours, 'j') + '</b><span class="k">Prochain re-test</span></div>' +
+      '<div class="figures display">' +
+        '<div class="figure"><b class="num">' + fv(Math.round(score * 100)) + '<small class="unit">%</small></b><span class="k">Rédaction</span></div>' +
+        '<div class="figure"><b class="num">' + fv(minutes) + '<small class="unit">min</small></b><span class="k">Temps passé</span></div>' +
+        '<div class="figure"><b class="num">' + fv(jours) + '<small class="unit">j</small></b><span class="k">Prochain re\u2060-\u2060test</span></div>' +
       '</div>' +
       '<div class="row">' +
         '<button class="btn-primary" type="button" id="pap-fin">Terminer</button>' +

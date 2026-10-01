@@ -172,14 +172,12 @@ function vMicro(){
       reviewResult(id, c.ok, c.n, {mode: c.retard >= 7 ? 'retard' : ''});
       j.rev = (j.rev || 0) + 1;
     });
-    j.seance = true;
+    _seanceValiderJour(i, plan.length);    // 5 minutes écoulées sans presque répondre : la journée n'est pas validée
     save();
 
     const poses = Math.max(1, i);
     const p = ok / poses;
     const serie = streak();
-    const emoji = p >= .9 ? '<span class="emoji" aria-hidden="true">🎉</span> '
-                : p >= .7 ? '<span class="emoji" aria-hidden="true">💪</span> ' : '';
     const lignes = [];
     if (Object.keys(revScore).length) lignes.push(Object.keys(revScore).length + ' rappel' + (Object.keys(revScore).length > 1 ? 's' : '') + ' remis à jour.');
     if (cmScore.n) lignes.push('Calcul mental : ' + cmScore.ok + ' sur ' + cmScore.n + '.');
@@ -191,9 +189,8 @@ function vMicro(){
       '<section class="fin-card" data-kind="serie">' +
         '<p class="overline">5 minutes' + (tempsEcoule ? ' · temps écoulé' : '') + ' · ' + esc(_mdJour(Date.now())) + '</p>' +
         '<h2 class="display-l">' + ok + ' / ' + poses + '</h2>' +
-        '<p class="small muted">' + emoji + Math.round(p * 100) + ' % de précision.</p>' +
-        (serie >= 7 ? '<p class="record">' + ic('flame', 'ic-20') +
-           '<span class="emoji" aria-hidden="true">🔥</span> ' + serie + ' jours de cordée</p>' : '') +
+        '<p class="small muted">' + Math.round(p * 100) + ' % de précision.</p>' +
+        (serie >= 7 ? '<p class="record">' + ic('flame', 'ic-20') + serie + ' jours de cordée</p>' : '') +
         '<p class="msg">' + esc(lignes.join(' ')) + '</p>' +
         '<div class="next-row"><button class="btn-primary lg" type="button" id="md-home">' +
           '<span>Revenir à Aujourd\'hui</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button></div>' +
@@ -219,70 +216,143 @@ function vMicro(){
    2. « DS en vue » (DESIGN-SPEC §7.12)
    ============================================================ */
 
-/* Prérequis d'un chapitre : ce qui le porte vraiment, pas ses deux voisins de liste.
-   On garde les compétences déjà travaillées qui alimentent le chapitre, en
-   privilégiant celles qui sont fragiles, en retard de rappel ou en dessous de 70 %. */
-function _mdPrereq(cible){
-  const maintenant = Date.now();
-  const rang = s => s.phase * 1000 + (s.ordre || 0);
-  const rc = rang(cible);
-  const candidats = SKILLS.filter(s => s.id !== cible.id && rang(s) < rc && phaseUnlocked(s.phase) && st(s.id).n > 0);
+const _mdDSMaxChap = 4;            // chapitres au plus dans un même DS
 
-  const note = s => {
-    const x = st(s.id);
-    let n = 0;
-    if (x.fragile) n += 5;
-    if (x.due && x.due <= maintenant) n += 3;
-    const t = tauxRecent(s.id);
-    if (t !== null && t < .7) n += 4;
-    if (x.mastered) n += 1;
-    if (s.phase === cible.phase) n += 3;                    // même chapitre de programme
-    else if (s.phase === cible.phase - 1) n += 1;
-    const ecart = (rc - rang(s)) / 1000;                    // distance en « chapitres »
-    n += Math.max(0, 3 - ecart);                            // la proximité départage
-    return n;
-  };
-  const trie = candidats.slice().sort((a, b) => note(b) - note(a) || rang(b) - rang(a));
-  const choisis = trie.slice(0, 2);
+/* Prérequis déclarés de chaque chapitre : ce qui le porte vraiment en mathématiques, jamais ses
+   voisins de liste. Une suite arithmétique u(n) = u(0) + n × r est une fonction affine de n, une
+   suite géométrique repose sur les puissances et les coefficients multiplicateurs, etc.
+   Un chapitre absent de la table n'a aucun prérequis. */
+const _mdPre = {
+  'p1-02-addition-soustraction':   ['p1-01-nombres'],
+  'p1-04-multiplication-posee':    ['p1-03-tables', 'p1-02-addition-soustraction'],
+  'p1-05-division-posee':          ['p1-03-tables', 'p1-04-multiplication-posee'],
+  'p1-06-priorites':               ['p1-03-tables', 'p1-02-addition-soustraction'],
+  'p1-07-relatifs':                ['p1-02-addition-soustraction'],
+  'p1-08-decimaux':                ['p1-01-nombres', 'p1-04-multiplication-posee'],
+  'p1-09-fractions-sens':          ['p1-05-division-posee', 'p1-03-tables'],
+  'p1-10-proportionnalite':        ['p1-09-fractions-sens', 'p1-08-decimaux'],
+  'p2-01-relatifs-multiplication': ['p1-07-relatifs', 'p1-03-tables'],
+  'p2-02-fractions-somme':         ['p1-09-fractions-sens', 'p1-03-tables'],
+  'p2-03-fractions-produit':       ['p1-09-fractions-sens', 'p2-02-fractions-somme'],
+  'p2-04-puissances':              ['p1-03-tables', 'p2-01-relatifs-multiplication'],
+  'p2-05-racines':                 ['p2-04-puissances', 'p1-03-tables'],
+  'p2-06-calcul-litteral':         ['p2-01-relatifs-multiplication', 'p1-06-priorites'],
+  'p2-07-equations':               ['p2-06-calcul-litteral', 'p2-01-relatifs-multiplication'],
+  'p2-08-pourcentages':            ['p1-10-proportionnalite', 'p1-08-decimaux'],
+  'p2-09-statistiques':            ['p1-08-decimaux', 'p1-05-division-posee'],
+  'p2-10-problemes':               ['p1-10-proportionnalite', 'p2-08-pourcentages'],
+  'p3-01-identites':               ['p2-06-calcul-litteral', 'p2-04-puissances'],
+  'p3-02-factorisation':           ['p3-01-identites', 'p2-06-calcul-litteral'],
+  'p3-03-inequations':             ['p2-07-equations', 'p2-01-relatifs-multiplication'],
+  'p3-04-fonctions':               ['p2-06-calcul-litteral', 'p2-07-equations'],
+  'p3-05-droites':                 ['p3-04-fonctions', 'p2-07-equations'],
+  'p3-06-evolutions':              ['p2-08-pourcentages', 'p1-08-decimaux'],
+  'p3-07-probabilites':            ['p1-09-fractions-sens', 'p2-02-fractions-somme'],
+  'p3-08-quartiles':               ['p2-09-statistiques'],
+  'p3-09-systemes':                ['p2-07-equations', 'p3-05-droites'],
+  'p4-01-second-degre':            ['p3-02-factorisation', 'p2-05-racines'],
+  'p4-02-nombre-derive':           ['p3-05-droites', 'p3-04-fonctions'],
+  'p4-03-derivees':                ['p4-02-nombre-derive', 'p2-04-puissances'],
+  'p4-04-variations':              ['p4-03-derivees', 'p3-03-inequations'],
+  'p4-05-suites-arithmetiques':    ['p3-05-droites', 'p2-07-equations'],
+  'p4-06-suites-geometriques':     ['p2-04-puissances', 'p3-06-evolutions'],
+  'p4-07-taux-indices':            ['p3-06-evolutions', 'p2-08-pourcentages'],
+  'p4-08-probas-conditionnelles':  ['p3-07-probabilites', 'p2-03-fractions-produit'],
+  'p4-09-automatismes':            ['p3-06-evolutions', 'p2-07-equations'],
+  'p5-01-degre3':                  ['p4-03-derivees', 'p4-04-variations'],
+  'p5-02-suites-applications':     ['p4-05-suites-arithmetiques', 'p4-06-suites-geometriques'],
+  'p5-03-probas-totales':          ['p4-08-probas-conditionnelles', 'p3-07-probabilites'],
+  'p5-04-stats-deux-variables':    ['p3-05-droites', 'p2-09-statistiques'],
+  'p5-05-suites-logiques':         ['p1-03-tables', 'p2-04-puissances'],
+  'p5-06-vitesses':                ['p1-10-proportionnalite', 'p1-08-decimaux'],
+  'p5-07-calcul-rapide':           ['p1-03-tables', 'p1-06-priorites'],
+  'p5-08-problemes-qcm':           ['p2-10-problemes', 'p2-08-pourcentages'],
+  'p7-01-automatismes-bac':        ['p4-09-automatismes', 'p3-06-evolutions'],
+  'p7-02-revision-analyse':        ['p4-03-derivees', 'p4-05-suites-arithmetiques'],
+  'p7-03-revision-probas':         ['p4-08-probas-conditionnelles', 'p2-09-statistiques']
+};
 
-  /* pas assez de matière travaillée : on complète par les compétences acquises juste avant */
-  if (choisis.length < 2){
-    SKILLS.filter(s => s.id !== cible.id && rang(s) < rc && phaseUnlocked(s.phase))
-      .sort((a, b) => rang(b) - rang(a))
-      .forEach(s => { if (choisis.length < 2 && !choisis.some(x => x.id === s.id)) choisis.push(s); });
+/* Les prérequis d'un sujet (deux au plus) : le premier de chaque chapitre choisi, puis les
+   suivants, sans jamais reprendre un chapitre du sujet lui-même. */
+function _mdPrereq(cibles){
+  const liste = Array.isArray(cibles) ? cibles : [cibles];
+  const pris = [];
+  for (let rang = 0; rang < 3 && pris.length < 2; rang++){
+    liste.forEach(c => {
+      const id = c ? (_mdPre[c.id] || [])[rang] : null;
+      const s = id ? SKILLS.find(x => x.id === id) : null;
+      if (s && pris.length < 2 && pris.indexOf(s) < 0 && liste.indexOf(s) < 0) pris.push(s);
+    });
   }
-  return choisis;
+  return pris;
 }
+/* Part des prérequis dans un sujet de N questions : 20 %, au moins une question par prérequis. */
+function _mdNbPre(pre, N){ return pre.length ? Math.max(pre.length, Math.round(N * .2)) : 0; }
 
-function vDS(){
+/* Composition d'un DS : les prérequis en ouverture, puis le ou les chapitres du niveau Découverte
+   au niveau Expert (30 %, 40 %, 30 %), à parts égales entre les chapitres choisis.
+   Retourne [{skill, level, pre}] dans l'ordre du sujet. */
+function _mdSujet(cibles, N, avecPre){
+  const pre = avecPre === false ? [] : _mdPrereq(cibles);
+  const nPre = _mdNbPre(pre, N), nCible = N - nPre;
+  const ouverture = [];
+  for (let k = 0; k < nPre; k++) ouverture.push({skill: pre[k % pre.length], level: 2, pre: true});
+  const suite = R.shuffle(ouverture);
+  const n1 = Math.round(nCible * .3), n3 = Math.round(nCible * .3);
+  let tour = R.int(0, cibles.length - 1);
+  [[1, n1], [2, nCible - n1 - n3], [3, n3]].forEach(part => {
+    const bloc = [];
+    for (let k = 0; k < part[1]; k++) bloc.push({skill: cibles[tour++ % cibles.length], level: part[0], pre: false});
+    R.shuffle(bloc).forEach(x => suite.push(x));
+  });
+  return suite;
+}
+/* « A, B et C » */
+function _mdListe(l){ return l.length > 1 ? l.slice(0, -1).join(', ') + ' et ' + l[l.length - 1] : (l[0] || ''); }
+/* Texte comparable : sans accents, en minuscules. */
+function _mdNorm(s){ return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+
+/* Dernière correction de DS affichée : le retour depuis « Revoir la leçon » la rouvre,
+   au lieu de retomber sur le choix du chapitre. */
+let _mdRevoir = null;
+
+/* params.skill : un ou plusieurs identifiants de chapitre (séparés par des virgules) présélectionnés,
+   params.q : texte de recherche. Tous deux viennent de l'URL ./?go=ds&skill=<id> (app.js). */
+function vDS(params){
+  const par = params || {};
+  if (par.retour && _mdRevoir){ _mdRevoir(); return; }
+  _mdRevoir = null;
   setCtx('outil');
   app().dataset.density = 'outil';
 
-  const ouverts = SKILLS.filter(s => phaseUnlocked(s.phase));
-  if (!ouverts.length){
-    app().innerHTML = '<section class="view"><h1>DS en vue</h1>' +
-      vide({icone: 'lock-simple', titre: 'Aucun chapitre ouvert pour l\'instant.',
-            texte: 'Commence le sentier : les chapitres s\'ouvrent au fur et à mesure.',
-            action: {label: 'Ouvrir le sentier', fn: () => nav('programme')}}) + '</section>';
-    return;
-  }
+  /* Tout le programme est proposé, même plus haut que le sentier : un contrôle n'attend pas la règle
+     des 90 %. Cette règle reste entière sur le sentier : un chapitre pas encore ouvert n'y gagne
+     ni altitude ni verrou (voir lancerDS). */
+  const demandes = String(par.skill || '').split(',').map(x => x.trim()).filter(Boolean);
+  let choisis = demandes.map(id => SKILLS.find(s => s.id === id))
+    .filter((s, k, l) => s && l.indexOf(s) === k).slice(0, _mdDSMaxChap);
+  const requete = String(par.q || '') || demandes.filter(id => !SKILLS.some(s => s.id === id)).join(' ');
 
-  /* chapitres regroupés par phase : une section repliable par niveau de programme */
   const phases = [];
-  ouverts.forEach(s => { if (phases.indexOf(s.phase) < 0) phases.push(s.phase); });
+  SKILLS.forEach(s => { if (phases.indexOf(s.phase) < 0) phases.push(s.phase); });
   const frontiere = (typeof frontier === 'function') ? frontier() : null;
+  const ouverte = p => choisis.length ? choisis.some(s => s.phase === p)
+    : frontiere ? frontiere.phase === p : p === phases[0];
 
   const groupes = phases.map(p => {
-    const liste = ouverts.filter(s => s.phase === p);
-    const ouvert = frontiere ? (frontiere.phase === p) : (p === phases[phases.length - 1]);
-    return '<details class="phase" data-phase="' + p + '"' + (ouvert ? ' open' : '') + '>' +
-      '<summary class="phase-head"><h2>' + esc((PHASES[p] || {}).nom || ('Phase ' + p)) + '</h2>' +
-      '<span class="etat small muted">' + liste.length + ' chapitres</span>' +
+    const liste = SKILLS.filter(s => s.phase === p);
+    const nom = (PHASES[p] || {}).nom || ('Phase ' + p);
+    return '<details class="phase" data-phase="' + p + '"' + (ouverte(p) ? ' open' : '') + '>' +
+      '<summary class="phase-head"><h2>' + esc(nom) + '</h2>' +
+      '<span class="etat small muted" data-nb="' + liste.length + '">' + liste.length + ' chapitres</span>' +
       ic('caret-right', 'ic-20 caret') + '</summary>' +
-      '<div class="skills" role="group" aria-label="Chapitres de ' + esc((PHASES[p] || {}).nom || ('phase ' + p)) + '">' +
+      '<div class="skills" role="group" aria-label="Chapitres de ' + esc(nom) + '">' +
       liste.map(s => {
         const m = niveauMaitrise(s.id);
-        return '<button class="skill" type="button" data-ds="' + esc(s.id) + '" aria-pressed="false">' +
+        const on = choisis.indexOf(s) >= 0;
+        return '<button class="skill' + (on ? ' frontier' : '') + '" type="button" data-ds="' + esc(s.id) +
+          '" data-mots="' + esc(_mdNorm(s.titre + ' ' + (s.objectif || '') + ' ' + nom)) +
+          '" aria-pressed="' + (on ? 'true' : 'false') + '">' +
           '<span class="node" aria-hidden="true"></span>' +
           '<span class="num">' + s.phase + '.' + (s.ordre || 0) + '</span>' +
           '<span class="t">' + esc(s.titre) + '</span>' +
@@ -299,62 +369,129 @@ function vDS(){
     '<section class="view">' +
       '<p class="overline">Épreuves · préparation ciblée</p>' +
       '<h1>DS en vue</h1>' +
-      '<blockquote class="coach-msg"><p>Choisis le chapitre du contrôle. Je fabrique le sujet avec ce chapitre et les deux compétences qui le portent.</p></blockquote>' +
-      '<section class="field"><span class="label">Chapitre</span>' + groupes + '</section>' +
-      '<section class="card card-muted" id="md-choix" hidden>' +
-        '<p class="overline">Sujet préparé</p>' +
-        '<p class="small ink-2" id="md-resume"></p>' +
-      '</section>' +
+      '<blockquote class="coach-msg"><p id="md-coach"></p></blockquote>' +
+      '<section class="field"><label class="label" for="md-cherche">Chapitres</label>' +
+        '<input class="input" id="md-cherche" type="search" autocomplete="off" spellcheck="false" enterkeyhint="search"' +
+          ' placeholder="Chercher : suites, dérivées…" value="' + esc(requete) + '">' +
+        '<p class="small muted" id="md-rien" hidden>Aucun chapitre ne correspond. Essaie un autre mot.</p>' +
+        '<div class="ds-liste">' + groupes + '</div></section>' +
       '<section class="field"><span class="label">Longueur</span>' +
-        '<div class="segment" role="radiogroup" aria-label="Longueur du DS">' + seg + '</div></section>' +
-      '<div class="row"><button class="btn-primary lg" type="button" id="md-go" disabled>' +
-        '<span>Lancer le DS</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button></div>' +
+        '<div class="segment" role="radiogroup" aria-label="Longueur du DS">' + seg + '</div>' +
+        '<label class="switch"><input type="checkbox" role="switch" id="md-pre" checked>' +
+          '<span class="track"><span class="thumb"></span></span>' +
+          '<span class="switch-t">Prérequis en ouverture</span></label></section>' +
+      '<section class="card card-muted" id="md-choix">' +
+        '<p class="overline">Sujet préparé</p>' +
+        '<p class="small ink-2" id="md-resume" aria-live="polite"></p>' +
+        '<p class="small muted" id="md-hors" hidden>Plus haut que ton sentier : ce DS t\'entraîne pour le contrôle, sans altitude ni verrou. Le sentier garde sa règle des 90 %.</p>' +
+      '</section>' +
+      '<div class="row ds-cta"><button class="btn-primary lg" type="button" id="md-go" disabled>' +
+        '<span>Lancer le DS</span><span class="meta num" id="md-go-n"></span>' +
+        '<span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button></div>' +
     '</section>';
 
-  let choisi = null;
   const boutons = Array.prototype.slice.call(document.querySelectorAll('[data-ds]'));
+  const longueur = () => { const c = document.querySelector('input[name="md-n"]:checked'); return c ? Number(c.value) : 20; };
+  const avecPre = () => { const c = $('md-pre'); return !c || c.checked; };
+
+  /* Le sujet annoncé est exactement celui que lancerDS fabriquera. */
+  function maj(){
+    boutons.forEach(b => {
+      const on = choisis.some(s => s.id === b.dataset.ds);
+      b.classList.toggle('frontier', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    const N = longueur();
+    const pre = avecPre() ? _mdPrereq(choisis) : [];
+    const nPre = _mdNbPre(pre, N);
+    const resume = $('md-resume'), hors = $('md-hors'), go = $('md-go'), meta = $('md-go-n'), coach = $('md-coach');
+    /* le coach et les en-têtes de phase disent toujours où en est le choix, même liste repliée */
+    if (coach) coach.textContent = choisis.length
+      ? 'Sujet prêt : ' + _mdListe(choisis.map(s => s.titre)) + '. Lance le DS, ou ajoute un chapitre.'
+      : 'Choisis le ou les chapitres du contrôle, même plus haut que ton sentier. Je prépare le sujet, du plus simple au plus exigeant.';
+    document.querySelectorAll('.ds-liste details.phase').forEach(d => {
+      const e = d.querySelector('.phase-head .etat'), k = choisis.filter(s => String(s.phase) === d.dataset.phase).length;
+      if (e) e.textContent = k ? k + (k > 1 ? ' choisis' : ' choisi') : e.dataset.nb + ' chapitres';
+    });
+    if (resume) resume.textContent = !choisis.length
+      ? 'Touche le ou les chapitres du contrôle : ' + _mdDSMaxChap + ' au plus.'
+      : _mdListe(choisis.map(s => s.titre)) + ' : ' + (N - nPre) + ' questions, du niveau Découverte au niveau Expert.' +
+        (nPre ? ' En ouverture, ' + nPre + ' questions de prérequis : ' + _mdListe(pre.map(s => s.titre)) + '.'
+              : avecPre() ? ' Aucun prérequis à revoir pour ce sujet.' : '');
+    if (hors) hors.hidden = !choisis.some(s => !phaseUnlocked(s.phase));
+    if (go) go.disabled = !choisis.length;
+    if (meta) meta.textContent = choisis.length ? N + ' questions' : '';
+  }
+
   boutons.forEach(b => b.addEventListener('click', () => {
     snd.click();
-    choisi = b.dataset.ds;
-    boutons.forEach(x => { const on = x === b; x.classList.toggle('frontier', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
-    const cible = SKILLS.find(s => s.id === choisi);
-    const pre = _mdPrereq(cible);
-    const encart = $('md-choix'), resume = $('md-resume');
-    if (encart && resume){
-      encart.hidden = false;
-      resume.textContent = cible.titre + (pre.length
-        ? ', avec ' + pre.map(s => s.titre).join(' et ') + '.'
-        : ', seul : rien d\'autre n\'est encore travaillé en amont.');
-    }
-    const go = $('md-go');
-    if (go) go.disabled = false;
+    const s = SKILLS.find(x => x.id === b.dataset.ds);
+    if (!s) return;
+    if (choisis.indexOf(s) >= 0) choisis = choisis.filter(x => x !== s);
+    else if (choisis.length >= _mdDSMaxChap){
+      toast('Quatre chapitres au plus par DS. Retire-en un pour en ajouter un autre.', {tone: 'info', icon: 'info'});
+      return;
+    } else choisis.push(s);
+    maj();
   }));
+  document.querySelectorAll('input[name="md-n"]').forEach(r => r.addEventListener('change', maj));
+  const sw = $('md-pre');
+  if (sw) sw.addEventListener('change', maj);
+
+  /* Recherche : chaque mot doit se retrouver dans le titre, l'objectif ou le niveau du chapitre. */
+  const champ = $('md-cherche');
+  function filtrer(){
+    const mots = _mdNorm(champ.value).split(/\s+/).filter(Boolean);
+    let total = 0;
+    document.querySelectorAll('.ds-liste details.phase').forEach(d => {
+      let n = 0;
+      d.querySelectorAll('[data-ds]').forEach(b => {
+        const vu = mots.every(m => b.dataset.mots.indexOf(m) >= 0);
+        b.hidden = !vu;
+        if (vu) n++;
+      });
+      d.hidden = !n;
+      d.open = mots.length ? n > 0 : ouverte(Number(d.dataset.phase));
+      total += n;
+    });
+    const rien = $('md-rien');
+    if (rien) rien.hidden = total > 0;
+  }
+  if (champ){
+    champ.addEventListener('input', filtrer);
+    if (champ.value) filtrer();
+  }
 
   $('md-go').addEventListener('click', () => {
-    if (!choisi) return;
+    if (!choisis.length) return;
     snd.click();
-    const c = document.querySelector('input[name="md-n"]:checked');
-    lancerDS(choisi, {n: c ? Number(c.value) : 20});
+    lancerDS(choisis.map(s => s.id), {n: longueur(), pre: avecPre()});
   });
+  maj();
 }
 
 /* ---------- le DS : correction différée, puis bilan ---------- */
-function lancerDS(id, opts){
+/* ids : un identifiant de chapitre ou un tableau · opts : {n: 10 | 20 | 30, pre: false pour un sujet sans prérequis}. */
+function lancerDS(ids, opts){
   const o = opts || {};
-  const cible = SKILLS.find(s => s.id === id);
-  if (!cible){ nav('ds'); return; }
+  const cibles = (Array.isArray(ids) ? ids : [ids]).map(id => SKILLS.find(s => s.id === id))
+    .filter((s, k, l) => s && l.indexOf(s) === k).slice(0, _mdDSMaxChap);
+  if (!cibles.length){ nav('ds'); return; }
   const N = _mdDSDurees.indexOf(o.n) >= 0 ? o.n : 20;
-  const pre = _mdPrereq(cible);
-
-  /* composition : environ 60 % le chapitre, le reste ses prérequis */
-  const lot = [];
-  const nCible = pre.length ? Math.round(N * .6) : N;
-  for (let k = 0; k < nCible; k++) lot.push(cible);
-  for (let k = lot.length; k < N; k++) lot.push(pre[(k - nCible) % pre.length]);
-  const suite = R.shuffle(lot);
+  const sujet = _mdSujet(cibles, N, o.pre);
+  const suite = sujet.map(x => x.skill);
+  const titre = _mdListe(cibles.map(s => s.titre));
+  const titreCourt = cibles.length > 1 ? 'DS en vue' : 'DS · ' + cibles[0].titre;      // en-tête étroit sur iPhone
 
   const rep = new Array(N).fill(null);
-  const exos = suite.map(s => genFor(s, 2));
+  /* un même énoncé ne tombe pas deux fois dans le sujet */
+  const vus = {};
+  const exos = sujet.map(x => {
+    let ex = genFor(x.skill, x.level);
+    for (let t = 0; t < 8 && vus[ex.q]; t++) ex = genFor(x.skill, x.level);
+    vus[ex.q] = true;
+    return ex;
+  });
   const temps = new Array(N).fill(0);
   let i = 0, fini = false;
 
@@ -368,7 +505,7 @@ function lancerDS(id, opts){
     if (fini) return;
     if (i >= N){ corriger(); return; }
     if (window.vueCourante.v !== 'ds') return;          // la correction reste dans sa vue
-    setCtx('parcours', {title: 'DS · ' + cible.titre, count: (i + 1) + ' / ' + N});
+    setCtx('parcours', {title: titreCourt, count: (i + 1) + ' / ' + N});
     const zone = $('md-zone');
     if (!zone) return;
     zone.innerHTML = '';
@@ -377,7 +514,8 @@ function lancerDS(id, opts){
     const sk = suite[i], t0 = performance.now();
     askQuestion(hote, {
       ex: exos[i], skill: sk, skillId: sk.id,
-      tag: sk.titre, overline: sk.id === cible.id ? 'Le chapitre' : 'Prérequis',
+      tag: sk.titre, overline: sujet[i].pre ? 'Prérequis' : 'Le chapitre',
+      lvl: sujet[i].pre ? null : sujet[i].level,
       count: (i + 1) + ' / ' + N,
       differe: true, chrono: false, indices: false, reprise: false, sansType: true, serie: false, prof: false
     }, r => {
@@ -396,7 +534,7 @@ function lancerDS(id, opts){
     window.vueCourante.garde = null;
 
     const parSkill = {};
-    let ok = 0, msTotal = 0;
+    let ok = 0, msTotal = 0, horsSentier = false;
     const details = [];
     for (let k = 0; k < N; k++){
       const sk = suite[k], ex = exos[k], donnee = rep[k] || '';
@@ -406,13 +544,16 @@ function lancerDS(id, opts){
       const c = parSkill[sk.id] || (parSkill[sk.id] = {ok: 0, n: 0, titre: sk.titre});
       c.n++; if (juste) c.ok++;
       logAnswer(juste, temps[k] || 0);
-      record(sk.id, juste);                       // l'altitude se gagne, la maîtrise ne se perd jamais ici
+      /* L'altitude se gagne, la maîtrise ne se perd jamais ici. Un chapitre plus haut que le sentier
+         n'est pas enregistré : ni mètres ni verrou, la règle des 90 % reste entière. */
+      if (phaseUnlocked(sk.phase)) record(sk.id, juste);
+      else horsSentier = true;
       if (!juste){
         _mdCahier(sk, ex, donnee, '');
         details.push({k: k, sk: sk, ex: ex, donnee: donnee});
       }
     }
-    jToday().seance = true;
+    _seanceValiderJour(rep.filter(v => v).length, N);    // une copie presque vide ne valide pas la journée
     save();
 
     const p = ok / N;
@@ -423,11 +564,9 @@ function lancerDS(id, opts){
       return c.n >= 2 && c.ok / c.n < _mdDSSeuil && st(sid).mastered && !st(sid).fragile;
     });
 
-    const verdict = p >= .85 ? 'Tu es prêt pour ce contrôle.'
+    const verdict = p >= .85 ? 'Solide sur ce qui est tombé ici. Avant le contrôle, rédige aussi un exercice complet sur papier.'
                   : p >= .7 ? 'C\'est solide. Refais une série sur les points qui ont glissé.'
                   : 'Reprends la leçon avant le contrôle : il reste de la marge.';
-    const emoji = p >= .9 ? '<span class="emoji" aria-hidden="true">🎉</span> '
-                : p >= .7 ? '<span class="emoji" aria-hidden="true">💪</span> ' : '';
 
     /* correction regroupée par compétence */
     let corr = '';
@@ -447,23 +586,27 @@ function lancerDS(id, opts){
           '</article>').join('') + '</section>';
     });
 
+    let rappelFait = false;
+    /* L'affichage est rejouable : le retour depuis « Revoir la leçon » rouvre cette correction. */
+    const afficher = () => {
     setCtx('plein');
     app().dataset.density = 'lecture';
     app().innerHTML =
       '<section class="fin-card" data-kind="serie">' +
-        '<p class="overline">DS · ' + esc(cible.titre) + '</p>' +
+        '<p class="overline">DS · ' + esc(cibles.length > 1 ? cibles.length + ' chapitres' : titre) + '</p>' +
         '<h2 class="display-l">' + ok + ' / ' + N + '</h2>' +
-        '<p class="small muted">' + emoji + Math.round(p * 100) + ' % de précision.</p>' +
+        '<p class="small muted">' + Math.round(p * 100) + ' % de précision.</p>' +
         '<div class="figures display">' +
           '<div class="figure"><b class="num">' + ok + '</b><span class="overline">justes</span></div>' +
           '<div class="figure"><b class="num">' + (N - ok) + '</b><span class="overline">à revoir</span></div>' +
           '<div class="figure"><b class="num">' + minutes + ' min</b><span class="overline">temps</span></div>' +
         '</div>' +
         '<blockquote class="coach-msg"><p>' + esc(verdict) + '</p></blockquote>' +
+        (horsSentier ? '<p class="small muted">Chapitre plus haut que ton sentier : entraînement compté dans ta journée, sans altitude ni verrou.</p>' : '') +
         (flanchent.length
           ? '<p class="msg">' + esc((flanchent.length > 1 ? flanchent.length + ' compétences ont glissé : ' : 'Une compétence a glissé : ') +
               flanchent.map(sid => parSkill[sid].titre).join(', ') + '. Rien ne change tant que tu ne le demandes pas.') + '</p>' +
-            '<div class="row"><button class="btn" type="button" id="md-rappel">' +
+            '<div class="row"><button class="btn" type="button" id="md-rappel"' + (rappelFait ? ' disabled' : '') + '>' +
               ic('arrows-clockwise', 'ic-20') + 'Remettre en rappel</button></div>'
           : '') +
         '<div class="next-row"><button class="btn-primary lg" type="button" id="md-fini">' +
@@ -476,13 +619,14 @@ function lancerDS(id, opts){
       (corr ? '<section class="view"><p class="overline">Correction par compétence</p>' + corr + '</section>' : '');
 
     $('md-fini').addEventListener('click', () => { snd.click(); nav('accueil'); });
-    $('md-refaire').addEventListener('click', () => { snd.click(); nav('ds'); });
+    $('md-refaire').addEventListener('click', () => { snd.click(); nav('ds', {skill: cibles.map(s => s.id).join(',')}); });
     $('md-cahier').addEventListener('click', () => { snd.click(); nav('erreurs'); });
     const btnRappel = $('md-rappel');
     if (btnRappel) btnRappel.addEventListener('click', () => {
       snd.click();
       flanchent.forEach(sid => { const x = st(sid); x.fragile = true; x.due = Date.now(); });
       save();
+      rappelFait = true;
       btnRappel.disabled = true;
       toast(flanchent.length + (flanchent.length > 1 ? ' compétences reviennent en rappel demain.' : ' compétence revient en rappel demain.'),
             {tone: 'glacier', icon: 'arrows-clockwise'});
@@ -490,6 +634,9 @@ function lancerDS(id, opts){
     document.querySelectorAll('[data-revoir]').forEach(b =>
       b.addEventListener('click', () => { snd.click(); nav('skill', {id: b.dataset.revoir}); }));
     $('md-fini').focus();
+    };
+    afficher();
+    _mdRevoir = afficher;
 
     celebrer(p >= .85 ? 3 : 2, {texte: 'DS terminé · ' + ok + ' sur ' + N + '.', icon: 'pencil-line'});
     try { (window.verifierJalons ? verifierJalons() : []).forEach(x => celebrer(x.niveau, {texte: x.texte})); } catch(e){}

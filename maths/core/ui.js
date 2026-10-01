@@ -173,7 +173,7 @@ function _uiFeuilleSuivante(){
     (o.texte ? '<p class="ink-2">' + _uiEsc(o.texte) + '</p>' : '') +
     (o.contenu ? '<div class="sheet-body">' + o.contenu + '</div>' : '') +
     '<div class="sheet-actions">' + boutons.map((b, i) =>
-      '<button class="btn lg' + (b.style === 'primaire' ? ' btn-primary' : b.style === 'danger' ? ' btn-danger' : '') +
+      '<button class="' + (b.style === 'primaire' ? 'btn-primary lg' : b.style === 'danger' ? 'btn lg btn-danger' : 'btn lg') +
       '" type="button" data-i="' + i + '">' + _uiEsc(b.label) + '</button>').join('') + '</div>';
   hote.appendChild(dlg);
   _uiFeuilleActive = dlg;
@@ -300,7 +300,7 @@ function majAnneauJour(){
   try {
     const j = jToday();
     ok = j.ok || 0;
-    obj = (typeof objectifJour === 'function' ? objectifJour() : (j.obj || (S.profil && S.profil.objectif) || 25));
+    obj = (typeof objectifJour === 'function' ? objectifJour().n : (j.obj || (S.profil && S.profil.objectif) || 25));
   } catch(e){}
   hote.setAttribute('aria-label', 'Objectif du jour : ' + ok + ' sur ' + obj);
   hote.innerHTML = ringSVG({val: ok, max: obj, taille: 40, texte: false,
@@ -315,8 +315,15 @@ let _uiCtx = {ctx: 'home', onQuit: null, parent: null};
 function setCtx(ctx, opts){
   const o = opts || {};
   const c = ['home', 'outil', 'lecon', 'parcours', 'plein'].indexOf(ctx) >= 0 ? ctx : 'home';
+  const avant = _uiCtx.ctx;
   _uiCtx = {ctx: c, onQuit: o.onQuit || null, parent: o.parent || null};
   document.body.dataset.ctx = c;
+  /* Un parcours garde le jour où il a commencé (séance à cheval sur minuit) ; on le relâche en le quittant.
+     L'écran de fin ('plein') le garde aussi, mais un NOUVEAU parcours lancé depuis cet écran repart du jour courant. */
+  try { if (typeof figerJour === 'function'){
+    if (c === 'parcours'){ if (avant !== 'parcours') figerJour(null); figerJour(todayKey()); }
+    else if (c !== 'plein') figerJour(null);
+  } } catch(e){}
 
   const parcours = (c === 'parcours'), lecon = (c === 'lecon'), plein = (c === 'plein');
   const el = id => document.getElementById(id);

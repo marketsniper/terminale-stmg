@@ -1,7 +1,7 @@
 (function(){
 
 // ---------- Helpers partagés ----------
-function fr(x){ return String(x).replace('.', ','); }
+function fr(x){ return String(x).replace('.', ',').replace('-', '−'); }
 function dec(x){ return String(Math.round(x*100)/100); }
 function fmtPct(v){ return (v>0?'+':(v<0?'−':'')) + Math.abs(v) + ' %'; }
 function pctAcc(t){
@@ -185,7 +185,8 @@ SKILLS.push({
   titre: 'Révision suites et fonctions',
   objectif: "Mobiliser suites, dérivées et variations dans des situations de gestion, comme le jour du bac.",
   lecon: `<p class="lede">Bonne nouvelle : toute la partie « analyse » du bac tient en trois réflexes. Reconnaître le type de suite, savoir dériver, et lire le signe de la dérivée. On révise les trois d'un coup.</p>
-<p><strong>Réflexe 1 — les suites.</strong> On ajoute toujours le même nombre ? Suite <mark>arithmétique</mark> de raison r, et u<sub>n</sub> = u<sub>0</sub> + n × r. On multiplie toujours par le même nombre ? Suite <mark>géométrique</mark> de raison q, et v<sub>n</sub> = v<sub>0</sub> × q<sup>n</sup>. En gestion, « +5 % par an » signifie géométrique de raison 1,05.</p>
+<p><strong>Réflexe 1 — les suites.</strong> On ajoute toujours le même nombre ? Suite <mark>arithmétique</mark> de raison r, et u(n) = u(0) + n × r. On multiplie toujours par le même nombre ? Suite <mark>géométrique</mark> de raison q, et v(n) = v(0) × q<sup>n</sup>. En gestion, « +5 % par an » signifie géométrique de raison 1,05, et « −12 % par an » géométrique de raison 0,88.</p>
+<p>Si la suite démarre au rang 1 : u(n) = u(1) + (n − 1) × r et v(n) = v(1) × q<sup>n − 1</sup>. Et quand l'énoncé dit « au total » ou « en tout », c'est une <mark>somme de termes</mark> : pour une suite arithmétique, nombre de termes × (premier + dernier) ÷ 2 ; pour une suite géométrique, premier terme × (1 − q<sup>nombre&nbsp;de&nbsp;termes</sup>) ÷ (1 − q). De u(0) à u(n), il y a n + 1 termes.</p>
 <p><strong>Réflexe 2 — dériver.</strong></p>
 <div class="formule"><p>(x²)' = 2x &nbsp;•&nbsp; (ax² + bx + c)' = 2ax + b &nbsp;•&nbsp; une constante seule disparaît</p></div>
 <p><strong>Réflexe 3 — le signe de la dérivée</strong> donne les variations de la fonction. Exemple type du bac : une entreprise a un bénéfice B(x) = −2x² + 80x − 200 pour x objets produits.</p>
@@ -195,8 +196,8 @@ SKILLS.push({
 <p>3. Signe : avant 20, B'(x) &gt; 0 donc B monte ; après 20, B'(x) &lt; 0 donc B descend.</p>
 <p>4. Conclusion : le bénéfice est <mark>maximal pour 20 objets</mark>, et il vaut B(20) = −800 + 1600 − 200 = 600 €.</p>
 </div>
-<div class="box piege"><p class="box-t">Piège</p><p>Dans u<sub>n</sub> = u<sub>0</sub> + n × r, le n compte les <strong>étapes depuis le départ</strong>. De 2020 à 2026, il y a n = 6 étapes, pas 7.</p></div>
-<div class="box retenir"><p class="box-t">À retenir</p><p>Arithmétique : + r, donc u<sub>n</sub> = u<sub>0</sub> + nr. Géométrique : × q, donc v<sub>n</sub> = v<sub>0</sub> × q<sup>n</sup>. Et f' positive = f croissante, f' négative = f décroissante.</p></div>
+<div class="box piege"><p class="box-t">Piège</p><p>Dans u(n) = u(0) + n × r, le n compte les <strong>étapes depuis le départ</strong>. De 2020 à 2026, il y a n = 6 étapes, pas 7.</p></div>
+<div class="box retenir"><p class="box-t">À retenir</p><p>Arithmétique : + r, donc u(n) = u(0) + nr. Géométrique : × q, donc v(n) = v(0) × q<sup>n</sup>. Et f' positive = f croissante, f' négative = f décroissante.</p></div>
 <div class="box astuce"><p class="box-t">Astuce</p><p>Le maximum d'un bénéfice se trouve toujours là où B'(x) s'annule en passant de + à −. Commence chaque exercice par « je dérive » : tu seras déjà à mi-chemin.</p></div>`,
   gen(level, R){
     if(level===1){
@@ -207,9 +208,9 @@ SKILLS.push({
         var n = R.int(4,8);
         var un = u0 + n*r;
         if(R.int(1,2)===1){
-          return {q:'La suite (un) est arithmétique de premier terme u0 = ' + u0 + ' et de raison r = ' + String(r).replace('-','−') + '. Calcule u' + n + '.',
+          return {q:'La suite u est arithmétique de premier terme u(0) = ' + u0 + ' et de raison r = ' + String(r).replace('-','−') + '. Calcule u(' + n + ').',
             a:String(un), accept:null, choix:null,
-            expl:'un = u0 + n × r : u' + n + ' = ' + u0 + ' + ' + n + ' × ' + neg(r) + ' = ' + un + '.'};
+            expl:'u(n) = u(0) + n × r : u(' + n + ') = ' + u0 + ' + ' + n + ' × ' + neg(r) + ' = ' + un + '.'};
         }
         var verbe = r>0 ? 'gagne ' + r : 'perd ' + (-r);
         return {q:'Un club compte ' + u0 + ' adhérents en 2020 et ' + verbe + ' adhérents chaque année. Combien d\'adhérents compte-t-il en ' + (2020+n) + ' ?',
@@ -222,10 +223,10 @@ SKILLS.push({
         var vk = R.int(2,12);
         var step = R.pick([1,2]);
         var ans = vk * Math.pow(qr, step);
-        var e = 'On multiplie par ' + qr + ' à chaque rang : v' + (k+1) + ' = ' + (vk*qr);
-        if(step===2) e += ', puis v' + (k+2) + ' = ' + ans;
+        var e = 'On multiplie par ' + qr + ' à chaque rang : v(' + (k+1) + ') = ' + (vk*qr);
+        if(step===2) e += ', puis v(' + (k+2) + ') = ' + ans;
         e += '.';
-        return {q:'La suite (vn) est géométrique de raison q = ' + qr + ' et v' + k + ' = ' + vk + '. Calcule v' + (k+step) + '.',
+        return {q:'La suite v est géométrique de raison q = ' + qr + ' et v(' + k + ') = ' + vk + '. Calcule v(' + (k+step) + ').',
           a:String(ans), accept:null, choix:null, expl:e};
       }
       var a1 = R.pick([1,2,3]);
@@ -235,7 +236,7 @@ SKILLS.push({
       var f1 = a1*x1*x1 + b1*x1 + c1;
       return {q:'Soit f(x) = ' + pol(a1,b1,c1) + '. Calcule f(' + x1 + ').',
         a:String(f1), accept:null, choix:null,
-        expl:'f(' + x1 + ') = ' + a1 + ' × ' + x1 + '² + ' + neg(b1) + ' × ' + x1 + ' + ' + neg(c1) + ' = ' + (a1*x1*x1) + ' + ' + neg(b1*x1) + ' + ' + neg(c1) + ' = ' + f1 + '.'};
+        expl:'f(' + x1 + ') = ' + a1 + ' × ' + x1 + '² + ' + neg(b1) + ' × ' + x1 + ' + ' + neg(c1) + ' = ' + (a1*x1*x1) + ' + ' + neg(b1*x1) + ' + ' + neg(c1) + ' = ' + String(f1).replace('-','−') + '.'};
     }
 
     if(level===2){
@@ -269,7 +270,7 @@ SKILLS.push({
           'Le chiffre d\'affaires d\'une boutique est de ' + v0 + ' milliers d\'€ et augmente de ' + t + ' % par an. Que vaudra-t-il, en milliers d\'€, dans ' + n3 + ' ans ?'
         ]);
         return {q:q3, a:dec(res), accept:null, choix:null,
-          expl:'Suite géométrique de raison ' + cm + ' : ' + v0 + ' × ' + cm + '^' + n3 + ' = ' + fr(dec(res)) + '.'};
+          expl:'Suite géométrique de raison ' + cm + ' : ' + v0 + ' × ' + cm + (n3===2?'²':'³') + ' = ' + fr(dec(res)) + '.'};
       }
       var pos = R.pick([true,false]);
       var a4 = R.pick([2,3,4,5]);
@@ -286,7 +287,22 @@ SKILLS.push({
     }
 
     // level 3
-    var type3 = R.int(1,4);
+    var type3 = R.int(1,5);
+    if(type3===5){
+      // une somme de termes : « au total », ou S = u(0) + … + u(n)
+      if(R.int(1,2)===1){
+        var p1s = 50*R.int(4,12), rs = R.pick([20,50,100]);
+        var p12 = p1s + 11*rs, St = 12*(p1s + p12)/2;
+        return {q:'Une entreprise produit ' + p1s + ' pièces en janvier (mois 1), puis ' + rs + ' pièces de plus chaque mois. Combien de pièces produit-elle au total sur les 12 mois de l\'année ?',
+          a:String(St), accept:null, choix:null,
+          expl:'« Au total » : c\'est la somme de 12 termes d\'une suite arithmétique de raison ' + rs + '. En décembre : ' + p1s + ' + 11 × ' + rs + ' = ' + p12 + ' pièces. Total = 12 × (' + p1s + ' + ' + p12 + ') ÷ 2 = ' + St + '.'};
+      }
+      var u0s = 10*R.int(2,10), r0s = R.pick([5,10,20]), ns = R.pick([9,10,11,19]);
+      var uns = u0s + ns*r0s, Ss = (ns+1)*(u0s + uns)/2;
+      return {q:'La suite u est arithmétique : u(0) = ' + u0s + ' et r = ' + r0s + '. Calcule S = u(0) + u(1) + … + u(' + ns + ').',
+        a:String(Ss), accept:null, choix:null,
+        expl:'De u(0) à u(' + ns + '), il y a ' + (ns+1) + ' termes. u(' + ns + ') = ' + u0s + ' + ' + ns + ' × ' + r0s + ' = ' + uns + '. S = ' + (ns+1) + ' × (' + u0s + ' + ' + uns + ') ÷ 2 = ' + Ss + '.'};
+    }
     if(type3===1){
       var a5 = R.pick([1,2,5]);
       var xm = R.int(5,30);
@@ -305,11 +321,11 @@ SKILLS.push({
       if(R.int(1,2)===1){
         return {q:'En janvier (mois 0), une salle de sport compte ' + u0b + ' abonnés. Chaque mois, elle gagne ' + rb + ' abonnés. À partir de quel mois n le nombre d\'abonnés atteint-il ' + S + ' ?',
           a:String(kb), accept:null, choix:null,
-          expl:'un = ' + u0b + ' + ' + rb + 'n. On veut ' + u0b + ' + ' + rb + 'n ≥ ' + S + ', donc n ≥ ' + (S-u0b) + ' ÷ ' + rb + ' = ' + kb + '.'};
+          expl:'u(n) = ' + u0b + ' + ' + rb + 'n. On veut ' + u0b + ' + ' + rb + 'n ≥ ' + S + ', donc n ≥ ' + (S-u0b) + ' ÷ ' + rb + ' = ' + kb + '.'};
       }
-      return {q:'La suite (un) est arithmétique : u0 = ' + u0b + ' et r = ' + rb + '. À partir de quel rang n a-t-on un ≥ ' + S + ' ?',
+      return {q:'La suite u est arithmétique : u(0) = ' + u0b + ' et r = ' + rb + '. À partir de quel rang n a-t-on u(n) ≥ ' + S + ' ?',
         a:String(kb), accept:null, choix:null,
-        expl:'un = u0 + n × r = ' + u0b + ' + ' + rb + 'n ≥ ' + S + ' donne n ≥ ' + (S-u0b) + '/' + rb + ' = ' + kb + '.'};
+        expl:'u(n) = u(0) + n × r = ' + u0b + ' + ' + rb + 'n ≥ ' + S + ' donne n ≥ ' + (S-u0b) + ' ÷ ' + rb + ' = ' + kb + '.'};
     }
     if(type3===3){
       var qq = R.pick([2,3]);
@@ -330,7 +346,7 @@ SKILLS.push({
     var f6 = a6*x6*x6 + b6*x6 + c6;
     return {q:'Soit f(x) = ' + pol(a6,b6,c6) + '. Calcule f(' + String(x6).replace('-','−') + ').',
       a:String(f6), accept:null, choix:null,
-      expl:'f(' + neg(x6) + ') = ' + neg(a6) + ' × ' + neg(x6) + '² + ' + neg(b6) + ' × ' + neg(x6) + ' + ' + neg(c6) + ' = ' + neg(a6*x6*x6) + ' + ' + neg(b6*x6) + ' + ' + neg(c6) + ' = ' + String(f6).replace('-','−') + '. Attention aux signes : (−x)² est positif.'};
+      expl:'f(' + String(x6).replace('-','−') + ') = ' + neg(a6) + ' × ' + neg(x6) + '² + ' + neg(b6) + ' × ' + neg(x6) + ' + ' + neg(c6) + ' = ' + neg(a6*x6*x6) + ' + ' + neg(b6*x6) + ' + ' + neg(c6) + ' = ' + String(f6).replace('-','−') + '. Attention aux signes : (−x)² est positif.'};
   }
 });
 
@@ -364,14 +380,14 @@ SKILLS.push({
         var pB = 10*R.int(1,9);
         var res = dec(pA*pB/10000);
         return {q:'On donne P(A) = ' + fr(dec(pA/100)) + ' et P(B sachant A) = ' + fr(dec(pB/100)) + '. Calcule P(A ∩ B).',
-          a:res, accept:null, choix:null,
+          a:res, accept:null, choix:null, pct:true,
           expl:'P(A ∩ B) = P(A) × P(B sachant A) = ' + fr(dec(pA/100)) + ' × ' + fr(dec(pB/100)) + ' = ' + fr(res) + '.'};
       }
       if(type===2){
         var p = 5*R.int(1,19);
         var res2 = dec((100-p)/100);
         return {q:'On donne P(A) = ' + fr(dec(p/100)) + '. Quelle est la probabilité de l\'événement contraire de A ?',
-          a:res2, accept:null, choix:null,
+          a:res2, accept:null, choix:null, pct:true,
           expl:'P(contraire de A) = 1 − P(A) = 1 − ' + fr(dec(p/100)) + ' = ' + fr(res2) + '.'};
       }
       if(type===3){
@@ -406,7 +422,7 @@ SKILLS.push({
         } else {
           q2 = pA2 + ' % des clients d\'une boutique ont la carte de fidélité. ' + p1 + ' % des porteurs de la carte utilisent l\'application, contre ' + p2 + ' % des clients sans carte. On interroge un client au hasard. Quelle est la probabilité qu\'il utilise l\'application ?';
         }
-        return {q:q2, a:pB2, accept:null, choix:null,
+        return {q:q2, a:pB2, accept:null, choix:null, pct:true,
           expl:'Probabilités totales : ' + fr(dec(pA2/100)) + ' × ' + fr(dec(p1/100)) + ' + ' + fr(dec((100-pA2)/100)) + ' × ' + fr(dec(p2/100)) + ' = ' + fr(dec(pA2*p1/10000)) + ' + ' + fr(dec((100-pA2)*p2/10000)) + ' = ' + fr(pB2) + '.'};
       }
       if(type2===2){
@@ -415,7 +431,7 @@ SKILLS.push({
         var inter = dec(pA3*tg/10000);
         var res3 = dec(tg/100);
         return {q:'On donne P(A) = ' + fr(dec(pA3/100)) + ' et P(A ∩ B) = ' + fr(inter) + '. Calcule P(B sachant A).',
-          a:res3, accept:null, choix:null,
+          a:res3, accept:null, choix:null, pct:true,
           expl:'P(B sachant A) = P(A ∩ B) ÷ P(A) = ' + fr(inter) + ' ÷ ' + fr(dec(pA3/100)) + ' = ' + fr(res3) + '.'};
       }
       if(type2===3){
@@ -424,12 +440,12 @@ SKILLS.push({
         if(R.int(1,2)===1){
           var r4 = dec(pA4*pb4/10000);
           return {q:'Dans un magasin, ' + pA4 + ' % des clients paient par carte. Parmi ceux qui paient par carte, ' + pb4 + ' % utilisent le sans-contact. Quelle est la probabilité qu\'un client pris au hasard paie par carte en sans-contact ?',
-            a:r4, accept:null, choix:null,
+            a:r4, accept:null, choix:null, pct:true,
             expl:'On multiplie le long du chemin : ' + fr(dec(pA4/100)) + ' × ' + fr(dec(pb4/100)) + ' = ' + fr(r4) + '.'};
         }
         var r5 = dec((100-pA4)*pb4/10000);
         return {q:pA4 + ' % des visiteurs d\'un site utilisent un mobile. Parmi les visiteurs qui n\'utilisent PAS de mobile, ' + pb4 + ' % restent plus de 5 minutes. Quelle est la probabilité qu\'un visiteur ne soit pas sur mobile ET reste plus de 5 minutes ?',
-          a:r5, accept:null, choix:null,
+          a:r5, accept:null, choix:null, pct:true,
           expl:'P(non mobile) = 1 − ' + fr(dec(pA4/100)) + ' = ' + fr(dec((100-pA4)/100)) + ', puis on multiplie : ' + fr(dec((100-pA4)/100)) + ' × ' + fr(dec(pb4/100)) + ' = ' + fr(r5) + '.'};
       }
       var bon = 'P(A) × P(B sachant A) + P(non A) × P(B sachant non A)';
@@ -448,10 +464,9 @@ SKILLS.push({
       var Btot = dec((pA5*pAB + (100-pA5)*pnAB)/10000);
       var ares = dec(ansPct/100);
       var fracs = {40:'2/5', 50:'1/2', 60:'3/5', 75:'3/4', 80:'4/5'};
-      var acc = [ansPct+' %', ansPct+'%'];
-      if(fracs[ansPct]) acc.push(fracs[ansPct]);
+      var acc = fracs[ansPct] ? [fracs[ansPct]] : null;
       return {q:'Deux agences traitent des dossiers de crédit. L\'agence A traite ' + pA5 + ' % des dossiers, et ' + pAB + ' % de ses dossiers sont acceptés. L\'agence B traite le reste, et ' + pnAB + ' % de ses dossiers sont acceptés. On choisit un dossier accepté au hasard. Quelle est la probabilité qu\'il vienne de l\'agence A ?',
-        a:ares, accept:acc, choix:null,
+        a:ares, accept:acc, choix:null, pct:true,
         expl:'P(accepté) = ' + fr(dec(pA5/100)) + ' × ' + fr(dec(pAB/100)) + ' + ' + fr(dec((100-pA5)/100)) + ' × ' + fr(dec(pnAB/100)) + ' = ' + fr(Btot) + '. Puis P(A sachant accepté) = ' + fr(ab) + ' ÷ ' + fr(Btot) + ' = ' + fr(ares) + '.'};
     }
     if(type3===2){
@@ -475,12 +490,12 @@ SKILLS.push({
     if(R.int(1,2)===1){
       var rB = dec((pA6*p16 + (100-pA6)*p26)/10000);
       return {q:'Une usine possède deux machines. La machine A produit ' + pA6 + ' % des pièces, dont ' + p16 + ' % sont défectueuses. La machine B produit le reste, dont ' + p26 + ' % sont défectueuses. On prélève une pièce au hasard. Quelle est la probabilité qu\'elle soit défectueuse ?',
-        a:rB, accept:null, choix:null,
+        a:rB, accept:null, choix:null, pct:true,
         expl:'Probabilités totales : ' + fr(dec(pA6/100)) + ' × ' + fr(dec(p16/100)) + ' + ' + fr(dec((100-pA6)/100)) + ' × ' + fr(dec(p26/100)) + ' = ' + fr(dec(pA6*p16/10000)) + ' + ' + fr(dec((100-pA6)*p26/10000)) + ' = ' + fr(rB) + '.'};
     }
     var rAnb = dec(pA6*(100-p16)/10000);
     return {q:'Une usine possède deux machines. La machine A produit ' + pA6 + ' % des pièces, dont ' + p16 + ' % sont défectueuses. On prélève une pièce au hasard. Quelle est la probabilité qu\'elle vienne de la machine A et qu\'elle ne soit PAS défectueuse ?',
-      a:rAnb, accept:null, choix:null,
+      a:rAnb, accept:null, choix:null, pct:true,
       expl:'Sur la branche A, P(non défectueuse sachant A) = 1 − ' + fr(dec(p16/100)) + ' = ' + fr(dec((100-p16)/100)) + '. Puis ' + fr(dec(pA6/100)) + ' × ' + fr(dec((100-p16)/100)) + ' = ' + fr(rAnb) + '.'};
   }
 });

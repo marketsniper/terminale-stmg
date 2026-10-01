@@ -329,7 +329,7 @@
           var op = R.pick(['>', '<']);
           var c = v + b;
           var r = ineqAns(op, v);
-          return { q: 'Résous : x + ' + b + ' ' + op + ' ' + c + '\nRéponds sous la forme x>' + v + ' ou x<' + v + '.',
+          return { q: 'Résous : x + ' + b + ' ' + op + ' ' + c + '\nRéponds sous la forme x > nombre ou x < nombre.',
             a: r.a, accept: r.accept, choix: null,
             expl: 'On enlève ' + b + ' des deux côtés : x ' + op + ' ' + c + ' − ' + b + ', donc x ' + op + ' ' + v + '. Le sens ne change pas.' };
         }
@@ -337,7 +337,7 @@
         var op2 = R.pick(['>', '<']);
         var c2 = k * v2;
         var r2 = ineqAns(op2, v2);
-        return { q: 'Résous : ' + k + 'x ' + op2 + ' ' + c2 + '\nRéponds sous la forme x>' + v2 + ' ou x<' + v2 + '.',
+        return { q: 'Résous : ' + k + 'x ' + op2 + ' ' + c2 + '\nRéponds sous la forme x > nombre ou x < nombre.',
           a: r2.a, accept: r2.accept, choix: null,
           expl: 'On divise par ' + k + ' (positif, le sens ne change pas) : x ' + op2 + ' ' + c2 + ' ÷ ' + k + ' = ' + v2 + '.' };
       }
@@ -348,7 +348,7 @@
           var op3 = R.pick(['>', '<']);
           var c3 = aC * v3 + b3;
           var r3 = ineqAns(op3, v3);
-          return { q: 'Résous : ' + aC + 'x + ' + b3 + ' ' + op3 + ' ' + c3 + '\nRéponds sous la forme x>' + v3 + ' ou x<' + v3 + '.',
+          return { q: 'Résous : ' + aC + 'x + ' + b3 + ' ' + op3 + ' ' + c3 + '\nRéponds sous la forme x > nombre ou x < nombre.',
             a: r3.a, accept: r3.accept, choix: null,
             expl: 'On enlève ' + b3 + ' : ' + aC + 'x ' + op3 + ' ' + (aC*v3) + ', puis on divise par ' + aC + ' (positif) : x ' + op3 + ' ' + v3 + '.' };
         }
@@ -374,7 +374,7 @@
         var sens = R.pick(['>', '<']);
         var opRes = (sens === '>') ? '<' : '>';
         var r5 = ineqAns(opRes, v5);
-        return { q: 'Résous : ' + c5 + ' − ' + a3 + 'x ' + sens + ' ' + disp(d5) + '\nRéponds sous la forme x>' + Math.abs(v5) + ' ou x<' + Math.abs(v5) + ' (avec le signe si besoin).',
+        return { q: 'Résous : ' + c5 + ' − ' + a3 + 'x ' + sens + ' ' + disp(d5) + '\nRéponds sous la forme x > nombre ou x < nombre (le nombre peut être négatif).',
           a: r5.a, accept: r5.accept, choix: null,
           expl: 'On enlève ' + c5 + ' : −' + a3 + 'x ' + sens + ' ' + disp(d5 - c5) + '. On divise par −' + a3 + ' (négatif) : le sens se retourne, x ' + opRes + ' ' + disp(v5) + '.' };
       }
@@ -602,7 +602,7 @@
         return { q: 'La fonction f(x) = ' + p7 + ' − ' + mtxt + ' est :',
           a: 'décroissante', accept: null,
           choix: ['décroissante', 'croissante', 'constante', 'd\'abord croissante, puis décroissante'],
-          expl: 'Réécris dans l\'ordre : f(x) = −' + m7 + 'x + ' + p7 + '. Le coefficient directeur est −' + m7 + ' < 0 : f est décroissante. Le ' + p7 + ' devant ne doit pas te tromper !' };
+          expl: 'Réécris dans l\'ordre : f(x) = −' + mtxt + ' + ' + p7 + '. Le coefficient directeur est −' + m7 + ' < 0 : f est décroissante. Le ' + p7 + ' devant ne doit pas te tromper !' };
       }
       var m8 = R.pick([-4, -3, -2, 2, 3, 4]);
       var p8 = R.int(-6, 6);
@@ -774,13 +774,13 @@
           ]);
           var f = frac(ev[1], 6);
           return { q: 'On lance un dé équilibré à 6 faces. Quelle est la probabilité d\'obtenir ' + ev[0] + ' ?',
-            a: f.a, accept: f.accept, choix: null,
+            a: f.a, accept: f.accept, choix: null, pct: true,
             expl: 'Il y a ' + ev[1] + ' cas favorable(s) sur 6 cas possibles : P = ' + ev[1] + '/6 = ' + f.a + '.' };
         }
         var r = R.int(2, 6), b = R.int(2, 6);
         var f2 = frac(r, r + b);
         return { q: 'Une urne contient ' + r + ' boules rouges et ' + b + ' boules bleues, indiscernables au toucher. On tire une boule au hasard.\nQuelle est la probabilité de tirer une boule rouge ?',
-          a: f2.a, accept: f2.accept, choix: null,
+          a: f2.a, accept: f2.accept, choix: null, pct: true,
           expl: r + ' boules rouges sur ' + (r + b) + ' boules en tout : P = ' + r + '/' + (r + b) + (f2.a !== r + '/' + (r + b) ? ' = ' + f2.a : '') + '.' };
       }
       if(level === 2){
@@ -792,13 +792,13 @@
           ]);
           var f3 = frac(ev2[1], 32);
           return { q: 'On tire une carte au hasard dans un jeu de 32 cartes. Quelle est la probabilité de tirer ' + ev2[0] + ' ?',
-            a: f3.a, accept: f3.accept, choix: null,
+            a: f3.a, accept: f3.accept, choix: null, pct: true,
             expl: ev2[1] + ' cas favorable(s) sur 32 : P = ' + ev2[1] + '/32 = ' + f3.a + '.' };
         }
         var p100 = 5 * R.int(1, 19);
         var comp = (100 - p100) / 100;
         return { q: 'La probabilité qu\'il pleuve demain est P(A) = ' + frNum(p100 / 100) + '. Quelle est la probabilité de l\'événement contraire (pas de pluie) ?',
-          a: String(comp), accept: null, choix: null,
+          a: String(comp), accept: null, choix: null, pct: true,
           expl: 'P(contraire de A) = 1 − P(A) = 1 − ' + frNum(p100 / 100) + ' = ' + frNum(comp) + '.' };
       }
       // level 3
@@ -812,11 +812,11 @@
         } while(pu > 9);
         if(type3 === 'union'){
           return { q: 'P(A) = ' + frNum(pa / 10) + ' ; P(B) = ' + frNum(pb / 10) + ' ; P(A ∩ B) = ' + frNum(pi / 10) + '.\nCalcule P(A ∪ B).',
-            a: String(pu / 10), accept: null, choix: null,
+            a: String(pu / 10), accept: null, choix: null, pct: true,
             expl: 'P(A ∪ B) = P(A) + P(B) − P(A ∩ B) = ' + frNum(pa / 10) + ' + ' + frNum(pb / 10) + ' − ' + frNum(pi / 10) + ' = ' + frNum(pu / 10) + '.' };
         }
         return { q: 'P(A) = ' + frNum(pa / 10) + ' ; P(B) = ' + frNum(pb / 10) + ' ; P(A ∪ B) = ' + frNum(pu / 10) + '.\nCalcule P(A ∩ B).',
-          a: String(pi / 10), accept: null, choix: null,
+          a: String(pi / 10), accept: null, choix: null, pct: true,
           expl: 'On retourne la formule : P(A ∩ B) = P(A) + P(B) − P(A ∪ B) = ' + frNum(pa / 10) + ' + ' + frNum(pb / 10) + ' − ' + frNum(pu / 10) + ' = ' + frNum(pi / 10) + '.' };
       }
       var it = R.pick([

@@ -303,6 +303,11 @@ html{
   font-size:16px;                 /* jamais sous 16 px : le zoom iOS en dépend */
   -webkit-text-size-adjust:100%;
   text-size-adjust:100%;
+  /* Ce que scrollIntoView ou la mise au point amènent à l'écran ne doit se
+     poser ni sous l'en-tête collant (rangée + crête), ni sur l'indicateur
+     d'accueil de l'iPhone (bouton « Continuer » d'une question). */
+  scroll-padding-top:calc(env(safe-area-inset-top) + var(--head-h) + 32px);
+  scroll-padding-bottom:calc(env(safe-area-inset-bottom) + 16px);
 }
 /* Le défilement doux n'est activé que si le mouvement n'est pas réduit. */
 @media (prefers-reduced-motion: no-preference){ html{ scroll-behavior:smooth; } }
@@ -366,6 +371,10 @@ input[type="range"]{ accent-color:var(--accent-line); }
   outline-offset:3px;
   border-radius:var(--r-1);
 }
+/* Cibles de focus posées par programme (titre de vue dans core/routeur.js,
+   titre d'étape de l'onboarding, #app du lien d'évitement) : elles ne sont
+   pas activables, le cadre n'a rien à signaler au premier affichage. */
+[tabindex="-1"]:focus-visible{ outline:none; }
 
 ::selection{ background:var(--hl); color:var(--ink); }
 
@@ -606,7 +615,7 @@ body[data-ctx="home"] .head{ background:var(--sky); }
   /* colonne 1 : retour/quitter (largeur nulle quand ils sont masqués)
      colonne 2 : marque · colonne 3 : titre ou navigation · colonne 4 : actions
      Sous 900 px, les colonnes 1 et 3 se replient : on retrouve auto 1fr auto. */
-  grid-template-columns:auto auto 1fr auto;
+  grid-template-columns:auto minmax(0, auto) minmax(0, 1fr) auto;
   align-items:center;
   /* gap nul : une colonne 1 vide (retour/quitter masqués) ne doit pas
      laisser de trou au bord gauche ; l'espacement passe par les marges. */
@@ -618,6 +627,30 @@ body[data-ctx="home"] .head{ background:var(--sky); }
 }
 
 .head-back, .head-quit{ grid-column:1; grid-row:1; margin-inline-end:var(--s-2); }
+
+/* Mode embarqué dans l'app STMG (html[data-embed], posé par index.html) : le retour « STMG » occupe la
+   colonne 1 sur les écrans d'onglet ; en leçon, parcours et plein écran, Retour et Quitter la reprennent. */
+.head-row > .btn.head-stmg{
+  grid-column:1; grid-row:1;
+  gap:2px;
+  padding:0 var(--s-3) 0 var(--s-1);
+  margin-inline:calc(-1 * var(--s-2)) var(--s-1);
+  font-size:.9375rem;
+  font-weight:600;
+}
+body:is([data-ctx="lecon"], [data-ctx="parcours"], [data-ctx="plein"]) .head-stmg{ display:none; }
+/* L'onboarding recouvre l'en-tête : son retour se pose en haut à gauche, en miroir de « Passer ». */
+.onb > .btn.onb-stmg{
+  position:absolute;
+  top:calc(env(safe-area-inset-top) + var(--s-2));
+  left:calc(var(--gutter) - var(--s-2));
+  gap:2px;
+  padding:0 var(--s-3) 0 var(--s-1);
+  font-weight:600;
+}
+/* Embarquée, l'app ne s'installe pas à part : l'invitation n'a pas de sens. */
+html[data-embed] .install-card,
+html[data-embed] #reg-install{ display:none; }
 
 .brand{
   grid-column:2; grid-row:1;
@@ -632,6 +665,13 @@ body[data-ctx="home"] .head{ background:var(--sky); }
   white-space:nowrap;
   margin-inline-end:var(--s-3);
   view-transition-name:brand;
+  /* Filet : la marque se coupe (…) plutôt que d'élargir la page. La hauteur
+     de 44 px donne la cible tactile sans rogner les accents. */
+  min-width:0;
+  max-width:100%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  line-height:44px;
 }
 
 .head-title{
@@ -691,20 +731,34 @@ body[data-ctx="home"] .head{ background:var(--sky); }
 .head-actions .btn-icon,
 .head-row > .btn-icon{ flex:none; }
 
-/* Son et Prof : réservés au desktop (§5.1). Le masquage est borné à
+/* Son : réservé au desktop (§5.1). Le masquage est borné à
    « sous 900 px » pour ne pas avoir à réaffirmer un display au-dessus. */
-@media (max-width:899.98px){ #btn-sound, #btn-prof-top{ display:none; } }
+@media (max-width:899.98px){ #btn-sound{ display:none; } }
+/* Le Prof sous 900 px : dans l'en-tête en parcours, à la place de la roue dentée
+   (le bouton flottant y recouvrait les touches), et sur l'écran de correction d'une
+   évaluation (body[data-prof="correction"]). Ailleurs, pas de bouton d'en-tête. */
+@media (max-width:899.98px){
+  body:not([data-ctx="parcours"]):not([data-prof="correction"]) #btn-prof-top,
+  body[data-prof="off"] #btn-prof-top{ display:none; }
+  body[data-ctx="parcours"]:not([data-prof]) #btn-settings,
+  body[data-prof="correction"] #btn-settings{ display:none; }
+}
+/* Évaluation en cours (body[data-prof="pause"], posé par assistant.js) : aucun bouton du Prof,
+   à toute largeur. Il revient à la correction. */
+body[data-prof="pause"] #btn-prof-top{ display:none; }
 
 /* Pastille de sauvegarde : icône 20 px, teinte selon l'état (§5.2). */
 #cloud .ic{ width:20px; height:20px; }
 #cloud.ok{ color:var(--ok-text); }
 #cloud.ko{ color:var(--ko-text); }
 
-/* Rotation du bouton de thème (§2.4, motion #15). */
+/* Rotation du bouton de thème (§2.4, motion #15) : un tour complet à la
+   bascule. Au repos l'icône est droite dans les deux thèmes (à 180 degrés,
+   le croissant de lune se lisait comme un crochet). */
 #btn-theme .ic{ transition:transform 300ms var(--ease-out); }
-:root[data-theme="dark"] #btn-theme .ic{ transform:rotate(180deg); }
+:root[data-theme="dark"] #btn-theme .ic{ transform:rotate(360deg); }
 @media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) #btn-theme .ic{ transform:rotate(180deg); }
+  :root:not([data-theme="light"]) #btn-theme .ic{ transform:rotate(360deg); }
 }
 
 /* ---------------------------------------------------------------------
@@ -763,6 +817,55 @@ body[data-ctx="parcours"] .ring-day{ display:none; }
    navigation desktop s'efface pour ne pas la chevaucher. */
 body[data-ctx="lecon"] .topnav{ display:none; }
 
+/* ---------------------------------------------------------------------
+   5.5 En-tête étroit (< 900 px) : jamais plus large que l'écran
+   Largeurs de référence : 390, 375 et 320 px. La rangée ne garde que ce
+   qui sert dans le contexte ; le reste est à un tap, dans Réglages.
+   --------------------------------------------------------------------- */
+@media (max-width:899.98px){
+  /* Leçon : le titre court prend la place de la marque. */
+  body[data-ctx="lecon"] .brand{ display:none; }
+
+  /* Leçon, parcours, plein écran : le thème se règle dans Réglages, le
+     nuage ne revient que pour signaler une sauvegarde en erreur. */
+  body:is([data-ctx="lecon"], [data-ctx="parcours"], [data-ctx="plein"]) #btn-theme,
+  body:is([data-ctx="lecon"], [data-ctx="parcours"], [data-ctx="plein"]) #cloud:not([data-etat="cloud-slash"]){ display:none; }
+
+  /* Hors ligne : la pastille réseau remplace le thème et le nuage (sans
+     réseau, l'état de la sauvegarde en ligne n'apprend rien de plus). */
+  .head-actions:has(#reseau:not([hidden])) :is(#btn-theme, #cloud){ display:none; }
+
+  /* Titre : deux lignes au plus, coupées entre deux mots, plutôt qu'une
+     ligne tronquée (« Séanc… »). [hidden] garde la priorité (!important). */
+  .head-title{
+    display:-webkit-box;
+    -webkit-box-orient:vertical;
+    -webkit-line-clamp:2;
+    line-clamp:2;
+    white-space:normal;
+    overflow-wrap:anywhere;
+    text-wrap:balance;
+  }
+}
+/* Sous 390 px (iPhone SE, mini) : on resserre avant de retirer quoi que ce soit. */
+@media (max-width:389.98px){
+  .brand{ margin-inline-end:var(--s-2); }
+  .head-actions{ gap:0; }
+}
+/* Sous 370 px : le nuage s'efface (sauf erreur), le thème lui cède la place s'il revient. */
+@media (max-width:369.98px){
+  #cloud:not([data-etat="cloud-slash"]){ display:none; }
+  .head-actions:has(#cloud[data-etat="cloud-slash"]) #btn-theme{ display:none; }
+}
+/* Sous 340 px (320 px, zoom d'affichage) : anneau du jour et réglages seulement. */
+@media (max-width:339.98px){
+  #btn-theme{ display:none; }
+  .head-count{ padding-inline:var(--s-1); }
+  /* Leçon : « Choisir le niveau » passe sous le bouton principal au lieu
+     de pousser la page de 20 px. */
+  .lecon-cta{ flex-wrap:wrap; }
+}
+
 
 /* =====================================================================
    6. BARRE D'ONGLETS MOBILE (§5.3, §6.3)
@@ -782,7 +885,7 @@ body[data-ctx="lecon"] .topnav{ display:none; }
   backdrop-filter:blur(24px) saturate(1.4);
   -webkit-backdrop-filter:blur(24px) saturate(1.4);
   box-shadow:var(--card-ring), var(--shadow-3);
-  transition:transform var(--dur-3) var(--ease-out-expo);
+  transition:transform var(--dur-3) var(--ease-out-expo), visibility 0s linear 0s;
 }
 @supports not (backdrop-filter: blur(1px)){
   .tabbar{ background:var(--surface-1); }
@@ -815,8 +918,16 @@ body[data-ctx="lecon"] .topnav{ display:none; }
   view-transition-name:tab-ink;
 }
 
-/* Retirée pendant un parcours (setCtx). */
-.tabbar.away{ transform:translateY(calc(100% + 24px)); }
+/* Retirée pendant un parcours (setCtx). Le décalage reprend la marge basse
+   de la barre (12 px ou la zone sûre de l'iPhone) : sinon une bande de 10 px
+   restait à l'écran et captait les taps. Une fois sortie, la barre devient
+   invisible et inerte ; visibility ne bascule qu'à la fin du glissement. */
+.tabbar.away{
+  transform:translateY(calc(100% + max(12px, env(safe-area-inset-bottom)) + 12px));
+  visibility:hidden;
+  pointer-events:none;
+  transition:transform var(--dur-3) var(--ease-out-expo), visibility 0s linear var(--dur-3);
+}
 
 
 /* =====================================================================
@@ -867,6 +978,9 @@ body[data-ctx="lecon"] .topnav{ display:none; }
 }
 
 @media (pointer:coarse){ .topnav kbd{ display:none; } }
+/* Entre 900 et 960 px, la navigation ne tient dans sa colonne que sans les
+   pastilles de raccourci (sinon elle chevauche la marque et l'anneau). */
+@media (min-width:900px) and (max-width:959.98px){ .topnav kbd{ display:none; } }
 
 
 /* =====================================================================

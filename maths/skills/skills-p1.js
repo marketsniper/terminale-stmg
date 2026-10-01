@@ -6,7 +6,7 @@
 (function(){
 
   /* ---------- Outils partagés ---------- */
-  function mf(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }        // 12500 -> "12 500"
+  function mf(n){ return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202F'); }   // 12500 -> "12 500" (espace fine insécable : jamais coupé en fin de ligne)
   function fv(x){ return String(x).replace('.', ','); }                            // 4.5 -> "4,5" (affichage)
   function eur(c){ return (c % 100 === 0) ? String(c/100) : (c/100).toFixed(2).replace('.', ','); } // centimes -> "4,80" ou "6"
   function acc2(c){ var s = String(c/100), t = (c/100).toFixed(2); return (t === s) ? null : [t]; } // accepte "4.10" si a="4.1"
@@ -762,8 +762,8 @@
         if(v === 1){
           c = R.int(101,999);
           while(c % 10 === 0){ c = R.int(101,999); }
-          return {q:'Calcule : ' + fv(c/100) + ' × 1 000', a:String(c*10), accept:null, choix:null,
-            expl:'× 1 000 : la virgule saute de 3 rangs vers la droite. Il manque un rang : on complète avec un zéro → ' + mf(c*10) + '.'};
+          return {q:'Calcule : ' + fv(c/100) + ' × 1\u202F000', a:String(c*10), accept:null, choix:null,
+            expl:'× 1\u202F000 : la virgule saute de 3 rangs vers la droite. Il manque un rang : on complète avec un zéro → ' + mf(c*10) + '.'};
         }
         if(v === 2){
           c = R.int(101,999);
@@ -793,8 +793,8 @@
         var kk = R.int(101,999);
         while(kk % 10 === 0){ kk = R.int(101,999); }
         var nn = kk*10;
-        return {q:'Calcule : ' + mf(nn) + ' ÷ 1 000', a:String(nn/1000), accept:null, choix:null,
-          expl:'÷ 1 000 : la virgule recule de 3 rangs : ' + fv(nn/1000) + '.'};
+        return {q:'Calcule : ' + mf(nn) + ' ÷ 1\u202F000', a:String(nn/1000), accept:null, choix:null,
+          expl:'÷ 1\u202F000 : la virgule recule de 3 rangs : ' + fv(nn/1000) + '.'};
       }
       if(v === 3){
         var E = R.pick([['49,7 × 2,1', 100], ['19,8 × 4,9', 100], ['98 × 5,1', 500], ['302 × 2,9', 900], ['48,1 × 9,8', 500], ['9,9 × 8,2', 80]]);

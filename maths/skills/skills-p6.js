@@ -4,21 +4,37 @@
 function n2(x){ return Math.round(x * 100) / 100; }
 function pt(x){ return String(n2(x)); }
 function fr(x){ return pt(x).replace("-", "−").replace(".", ","); }
-// Construit 4 valeurs numériques distinctes : la bonne réponse + des distracteurs,
-// complétés si besoin par des valeurs proches (boucles for bornées, jamais de while).
-function quatre(a, cands){
+// « Grain » d'une valeur : le pas naturel des nombres qui lui ressemblent (120 → 10, 75 → 5, 0,5 → 0,5).
+function grain(a){
+  var x = Math.abs(n2(a));
+  if (x === 0) return 1;
+  if (Math.round(x) !== x) return (Math.round(x * 2) === x * 2) ? 0.5 : (Math.round(x * 4) === x * 4 ? 0.25 : 0.1);
+  var G = [1000, 500, 100, 50, 10, 5];
+  for (var i = 0; i < G.length; i++) if (x % G[i] === 0 && x >= 2 * G[i]) return G[i];
+  return 1;
+}
+// Construit 4 valeurs numériques distinctes : la bonne réponse + des distracteurs.
+// Les distracteurs viennent d'abord d'erreurs plausibles (cands). S'il en manque, on complète par des
+// valeurs du même grain que la réponse, d'un côté ou de l'autre au hasard, sans jamais encadrer la
+// réponse par a − pas et a + pas (ce motif la désignait). Boucles for bornées, jamais de while.
+function quatre(a, cands, R, pas){
   var out = [n2(a)];
   for (var i = 0; i < cands.length && out.length < 4; i++){
     var c = n2(cands[i]);
     if (out.indexOf(c) === -1) out.push(c);
   }
-  for (var k = 1; out.length < 4 && k <= 60; k++){
-    var c1 = n2(a + k);
+  var g = pas || grain(a);
+  var m = R ? R.pick([[1, 2, -2], [-1, -2, 2], [1, -2, 3], [-1, 2, -3], [2, 3, -1], [-2, -3, 1], [1, 3, -2], [-1, -3, 2]]) : [1, 2, -2];
+  var suite = m.concat([4, -4, 5, -5, 6, -6]);
+  for (var k = 0; out.length < 4 && k < suite.length; k++){
+    var c1 = n2(a + suite[k] * g);
+    if (a > 0 && c1 <= 0) continue;                       // pas de valeur nulle ou négative pour une quantité positive
+    if (out.indexOf(n2(2 * a - c1)) !== -1) continue;     // jamais le symétrique d'un distracteur déjà posé
     if (out.indexOf(c1) === -1) out.push(c1);
-    if (out.length < 4){
-      var c2 = n2(a - k);
-      if (out.indexOf(c2) === -1) out.push(c2);
-    }
+  }
+  for (var j = 7; out.length < 4 && j <= 60; j++){
+    var c2 = n2(a + j * g);
+    if (out.indexOf(c2) === -1) out.push(c2);
   }
   return out;
 }
@@ -53,16 +69,16 @@ SKILLS.push({
         var p = R.pick([5, 10, 15, 20, 25, 30, 50]);
         var N = R.pick([40, 60, 80, 120, 140, 160, 180, 200, 240, 300]);
         a = N * p / 100;
-        ch = quatre(a, [N * p / 10, N - p, N * (100 - p) / 100]);
-        return { q: "Combien vaut " + p + " % de " + N + " ?", a: pt(a), accept: null, choix: ch.map(pt),
-          expl: p + " % de " + N + " = " + N + " × " + p + " ÷ 100 = " + pt(a) + "." };
+        ch = quatre(a, [N * p / 10, N * (100 - p) / 100, N > p + 5 ? N - p : N * p / 1000], R);
+        return { q: "Combien vaut " + p + " % de " + N + " ?", a: fr(a), accept: null, choix: ch.map(fr),
+          expl: p + " % de " + N + " = " + N + " × " + p + " ÷ 100 = " + fr(a) + "." };
       }
       if (t === 2){
         var u = R.int(2, 15), r = R.int(3, 9);
         a = u + 4 * r;
-        ch = quatre(a, [a - 1, a + 1, a + r]);
+        ch = quatre(a, [a + r], R, 1);
         return { q: "Quel nombre continue la suite ?\n" + [u, u + r, u + 2 * r, u + 3 * r].join(" ; ") + " ; …",
-          a: pt(a), accept: null, choix: ch.map(pt),
+          a: fr(a), accept: null, choix: ch.map(fr),
           expl: "On ajoute " + r + " à chaque étape : " + (u + 3 * r) + " + " + r + " = " + a + "." };
       }
       if (t === 3){
@@ -70,15 +86,15 @@ SKILLS.push({
         var pc = R.pick([10, 20, 25, 50]);
         var rem = P * pc / 100;
         a = P - rem;
-        ch = quatre(a, [P - pc, rem]);
+        ch = quatre(a, [P - pc, rem, P + rem], R);
         return { q: "Un article coûte " + P + " €. Le magasin accorde une remise de " + pc + " %. Quel est le nouveau prix (en €) ?",
-          a: pt(a), accept: null, choix: ch.map(pt),
-          expl: "La remise vaut " + rem + " € (" + pc + " % de " + P + "), donc le prix devient " + P + " − " + rem + " = " + pt(a) + " €." };
+          a: fr(a), accept: null, choix: ch.map(fr),
+          expl: "La remise vaut " + rem + " € (" + pc + " % de " + P + "), donc le prix devient " + P + " − " + rem + " = " + fr(a) + " €." };
       }
       var x = R.int(12, 19), y = R.pick([11, 12, 15, 21, 25]);
       a = x * y;
-      ch = quatre(a, [x * (y + 1), (x + 1) * y, a - 10]);
-      return { q: "Calcule de tête : " + x + " × " + y, a: pt(a), accept: null, choix: ch.map(pt),
+      ch = quatre(a, [x * (y + 1), (x + 1) * y, a - 10], R);
+      return { q: "Calcule de tête : " + x + " × " + y, a: fr(a), accept: null, choix: ch.map(fr),
         expl: x + " × " + y + " = " + x + " × " + (y - 1) + " + " + x + " = " + a + " (ou toute autre décomposition)." };
     }
     if (level === 2){
@@ -87,48 +103,48 @@ SKILLS.push({
         var p2 = R.pick([10, 20, 25, 50]);
         var N2 = R.pick([60, 80, 120, 160, 200, 240]);
         var V2 = N2 * p2 / 100;
-        ch = quatre(N2, [V2 * p2 / 100, V2 + p2, N2 / 2]);
-        return { q: p2 + " % d'un nombre vaut " + V2 + ". Quel est ce nombre ?", a: pt(N2), accept: null, choix: ch.map(pt),
+        ch = quatre(N2, [V2 * p2 / 100, V2 + p2, N2 / 2], R);
+        return { q: p2 + " % d'un nombre vaut " + V2 + ". Quel est ce nombre ?", a: fr(N2), accept: null, choix: ch.map(fr),
           expl: "Si " + p2 + " % du nombre vaut " + V2 + ", alors le nombre vaut " + V2 + " × 100 ÷ " + p2 + " = " + N2 + "." };
       }
       if (t === 2){
         var v = R.pick([60, 70, 80, 90, 100, 110]), tm = R.pick([2, 3, 4]);
         var d = v * tm;
-        ch = quatre(v, [d - tm, v + 10, v - 10]);
+        ch = quatre(v, [d - tm, d * tm, v + 10], R);
         return { q: "Une voiture parcourt " + d + " km en " + tm + " heures. Quelle est sa vitesse moyenne (en km/h) ?",
-          a: pt(v), accept: null, choix: ch.map(pt),
+          a: fr(v), accept: null, choix: ch.map(fr),
           expl: "Vitesse = distance ÷ temps = " + d + " ÷ " + tm + " = " + v + " km/h." };
       }
       if (t === 3){
         var u3 = R.pick([2, 3, 4, 5]), k3 = R.pick([2, 3]);
         var T2 = u3 * k3 * k3, T3 = T2 * k3;
         a = T3 * k3;
-        ch = quatre(a, [2 * T3 - T2, a - k3, a + k3]);
+        ch = quatre(a, [2 * T3 - T2, T3 + T2, a * k3, a + T2], R, 1);
         return { q: "Quel nombre continue la suite ?\n" + [u3, u3 * k3, T2, T3].join(" ; ") + " ; …",
-          a: pt(a), accept: null, choix: ch.map(pt),
+          a: fr(a), accept: null, choix: ch.map(fr),
           expl: "Chaque terme est multiplié par " + k3 + " : " + T3 + " × " + k3 + " = " + a + "." };
       }
       if (t === 4){
         var m = R.int(10, 16), d1 = R.int(1, 3), d2 = R.int(1, 4);
         var notes = R.shuffle([m - d1, m + d1, m - d2, m + d2]);
-        ch = quatre(m, [m - 1, m + 1, m + 2]);
+        ch = quatre(m, [m + Math.max(d1, d2)], R, 1);
         return { q: "Un candidat obtient les notes suivantes (sur 20) : " + notes.join(" ; ") + ". Quelle est sa moyenne ?",
-          a: pt(m), accept: null, choix: ch.map(pt),
+          a: fr(m), accept: null, choix: ch.map(fr),
           expl: "Somme = " + (4 * m) + ", divisée par 4 notes : " + (4 * m) + " ÷ 4 = " + m + "." };
       }
       var f = R.pick([[3, 4], [2, 3], [3, 5], [2, 5], [5, 6]]);
       var B = f[1] * R.pick([12, 15, 20, 24, 30]);
       a = B * f[0] / f[1];
-      ch = quatre(a, [B / f[1], B - a, a + f[0]]);
-      return { q: "Combien valent les " + f[0] + "/" + f[1] + " de " + B + " ?", a: pt(a), accept: null, choix: ch.map(pt),
-        expl: B + " ÷ " + f[1] + " = " + (B / f[1]) + ", puis × " + f[0] + " = " + pt(a) + "." };
+      ch = quatre(a, [B / f[1], B - a, a + f[0]], R);
+      return { q: "Combien valent les " + f[0] + "/" + f[1] + " de " + B + " ?", a: fr(a), accept: null, choix: ch.map(fr),
+        expl: B + " ÷ " + f[1] + " = " + (B / f[1]) + ", puis × " + f[0] + " = " + fr(a) + "." };
     }
     t = R.int(1, 5);
     if (t === 1){
       var ph = R.pick([10, 20, 30, 40, 50]);
       var pb = R.pick([10, 20, 30, 40, 50].filter(function(z){ return z !== ph; }));
       var vg = ph - pb - ph * pb / 100;
-      ch = quatre(vg, [ph - pb, -(ph - pb), ph - pb + ph * pb / 100]);
+      ch = quatre(vg, [ph - pb, -(ph - pb), ph - pb + ph * pb / 100], R);
       return { q: "Le prix d'un article augmente de " + ph + " %, puis baisse de " + pb + " %. Quelle est l'évolution globale ?",
         a: pcf(vg), accept: null, choix: ch.map(pcf),
         expl: "On multiplie les coefficients : " + fr(1 + ph / 100) + " × " + fr(1 - pb / 100) + " = " + fr((1 + ph / 100) * (1 - pb / 100)) + ", soit " + pcf(vg) + ". Les pourcentages ne s'additionnent pas." };
@@ -137,9 +153,9 @@ SKILLS.push({
       var p3 = R.pick([10, 20, 25, 50]);
       var P0 = R.pick([40, 60, 80, 120, 200]);
       var V3 = P0 * (100 + p3) / 100;
-      ch = quatre(P0, [V3 * (100 - p3) / 100, V3 - p3]);
+      ch = quatre(P0, [V3 * (100 - p3) / 100, V3 - p3, V3 * (100 + p3) / 100], R);
       return { q: "Après une hausse de " + p3 + " %, un article coûte " + V3 + " €. Quel était son prix avant la hausse (en €) ?",
-        a: pt(P0), accept: null, choix: ch.map(pt),
+        a: fr(P0), accept: null, choix: ch.map(fr),
         expl: "Hausse de " + p3 + " % = multiplication par " + fr(1 + p3 / 100) + ". Prix initial = " + V3 + " ÷ " + fr(1 + p3 / 100) + " = " + P0 + " €. Retirer " + p3 + " % du prix final est l'erreur classique." };
     }
     if (t === 3){
@@ -147,26 +163,26 @@ SKILLS.push({
       var unit = R.pick([50, 100, 200, 500]);
       var Bt = (rt[0] + rt[1]) * unit;
       a = rt[1] * unit;
-      ch = quatre(a, [rt[0] * unit, Bt / 2, a + unit]);
+      ch = quatre(a, [rt[0] * unit, Bt / 2, a + unit], R);
       return { q: rt[0] === 1 ? Bt + " € sont partagés entre deux associés dans le ratio " + rt[0] + " : " + rt[1] + ". Combien reçoit celui qui a la plus grande part (en €) ?"
           : Bt + " € sont partagés entre deux associés dans le ratio " + rt[0] + " : " + rt[1] + ". Quelle est la part la plus élevée (en €) ?",
-        a: pt(a), accept: null, choix: ch.map(pt),
+        a: fr(a), accept: null, choix: ch.map(fr),
         expl: "Il y a " + (rt[0] + rt[1]) + " parts égales de " + Bt + " ÷ " + (rt[0] + rt[1]) + " = " + unit + " €. La plus grande part vaut " + rt[1] + " × " + unit + " = " + a + " €." };
     }
     if (t === 4){
       var rob = R.pick([[3, 6], [2, 6], [4, 12], [6, 12], [10, 15], [2, 2], [4, 4], [5, 20]]);
       var x1 = rob[0], y1 = rob[1];
       a = 60 * x1 * y1 / (x1 + y1);
-      ch = quatre(a, [60 * (x1 + y1) / 2, 60 * (x1 + y1), 60 * Math.min(x1, y1)]);
+      ch = quatre(a, [60 * (x1 + y1) / 2, 60 * (x1 + y1), 60 * Math.min(x1, y1)], R);
       return { q: "Un premier robinet remplit un bassin en " + x1 + " h, un second en " + y1 + " h. Ouverts ensemble, en combien de minutes remplissent-ils le bassin ?",
-        a: pt(a), accept: null, choix: ch.map(pt),
-        expl: "En 1 h, ils remplissent 1/" + x1 + " + 1/" + y1 + " du bassin. Le temps total vaut " + (x1 * y1) + " ÷ " + (x1 + y1) + " = " + fr(x1 * y1 / (x1 + y1)) + " h, soit " + pt(a) + " min." };
+        a: fr(a), accept: null, choix: ch.map(fr),
+        expl: "En 1 h, ils remplissent 1/" + x1 + " + 1/" + y1 + " du bassin. Le temps total vaut " + (x1 * y1) + " ÷ " + (x1 + y1) + " = " + fr(x1 * y1 / (x1 + y1)) + " h, soit " + fr(a) + " min." };
     }
     var e = R.int(2, 4), pl = R.int(3, 5), de = R.int(2, 4);
     a = e * pl * de;
-    ch = quatre(a, [e + pl + de, e * pl + de, (e + pl) * de]);
+    ch = quatre(a, [e + pl + de, e * pl + de, (e + pl) * de], R);
     return { q: "Un restaurant propose " + e + " entrées, " + pl + " plats et " + de + " desserts. Combien de menus différents entrée-plat-dessert peut-on composer ?",
-      a: pt(a), accept: null, choix: ch.map(pt),
+      a: fr(a), accept: null, choix: ch.map(fr),
       expl: "Principe multiplicatif : " + e + " × " + pl + " × " + de + " = " + a + " menus. On multiplie les choix, on ne les additionne pas." };
   }
 });
@@ -200,26 +216,26 @@ SKILLS.push({
         var pr = R.pick([[10, 50], [20, 50], [15, 60], [30, 120], [12, 48], [45, 180], [27, 90], [16, 80], [21, 70], [36, 120]]);
         var k = pr[0], N = pr[1];
         a = 100 * k / N;
-        ch = quatre(a, [100 - a, k, a + 5]);
+        ch = quatre(a, [100 - a, k, a + 5], R);
         return { q: "Sur " + N + " personnes interrogées, " + k + " préfèrent le produit A. Quel pourcentage cela représente-t-il ?",
-          a: pt(a), accept: null, choix: ch.map(pt),
-          expl: k + " ÷ " + N + " × 100 = " + pt(a) + " %. Attention à ne pas confondre l'effectif (" + k + ") et le pourcentage." };
+          a: fr(a), accept: null, choix: ch.map(fr),
+          expl: k + " ÷ " + N + " × 100 = " + fr(a) + " %. Attention à ne pas confondre l'effectif (" + k + ") et le pourcentage." };
       }
       if (t === 2){
         var u0 = R.int(3, 12), A = R.int(2, 5), Bb = A + R.int(2, 4);
         var terms = [u0, u0 + A, u0 + A + Bb, u0 + 2 * A + Bb];
         a = u0 + 2 * A + 2 * Bb;
-        ch = quatre(a, [u0 + 3 * A + Bb, a - 1, a + 1]);
+        ch = quatre(a, [u0 + 3 * A + Bb, a + A], R, 1);
         return { q: "Quel nombre continue la suite ?\n" + terms.join(" ; ") + " ; …",
-          a: pt(a), accept: null, choix: ch.map(pt),
+          a: fr(a), accept: null, choix: ch.map(fr),
           expl: "La suite alterne +" + A + " puis +" + Bb + ". Après +" + A + ", on ajoute " + Bb + " : " + terms[3] + " + " + Bb + " = " + a + "." };
       }
       var X = R.pick([100, 200, 300, 400, 500]);
       var pc = R.pick([10, 20, 25, 50]);
       var Y = X * (100 + pc) / 100;
-      ch = quatre(pc, [Y - X, 100 * (Y - X) / Y, pc + 5]);
+      ch = quatre(pc, [Y - X, 100 * (Y - X) / Y, pc + 5], R);
       return { q: "Le chiffre d'affaires d'une boutique est passé de " + X + " € à " + Y + " €. Quel est le pourcentage d'augmentation ?",
-        a: pt(pc), accept: null, choix: ch.map(pt),
+        a: fr(pc), accept: null, choix: ch.map(fr),
         expl: "Variation : " + (Y - X) + " €. En pourcentage du point de départ : " + (Y - X) + " ÷ " + X + " × 100 = " + pc + " %." };
     }
     if (level === 2){
@@ -230,18 +246,18 @@ SKILLS.push({
         var q1 = R.pick([10, 20, 30, 40, 60]);
         var enLigne = C * p1 / 100;
         a = enLigne * q1 / 100;
-        ch = quatre(a, [enLigne, C * q1 / 100, C * (p1 + q1) / 100]);
+        ch = quatre(a, [enLigne, C * q1 / 100, C * (p1 + q1) / 100], R);
         return { q: "Une entreprise réalise " + C + " € de chiffre d'affaires. Les ventes en ligne représentent " + p1 + " % du total, et " + q1 + " % des ventes en ligne proviennent du mobile. Quel montant (en €) provient du mobile ?",
-          a: pt(a), accept: null, choix: ch.map(pt),
-          expl: "En ligne : " + C + " × " + p1 + " ÷ 100 = " + enLigne + " €. Puis mobile : " + enLigne + " × " + q1 + " ÷ 100 = " + pt(a) + " €. Le second pourcentage porte sur les ventes en ligne, pas sur le total." };
+          a: fr(a), accept: null, choix: ch.map(fr),
+          expl: "En ligne : " + C + " × " + p1 + " ÷ 100 = " + enLigne + " €. Puis mobile : " + enLigne + " × " + q1 + " ÷ 100 = " + fr(a) + " €. Le second pourcentage porte sur les ventes en ligne, pas sur le total." };
       }
       if (t === 2){
         var u2 = R.int(2, 10), s = R.int(2, 4);
         var terms2 = [u2, u2 + s, u2 + 2 * s + 1, u2 + 3 * s + 3];
         a = u2 + 4 * s + 6;
-        ch = quatre(a, [a - 1, a + 1, a - 3]);
+        ch = quatre(a, [a - 1, a - 3], R, 1);
         return { q: "Quel nombre continue la suite ?\n" + terms2.join(" ; ") + " ; …",
-          a: pt(a), accept: null, choix: ch.map(pt),
+          a: fr(a), accept: null, choix: ch.map(fr),
           expl: "Les écarts augmentent de 1 à chaque fois : +" + s + ", +" + (s + 1) + ", +" + (s + 2) + ", donc +" + (s + 3) + " : " + terms2[3] + " + " + (s + 3) + " = " + a + "." };
       }
       if (t === 3){
@@ -256,9 +272,9 @@ SKILLS.push({
       }
       var mo = R.int(9, 15), dd = R.int(1, 2);
       var nE = mo - 3 * dd, nO = mo + dd;
-      ch = quatre(mo, [(nE + nO) / 2, mo + 1, mo - 1]);
+      ch = quatre(mo, [(nE + nO) / 2, (3 * nE + nO) / 4], R, 1);
       return { q: "Un candidat obtient " + nE + "/20 à l'écrit (coefficient 1) et " + nO + "/20 à l'oral (coefficient 3). Quelle est sa moyenne pondérée ?",
-        a: pt(mo), accept: null, choix: ch.map(pt),
+        a: fr(mo), accept: null, choix: ch.map(fr),
         expl: "(" + nE + " × 1 + " + nO + " × 3) ÷ 4 = " + (nE + 3 * nO) + " ÷ 4 = " + mo + ". La moyenne simple " + fr((nE + nO) / 2) + " est le piège classique." };
     }
     t = R.int(1, 4);
@@ -266,18 +282,18 @@ SKILLS.push({
       var pb2 = R.pick([10, 20, 25, 50]);
       var V0 = R.pick([200, 400, 600, 800, 1200, 1600, 2000]);
       var Vf = V0 * (100 - pb2) / 100;
-      ch = quatre(V0, [Vf * (100 + pb2) / 100, Vf + pb2]);
+      ch = quatre(V0, [Vf * (100 + pb2) / 100, Vf + pb2, Vf * (100 - pb2) / 100], R);
       return { q: "Après une baisse de " + pb2 + " %, les ventes annuelles s'élèvent à " + Vf + " unités. Combien valaient-elles avant la baisse ?",
-        a: pt(V0), accept: null, choix: ch.map(pt),
+        a: fr(V0), accept: null, choix: ch.map(fr),
         expl: "Baisser de " + pb2 + " % = multiplier par " + fr((100 - pb2) / 100) + ". Avant la baisse : " + Vf + " ÷ " + fr((100 - pb2) / 100) + " = " + V0 + ". Rajouter " + pb2 + " % à " + Vf + " donne " + fr(Vf * (100 + pb2) / 100) + " : c'est l'erreur piégée." };
     }
     if (t === 2){
       var t1 = R.int(2, 6), t2 = R.int(3, 9);
       var t3 = t1 + t2, t4 = t2 + t3;
       a = t3 + t4;
-      ch = quatre(a, [t4 + t2, a - 1, a + 1]);
+      ch = quatre(a, [t4 + t2, 2 * t4, a + t1], R, 1);
       return { q: "Dans cette suite, chaque terme est obtenu à partir des précédents :\n" + [t1, t2, t3, t4].join(" ; ") + " ; …\nQuel est le terme suivant ?",
-        a: pt(a), accept: null, choix: ch.map(pt),
+        a: fr(a), accept: null, choix: ch.map(fr),
         expl: "Chaque terme est la somme des deux précédents : " + t3 + " + " + t4 + " = " + a + "." };
     }
     if (t === 3){
@@ -285,17 +301,17 @@ SKILLS.push({
       var L = dl[0], ps = dl[1], dz = dl[2];
       var S = L * ps / 100;
       a = 100 * S / (L + dz);
-      ch = quatre(a, [ps, ps / 2, a + 5]);
+      ch = quatre(a, [ps, ps / 2, a + 5], R);
       return { q: "Une cuve contient " + L + " litres d'un mélange composé à " + ps + " % de sirop. On ajoute " + dz + " litres d'eau pure. Quel est le nouveau pourcentage de sirop ?",
-        a: pt(a), accept: null, choix: ch.map(pt),
-        expl: "La quantité de sirop ne change pas : " + S + " L. Nouveau volume : " + (L + dz) + " L. Donc " + S + " ÷ " + (L + dz) + " × 100 = " + pt(a) + " %." };
+        a: fr(a), accept: null, choix: ch.map(fr),
+        expl: "La quantité de sirop ne change pas : " + S + " L. Nouveau volume : " + (L + dz) + " L. Donc " + S + " ÷ " + (L + dz) + " × 100 = " + fr(a) + " %." };
     }
     var Tt = R.pick([200, 300, 400, 500, 600, 800]);
     var pv = R.pick([10, 20, 25, 40, 50]);
     var Nv = Tt * pv / 100;
-    ch = quatre(Tt, [Nv * pv / 100, Nv + pv, 2 * Nv]);
+    ch = quatre(Tt, [Nv * pv / 100, Nv + pv, 2 * Nv], R);
     return { q: "Dans un salon professionnel, " + pv + " % des visiteurs ont signé un contrat, soit " + Nv + " personnes. Combien y avait-il de visiteurs en tout ?",
-      a: pt(Tt), accept: null, choix: ch.map(pt),
+      a: fr(Tt), accept: null, choix: ch.map(fr),
       expl: "Si " + pv + " % du total vaut " + Nv + ", le total vaut " + Nv + " × 100 ÷ " + pv + " = " + Tt + " visiteurs." };
   }
 });
@@ -411,18 +427,18 @@ SKILLS.push({
       var situ = r3 === 4
         ? "Tu n'as éliminé aucune proposition : les 4 restent possibles."
         : "Tu as éliminé 2 propositions sur 4 : il en reste 2, sans préférence.";
-      ch = quatre(ev, [g / r3, (g - p) / r3, -p]);
+      ch = quatre(ev, [g / r3, (g - p) / r3, -p], R);
       return { q: "Barème : +" + g + " par bonne réponse, −" + p + " par mauvaise, 0 si tu passes. " + situ + " Quelle est ton espérance de points si tu réponds au hasard ?",
-        a: pt(ev), accept: null, choix: ch.map(pt),
+        a: fr(ev), accept: null, choix: ch.map(fr),
         expl: "Espérance = (" + g + " − " + (r3 - 1) + " × " + p + ") ÷ " + r3 + " = " + fr(ev) + " point(s). C'est " + concl(ev) + "." };
     }
     if (t === 2){
       var tq = R.pick([[30, 40], [60, 80], [45, 30], [60, 120], [40, 20], [90, 60], [30, 60], [45, 90]]);
       var Tm = tq[0], Nq = tq[1];
       var sec = Tm * 60 / Nq;
-      ch = quatre(sec, [Math.round(60 * Nq / Tm), sec + 15, sec - 15]);
+      ch = quatre(sec, [Math.round(60 * Nq / Tm), Math.round(100 * Tm / Nq), sec + 15], R);
       return { q: "Gestion du temps : l'épreuve dure " + Tm + " minutes et compte " + Nq + " questions. De combien de temps disposes-tu en moyenne par question (en secondes) ?",
-        a: pt(sec), accept: null, choix: ch.map(pt),
+        a: fr(sec), accept: null, choix: ch.map(fr),
         expl: Tm + " min = " + (Tm * 60) + " s ; " + (Tm * 60) + " ÷ " + Nq + " = " + sec + " s par question. Au double de ce temps sur une question, tu la marques et tu passes." };
     }
     var s1 = R.pick([20, 30, 40]);

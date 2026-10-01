@@ -23,6 +23,21 @@ function _progTitrePhase(p){
   const camp = (PHASES[p] && PHASES[p].camp) || '';
   return (camp === 'Sommet' ? 'Vers le Sommet' : 'Vers le ' + camp) + ' · ' + _progNomPhase(p);
 }
+/* Dans un texte de leçon ou d'énoncé, « 12 500 » ne doit jamais se couper entre 12 et 500 :
+   l'espace des milliers devient une espace fine insécable. On ne touche qu'aux nœuds de texte
+   (jamais aux attributs : un viewBox « 0 0 360 160 » doit rester intact), et pas aux SVG.
+   Posée sur window : le mode papier et les techniques s'en servent aussi. */
+window.espacesInsecables = function(racine){
+  if (!racine || !document.createTreeWalker) return;
+  const w = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())){
+    const t = n.nodeValue;
+    if (!/\d \d{3}(?!\d)/.test(t)) continue;
+    if (n.parentNode && n.parentNode.closest && n.parentNode.closest('svg')) continue;
+    n.nodeValue = t.replace(/(\d) (?=\d{3}(?!\d))/g, '$1\u202F');
+  }
+};
 /* Ce qu'il reste à faire pour verrouiller, en clair (DESIGN-SPEC §6.16). */
 function _progReste(id){
   const s = st(id);
@@ -242,8 +257,8 @@ function _progLigne(s, f, ouverte){
   if (bloquee) etat = ic('circle-dashed');
   else if (x.provisoire) etat = '<span class="chip" data-tone="gold">À confirmer</span>';
   else if (x.fragile) etat = ic('warning-circle');
-  else if (nm.cle === 'consolide') etat = ic('seal-check');
-  else if (x.mastered) etat = ic('lock-simple');
+  else if (nm.cle === 'consolide') etat = ic('medal') + '<span class="sr-only">' + esc(nm.libelle) + '</span>';
+  else if (x.mastered) etat = ic('seal-check') + '<span class="sr-only">' + esc(nm.libelle) + '</span>';
   else if (estFront || x.n > 0) etat = _progCrampons(s.id);
 
   const sub = estFront
@@ -302,11 +317,12 @@ function vSkill(p){
           (skill.objectif ? '<p class="body-l ink-2">' + esc(skill.objectif) + '</p>' : '') +
           '<p class="lecon-state">' + _progChip(id) +
             (x.n > 0 ? _progCrampons(id) + '<span class="num">' + fv(justes) + ' / 10</span>' : '') +
-            (reste ? '<span class="small muted">· ' + esc(reste) + '</span>' : '') +
+            (reste ? '<span class="small muted lecon-reste">' + esc(reste.charAt(0).toUpperCase() + reste.slice(1)) + '</span>' : '') +
           '</p>' +
           (rappel ? '<p class="small muted">' + ic('clock-countdown') + ' ' + esc(rappel) + '</p>' : '') +
           (histo ? '<p class="small muted">Rappels : ' + histo + '</p>' : '') +
-          (x.lu ? '<p><button class="btn btn-ghost sm" type="button" id="btn-replier">Réduire la leçon</button></p>' : '') +
+          (x.lu ? '<p class="lecon-repli"><button class="btn sm" type="button" id="btn-replier" aria-expanded="true">' +
+            ic('caret-down', 'ic-20') + '<span>Réduire la leçon</span></button></p>' : '') +
         '</header>' +
         '<div class="lecon-body">' + (skill.lecon || '<p class="muted">Leçon en préparation.</p>') + '</div>' +
         (ouverte
@@ -335,7 +351,10 @@ function vSkill(p){
     if (!corps) return;
     const replie = corps.hasAttribute('data-collapsed');
     if (replie) corps.removeAttribute('data-collapsed'); else corps.setAttribute('data-collapsed', '');
-    bRepl.textContent = replie ? 'Réduire la leçon' : 'Déplier la leçon';
+    bRepl.setAttribute('aria-expanded', replie ? 'true' : 'false');
+    const lib = bRepl.querySelector('span'), use = bRepl.querySelector('use');
+    if (lib) lib.textContent = replie ? 'Réduire la leçon' : 'Déplier la leçon';
+    if (use) use.setAttribute('href', replie ? '#i-caret-down' : '#i-caret-right');
   });
 
   const bFront = $('btn-front');
@@ -355,6 +374,8 @@ function vSkill(p){
     _progSerie(skill);
   });
 
+  window.espacesInsecables(document.querySelector('.lecon-body'));
+  window.espacesInsecables(document.querySelector('.lecon-head .body-l'));
   _progRevelerCta();
   _progToc();
 }
@@ -425,20 +446,21 @@ function _progToc(){
 /* Feuille « Choisir le niveau » : jamais un select posé dans la page. */
 function _progFeuilleNiveau(){
   const opts = [[0, 'Automatique'], [1, 'Découverte'], [2, 'Maîtrise'], [3, 'Expert']];
-  const contenu = '<div class="stack">' + opts.map(o =>
-    '<label class="switch"><input type="radio" name="niv-serie" value="' + o[0] + '"' +
-    (_progNiveau === o[0] ? ' checked' : '') + '><span class="track"><span class="thumb"></span></span>' +
-    '<span class="switch-t">' + o[1] + '</span></label>').join('') +
+  const contenu = '<div class="stack">' +
+    '<div class="segment grille" role="radiogroup" aria-label="Niveau de la série">' + opts.map(o =>
+    '<label><input type="radio" name="niv-serie" value="' + o[0] + '"' +
+    (_progNiveau === o[0] ? ' checked' : '') + '><span>' + o[1] + '</span></label>').join('') + '</div>' +
     '<p class="small muted">En automatique, le niveau monte après trois bonnes réponses d’affilée et redescend après une erreur.</p></div>';
+  let choisi = _progNiveau;
   ouvrirFeuille({
     titre: 'Le niveau de la série',
     contenu: contenu,
     boutons: [{label: 'Annuler'}, {label: 'Garder ce niveau', style: 'primaire'}],
     apres(dlg){
       dlg.querySelectorAll('[name="niv-serie"]').forEach(r =>
-        r.addEventListener('change', () => { _progNiveau = Number(r.value) || 0; }));
+        r.addEventListener('change', () => { choisi = Number(r.value) || 0; }));
     }
-  });
+  }).then(i => { if (i === 1) _progNiveau = choisi; });
 }
 
 /* ============================================================
@@ -512,7 +534,7 @@ function _progFinSerie(skill, res){
       '<div class="figures">' +
         '<div class="figure"><b>' + esc(nm.libelle) + '</b><span class="k">État</span></div>' +
         '<div class="figure"><b>' + _progMetres(skill.id) + '</b><span class="k">Sur cette marche</span></div>' +
-        '<div class="figure"><b>' + nf(altitude(), 'm') + '</b><span class="k">Altitude</span></div>' +
+        '<div class="figure"><b>' + fv(altitude()) + '<small class="unit">m</small></b><span class="k">Altitude</span></div>' +
       '</div>' +
       '<div class="row">' +
         '<button class="btn-primary" type="button" id="fin-encore">Relancer une série</button>' +

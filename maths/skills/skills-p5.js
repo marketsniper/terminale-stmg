@@ -5,8 +5,10 @@
 // ============================================================
 (function(){
 
-function fr(n){ return String(n).replace(".", ","); }
+function fr(n){ return String(n).replace(".", ",").replace("-", "−"); }
 function r2(x){ return Math.round(x*100)/100; }
+// Nombre relatif affiché avec le vrai signe moins.
+function sg(n){ return String(n).replace("-", "−"); }
 
 // ------------------------------------------------------------
 // p5-01 — Fonctions polynômes de degré 3
@@ -113,7 +115,7 @@ SKILLS.push({
         a: String(M),
         accept: null,
         choix: null,
-        expl: "f(−" + aa3 + ") = (−" + aa3 + ")³ − " + k33 + " × (−" + aa3 + ")" + cTxt + " = −" + cube + " + " + (3*cube) + cTxt + " = " + M + "."
+        expl: "f(−" + aa3 + ") = (−" + aa3 + ")³ − " + k33 + " × (−" + aa3 + ")" + cTxt + " = −" + cube + " + " + (3*cube) + cTxt + " = " + sg(M) + "."
       };
     }
     var sc = R.pick(['haut', 'bas', 'entre', 'egalM', 'egalm']);
@@ -124,11 +126,11 @@ SKILLS.push({
     else if (sc === 'egalM'){ k = M; nb = '2'; }
     else { k = m; nb = '2'; }
     return {
-      q: ftxt + "\nMaximum local : " + M + " (en x = −" + aa3 + "). Minimum local : " + m + " (en x = " + aa3 + ").\nCombien de solutions possède l'équation f(x) = " + k + " ?",
+      q: ftxt + "\nMaximum local : " + sg(M) + " (en x = −" + aa3 + "). Minimum local : " + sg(m) + " (en x = " + aa3 + ").\nCombien de solutions possède l'équation f(x) = " + sg(k) + " ?",
       a: nb,
       accept: null,
       choix: ['0', '1', '2', '3'],
-      expl: "La droite horizontale y = k coupe la courbe 3 fois si k est strictement entre " + m + " et " + M + ", 2 fois si k est égal à l'un des deux, 1 fois sinon. Ici k = " + k + " → " + nb + " solution(s)."
+      expl: "La droite horizontale y = k coupe la courbe 3 fois si k est strictement entre " + sg(m) + " et " + sg(M) + ", 2 fois si k est égal à l'un des deux, 1 fois sinon. Ici k = " + sg(k) + " → " + nb + " solution(s)."
     };
   }
 });
@@ -156,6 +158,7 @@ SKILLS.push({
 <p><strong>Question seuil :</strong> « au bout de combien d'années dépasse-t-on 2 600 € ? » On lit le tableau : <mark>au bout de 3 ans</mark>.</p>
 </div>
 <div class="formule"><p>Augmenter de t % = multiplier par (1 + t/100). Diminuer de t % = multiplier par (1 − t/100). Exemple : perdre 10 % = × 0,9.</p></div>
+<p><strong>Un terme ou un total ?</strong> « Combien vaut le capital au bout de 5 ans ? » demande <strong>un terme</strong>. « Combien a-t-on versé en tout en 5 ans ? » demande <strong>la somme</strong> des 5 termes. Suite arithmétique : nombre de termes × (premier + dernier) ÷ 2. Suite géométrique : premier terme × (1 − q<sup>nombre&nbsp;de&nbsp;termes</sup>) ÷ (1 − q). La fiche « Sommes de suites » détaille les deux formules.</p>
 <div class="box piege"><p class="box-t">Piège</p><p>Une machine qui perd 10 % par an ne perd pas 10 % de son prix de départ chaque année : elle perd 10 % de sa valeur de <strong>l'année précédente</strong>. C'est une multiplication par 0,9, répétée.</p></div>
 <div class="box retenir"><p class="box-t">À retenir</p><p>On ajoute → arithmétique. On multiplie → géométrique. Un pourcentage répété, c'est toujours géométrique.</p></div>
 <div class="box astuce"><p class="box-t">Astuce</p><p>Pour les questions « au bout de combien d'années… », avance simplement année par année en notant les valeurs : c'est rapide, sûr, et c'est exactement ce qu'on attend de toi.</p></div>`,
@@ -203,7 +206,7 @@ SKILLS.push({
       var mm = R.pick([20, 50, 100]);
       var n = R.int(2,6);
       return {
-        q: "Léo place " + C + " € (sans intérêts) et ajoute " + mm + " € à la fin de chaque année.\nQuelle somme (en €) possède-t-il au bout de " + n + " années ?",
+        q: "Léo place " + C + " € (sans intérêts) et ajoute " + mm + " € à la fin de chaque année.\nQuel montant (en €) possède-t-il au bout de " + n + " années ?",
         a: String(C + n*mm),
         accept: null,
         choix: null,
@@ -211,7 +214,21 @@ SKILLS.push({
       };
     }
     if (level === 2){
-      var t2 = R.pick(['geo-pos', 'geo-neg', 'formule']);
+      var t2 = R.pick(['geo-pos', 'geo-neg', 'formule', 'cumul']);
+      if (t2 === 'cumul'){
+        var V1c = R.pick([400, 500, 600, 800]);
+        var mc = R.pick([50, 100]);
+        var nc = R.pick([5, 6, 8, 10]);
+        var dc = V1c + (nc - 1)*mc;
+        var Sc = nc*(V1c + dc)/2;
+        return {
+          q: "Inès verse " + V1c + " € sur un compte la première année, puis chaque année " + mc + " € de plus que l'année précédente.\nCombien a-t-elle versé en tout en " + nc + " ans (en €) ?",
+          a: String(Sc),
+          accept: null,
+          choix: null,
+          expl: "« En tout » : on additionne les " + nc + " versements, qui forment une suite arithmétique de raison " + mc + ". Dernier versement : " + V1c + " + " + (nc - 1) + " × " + mc + " = " + dc + " €. Total = " + nc + " × (" + V1c + " + " + dc + ") ÷ 2 = " + Sc + " €."
+        };
+      }
       if (t2 === 'geo-pos'){
         var tx2 = R.pick([5, 10]);
         var n2 = tx2 === 5 ? 2 : R.pick([2, 3]);
@@ -250,7 +267,21 @@ SKILLS.push({
       };
     }
     // level 3
-    var t3 = R.pick(['seuil-geo', 'seuil-dep', 'seuil-arith']);
+    var t3 = R.pick(['seuil-geo', 'seuil-dep', 'seuil-arith', 'cumul-geo']);
+    if (t3 === 'cumul-geo'){
+      var L1 = R.pick([5000, 6000, 8000, 10000]);
+      var tl = R.pick([2, 5, 10]);
+      var ql = 1 + tl/100;
+      var l2 = r2(L1*ql), l3 = r2(L1*ql*ql);
+      var Sl = r2(L1 + l2 + l3);
+      return {
+        q: "Un locataire paie " + L1 + " € de loyer la première année, puis le loyer annuel augmente de " + tl + " % par an.\nCombien aura-t-il payé au total sur les 3 premières années (en €) ?",
+        a: String(Sl),
+        accept: null,
+        choix: null,
+        expl: "« Au total » : on additionne les 3 loyers annuels, qui forment une suite géométrique de raison " + fr(ql) + ". " + L1 + " + " + fr(l2) + " + " + fr(l3) + " = " + fr(Sl) + " €. Avec la formule : " + L1 + " × (1 − " + fr(ql) + "³) ÷ (1 − " + fr(ql) + ") = " + fr(Sl) + " €."
+      };
+    }
     if (t3 === 'seuil-geo'){
       var S = R.pick([1300, 1500, 1600, 1750, 1900, 2100]);
       var nb = 0, val = 1000;
@@ -326,6 +357,7 @@ SKILLS.push({
           a: String(prod/100),
           accept: null,
           choix: null,
+          pct: true,
           expl: "On multiplie le long du chemin : 0," + pi + " × 0," + qi + " = " + fr(prod/100) + "."
         };
       }
@@ -336,6 +368,7 @@ SKILLS.push({
           a: String((10 - p2)/10),
           accept: null,
           choix: null,
+          pct: true,
           expl: "P(Ā) = 1 − P(A) = 1 − 0," + p2 + " = " + fr((10 - p2)/10) + "."
         };
       }
@@ -375,6 +408,7 @@ SKILLS.push({
         a: String(num/100),
         accept: null,
         choix: null,
+        pct: true,
         expl: "P(B) = 0," + pi2 + " × 0," + q1 + " + 0," + (10 - pi2) + " × 0," + q2b + " = " + fr(pi2*q1/100) + " + " + fr((10 - pi2)*q2b/100) + " = " + fr(num/100) + "."
       };
     }
@@ -388,6 +422,7 @@ SKILLS.push({
         a: String(qi3/10),
         accept: null,
         choix: null,
+        pct: true,
         expl: "P_A(B) = P(A ∩ B) ÷ P(A) = " + fr(inter) + " ÷ 0," + pi3 + " = " + fr(qi3/10) + "."
       };
     }

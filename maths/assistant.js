@@ -62,6 +62,23 @@ function fournisseur(){
 function iaDispo(){ return !!fournisseur() && enLigne(); }
 const nomFournisseur = f => f === 'groq' ? 'Groq' : f === 'claude' ? 'Claude' : 'Local';
 
+/* ---- évaluations : le Prof se tait jusqu'à la correction ----
+   Test de la semaine, DS, épreuve blanche SESAME / ACCÈS, bilan d'altitude et test de camp.
+   Signaux déjà émis par l'app, lus à chaque demande (rien n'est mis en cache) :
+   - window.MODE_EXAMEN, posé par l'épreuve blanche et par le bilan ;
+   - window.vueCourante {v, enCours}, pour le test et le DS qui ne posent pas MODE_EXAMEN.
+   La règle vaut pour les deux moteurs : ni réponse locale, ni appel au modèle. */
+const VUES_EVAL = ['test', 'ds', 'epreuveRun', 'bilan'];
+function enEvaluation(){
+  try {
+    if (window.MODE_EXAMEN === true) return true;
+    const vc = window.vueCourante;
+    return !!(vc && vc.enCours && VUES_EVAL.indexOf(vc.v) >= 0);
+  } catch(e){ return false; }
+}
+const MSG_EVAL = 'Le Prof revient à la correction.';
+const HTML_EVAL = '<p>Évaluation en cours : je me tais jusqu\'à la correction. On reprendra chaque question ensemble juste après.</p>';
+
 /* ============================================================
    1. MOTEUR LOCAL : calcul, résolution, recherche dans le cours
    ============================================================ */
@@ -331,7 +348,7 @@ function localCours(q, ctx){
     '<li>un pourcentage : <em>« 15 % de 240 »</em></li>' +
     '<li>simplifier une fraction : <em>« simplifie 36/48 »</em></li>' +
     '<li>expliquer l\'exercice affiché : <em>« explique »</em></li>' +
-    '<li>chercher une notion dans tes 52 leçons et tes 25 techniques</li>' +
+    '<li>chercher une notion dans tes ' + ((window.SKILLS || []).length || 53) + ' leçons et tes 25 techniques</li>' +
     '</ul>' + sansCleHtml();
 }
 /* Invitation discrète à ajouter une clé, seulement quand il n'y en a pas. */
@@ -443,7 +460,10 @@ function etapesDe(ex){
 /* Réponse locale d'une chip, garantie sans appel réseau (S1 : moins de 50 ms). */
 function reponseLocale(chip, ctx){
   const c = ctx || ctxCourant();
+  if (enEvaluation()) return HTML_EVAL;
   if (chip === 'etape'){
+    /* Exercice en cours, pas encore de réponse : la méthode, jamais le corrigé (ex.expl contient le résultat). */
+    if (c.ex && !c.repondu) return localCours('explique', c);
     const e = etapesDe(c.ex);
     if (e) return '<p class="k">Étape par étape</p>' + e;
     if (c.ex && c.ex.a && c.repondu)
@@ -793,6 +813,7 @@ window.ASSIST_CONFIG = {
    5. PANNEAU (DESIGN-SPEC §6.28)
    ============================================================ */
 let panneau = null, corps = null, champ = null, zoneChips = null, ligneCtx = null;
+let filAuBas = true;                // le fil est lu jusqu'en bas : il y est recalé quand sa hauteur change
 let histoire = [];                 // [{role, content}] persisté dans localStorage
 let occupe = false;
 let declencheur = null;            // bouton qui a ouvert le panneau : le focus lui revient
@@ -841,6 +862,18 @@ function construire(){
   hote.appendChild(panneau);
 
   corps = panneau.querySelector('#assist-body');
+  /* Le fil lu jusqu'en bas y reste quand sa hauteur change (clavier, feuille qui se replie, champ qui grandit).
+     Seul un défilement vers le haut fait par l'élève le décroche. */
+  let dernierHaut = 0;
+  corps.addEventListener('scroll', () => {
+    if (corps.scrollHeight - corps.scrollTop - corps.clientHeight < 24) filAuBas = true;
+    else if (corps.scrollTop < dernierHaut - 1) filAuBas = false;
+    dernierHaut = corps.scrollTop;
+  }, {passive: true});
+  try {
+    if (typeof ResizeObserver === 'function')
+      new ResizeObserver(() => { if (filAuBas) corps.scrollTop = corps.scrollHeight; }).observe(corps);
+  } catch(e){}
   champ = panneau.querySelector('#assist-in');
   zoneChips = panneau.querySelector('#assist-chips');
   ligneCtx = panneau.querySelector('#assist-ctx');
@@ -995,10 +1028,27 @@ function majViewport(){
   if (!vv || !panneau) return;
   document.documentElement.style.setProperty('--vv', Math.round(vv.height) + 'px');
   if (!surBureau()) panneau.style.maxHeight = 'calc(var(--vv) - 16px)';
+  /* Clavier ouvert sur un petit écran : la ligne de contexte et les suggestions s'effacent,
+     pour garder au moins 200 px de fil au-dessus du champ (DESIGN-SPEC §6.28). */
+  panneau.toggleAttribute('data-serre', !surBureau() && vv.height < 560);
+  /* Le fil était lu jusqu'en bas : il y reste quand le clavier réduit la hauteur. */
+  if (filAuBas && corps) corps.scrollTop = corps.scrollHeight;
 }
 
 /* ---- ouverture et fermeture ---- */
+/* Évaluation en cours : rien ne s'ouvre, un toast dit pourquoi. Renvoie true si la demande est refusée. */
+let dernierRefus = 0;               // un seul toast par demande, même si elle passe par deux portes
+function refuserEnEvaluation(){
+  if (!enEvaluation()) return false;
+  if (panneau && panneau.open) fermer();
+  const t = Date.now();
+  if (t - dernierRefus < 3500) return true;
+  dernierRefus = t;
+  try { if (typeof toast === 'function') toast(MSG_EVAL, {tone: 'info', icon: 'graduation-cap'}); else dire(MSG_EVAL); } catch(e){}
+  return true;
+}
 function ouvrir(){
+  if (refuserEnEvaluation()) return;
   construire();
   majMode(); majLigneCtx(); majChips();
   if (panneau.open){ if (champ) try { champ.focus(); } catch(e){} return; }
@@ -1023,6 +1073,7 @@ function ouvrir(){
       window.visualViewport.removeEventListener('resize', majViewport);
       window.visualViewport.removeEventListener('scroll', majViewport);
       panneau.style.maxHeight = '';
+      panneau.removeAttribute('data-serre');
     });
   }
   plusTard(80, () => { if (panneau && panneau.open && champ) try { champ.focus(); } catch(e){} });
@@ -1033,9 +1084,12 @@ function fermer(){
   ecoutesFermeture = [];
   try { panneau.close(); } catch(e){ panneau.removeAttribute('open'); }
   majEtatBoutons(false);
-  const cible = declencheur && document.contains(declencheur) && !declencheur.hidden
-    ? declencheur
-    : (document.getElementById('assist-fab') && !document.getElementById('assist-fab').hidden
+  /* Le bouton flottant n'existe plus en parcours : on vise un bouton réellement affiché. */
+  const affiche = n => !!(n && document.contains(n) && !n.hidden && n.getClientRects().length);
+  /* Sur iPhone, un tap ne donne pas le focus au bouton : le déclencheur relevé est alors la page. */
+  if (champ && document.activeElement === champ) try { champ.blur(); } catch(e){}
+  const cible = affiche(declencheur) && declencheur !== document.body ? declencheur
+    : (affiche(document.getElementById('assist-fab'))
         ? document.getElementById('assist-fab') : document.getElementById('btn-prof-top'));
   if (cible && cible.focus) try { cible.focus(); } catch(e){}
   declencheur = null;
@@ -1075,6 +1129,7 @@ const marque = f => '<p><span class="assist-src chip" data-tone="' +
 /* Chip cliquée, dans la carte de question comme dans le panneau (S1) :
    la réponse locale s'affiche tout de suite, l'IA la remplace ensuite. */
 function jouerChip(id){
+  if (refuserEnEvaluation()) return;
   ouvrir();
   const c = ctxCourant();
   const libelle = LIBELLE_CHIP[id] || String(id);
@@ -1098,6 +1153,7 @@ function questionDeChip(id, c){
 function poser(texte){
   const q = String(texte || '').trim();
   if (!q) return;
+  if (refuserEnEvaluation()) return;
   ouvrir();
   if (champ) champ.value = q;
   envoyer();
@@ -1110,6 +1166,8 @@ async function envoyer(){
   champ.value = ''; champ.style.height = 'auto';
   bruit('click');
   bulle('moi', '<p>' + ech(q) + '</p>');
+  /* Évaluation en cours : aucun des deux moteurs ne répond, même au calcul. */
+  if (enEvaluation()){ bulle('bot', HTML_EVAL); majChips(); return; }
   const c = ctxCourant();
 
   /* 1. Calcul exact : le moteur local est instantané, gratuit et sûr,
@@ -1142,6 +1200,7 @@ async function envoyer(){
 async function streamer(q, c, cible, secours){
   const f = fournisseur();
   if (!f || !enLigne()) return;
+  if (enEvaluation()){ if (cible) cible.innerHTML = HTML_EVAL; return; }
   occuper(true); majMode();
   let acc = '';
   try {
@@ -1184,6 +1243,83 @@ async function streamer(q, c, cible, secours){
 }
 
 /* ============================================================
+   6 bis. BOUTONS DU PROF : disponibilité et placement
+   ============================================================ */
+/* body[data-prof] dit au CSS si le Prof est joignable :
+   « pause » pendant une évaluation (plus aucun bouton, panneau refermé),
+   « off » quand l'élève a coupé le bouton dans Réglages,
+   « correction » sur l'écran de résultat d'une évaluation (le bouton d'en-tête revient, même sur téléphone),
+   absent sinon. */
+function majDispo(){
+  const b = document.body;
+  if (!b) return;
+  let etat = '';
+  if (enEvaluation()) etat = 'pause';
+  else {
+    try { if (window.S && S.prefs && S.prefs.prof === false) etat = 'off'; } catch(e){}
+    try {
+      const vc = window.vueCourante;
+      if (!etat && b.dataset.ctx === 'plein' && vc && VUES_EVAL.indexOf(vc.v) >= 0) etat = 'correction';
+    } catch(e){}
+  }
+  if (etat){ if (b.dataset.prof !== etat) b.dataset.prof = etat; }
+  else if (b.hasAttribute('data-prof')) b.removeAttribute('data-prof');
+  if (etat === 'pause' && panneau && panneau.open) fermer();
+}
+
+/* Le bouton flottant ne vit plus qu'en leçon, sous 900 px. Il ne recouvre jamais une commande :
+   il se pose au-dessus de la barre d'action collante (.lecon-cta), et s'efface le temps
+   qu'un bouton, un lien ou un champ de la page passe dessous. */
+const COMMANDES = ['button', 'a[href]', 'input', 'textarea', 'select', 'summary', '[role="button"]']
+  .map(s => '#app ' + s).join(', ');
+let fabPrevu = 0;
+function placerFab(){
+  fabPrevu = 0;
+  const fab = document.getElementById('assist-fab');
+  if (!fab) return;
+  const appliquer = (leve, cede) => {
+    const v = leve ? leve + 'px' : '';
+    if (fab.style.getPropertyValue('--prof-leve') !== v){
+      if (v) fab.style.setProperty('--prof-leve', v); else fab.style.removeProperty('--prof-leve');
+    }
+    if (cede !== fab.hasAttribute('data-cede')){
+      if (cede) fab.setAttribute('data-cede', ''); else fab.removeAttribute('data-cede');
+    }
+  };
+  if (document.body.dataset.ctx !== 'lecon' || fab.hidden || surBureau()){ appliquer(0, false); return; }
+  const r = fab.getBoundingClientRect();
+  if (!r.width){ appliquer(0, false); return; }
+  /* position de repos : le rectangle mesuré, moins le décalage en cours (même en pleine transition) */
+  let dy = 0;
+  try { dy = new DOMMatrixReadOnly(getComputedStyle(fab).transform).m42 || 0; } catch(e){}
+  const haut0 = r.top - dy, bas0 = r.bottom - dy;
+
+  let leve = 0;
+  const barre = document.querySelector('#app .lecon-cta[data-shown]');
+  if (barre){
+    const b = barre.getBoundingClientRect();
+    if (b.height > 0 && b.top < bas0 && b.bottom > haut0) leve = Math.ceil(bas0 - b.top + 4);
+  }
+  const haut = haut0 - leve, bas = bas0 - leve;
+  let cede = false;
+  const cibles = document.querySelectorAll(COMMANDES);
+  for (let i = 0; i < cibles.length && !cede; i++){
+    const n = cibles[i];
+    const e = n.getBoundingClientRect();
+    if (e.width < 1 || e.height < 1) continue;
+    if (e.right <= r.left || e.left >= r.right || e.bottom <= haut || e.top >= bas) continue;
+    if (n.closest('.lecon-cta:not([data-shown])')) continue;            // barre pas encore révélée
+    try { if (n.checkVisibility && !n.checkVisibility({checkOpacity: true, checkVisibilityCSS: true})) continue; } catch(x){}
+    cede = true;
+  }
+  appliquer(leve, cede);
+}
+function prevoirFab(){
+  if (fabPrevu) return;
+  fabPrevu = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame(placerFab) : setTimeout(placerFab, 16);
+}
+
+/* ============================================================
    7. PASSERELLES PUBLIQUES
    ============================================================ */
 /* Ouvre le panneau. Avec un argument : identifiant de chip, ou question libre. */
@@ -1221,6 +1357,24 @@ function amorcer(){
   addEventListener('offline', majMode);
   /* Le contexte change à chaque question : la première ligne et les chips suivent. */
   try { if (typeof window.on === 'function') window.on('question', () => { majLigneCtx(); majChips(); }); } catch(e){}
+
+  /* Disponibilité et placement des boutons : setCtx() (core/ui.js) réécrit body[data-ctx] à chaque écran
+     et à chaque question ; on s'y accroche sans rien lui demander. Le rappel passe en microtâche,
+     donc après que la vue a posé MODE_EXAMEN et vueCourante.enCours, et avant tout affichage. */
+  const suivre = () => { majDispo(); prevoirFab(); };
+  try {
+    new MutationObserver(suivre).observe(document.body, {attributes: true, attributeFilter: ['data-ctx']});
+    const page = document.getElementById('app');
+    if (page) new MutationObserver(() => { if (document.body.dataset.ctx === 'lecon') prevoirFab(); })
+      .observe(page, {childList: true, subtree: true, attributes: true, attributeFilter: ['data-shown', 'hidden', 'data-collapsed', 'open']});
+  } catch(e){}
+  try { if (typeof window.on === 'function') window.on('vue', suivre); } catch(e){}
+  addEventListener('scroll', prevoirFab, {passive: true});
+  addEventListener('resize', prevoirFab);
+  document.addEventListener('transitionend', e => {
+    if (e.target && e.target.classList && e.target.classList.contains('lecon-cta')) prevoirFab();
+  });
+  suivre();
 }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', amorcer);
 else amorcer();

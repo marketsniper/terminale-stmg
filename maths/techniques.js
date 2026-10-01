@@ -2,10 +2,15 @@
 /* Chaque famille : {id, nom, icone, cat, astuce, methode(HTML), gen(R) -> {q,a,expl,choix?,accept?}} */
 (function(){
 
+/* Nombre affiché à la française : virgule décimale et vrai signe moins. */
+function nbFr(x){ return String(x).replace('.', ',').replace('-', '−'); }
+/* Exposant en caractères Unicode (les énoncés sont du texte, pas du HTML). */
+function expo(n){ return String(n).split('').map(c => '⁰¹²³⁴⁵⁶⁷⁸⁹'[c] || c).join(''); }
+
 function tipMult(a, b){
   if (a === 9 || b === 9){ const n = a === 9 ? b : a; return n + ' × 9 = ' + n + ' × 10 − ' + n + ' = ' + (n * 10) + ' − ' + n + ' = ' + (a * b) + '.'; }
   if (a === 11 || b === 11){ const n = a === 11 ? b : a; return n + ' × 11 : ' + n + ' × 10 + ' + n + ' = ' + (n * 10) + ' + ' + n + ' = ' + (a * b) + '.'; }
-  if (a === 5 || b === 5){ const n = a === 5 ? b : a; return n + ' × 5 = (moitié de ' + n + ') × 10 = ' + (n / 2) + ' × 10 = ' + (a * b) + '.'; }
+  if (a === 5 || b === 5){ const n = a === 5 ? b : a; return n + ' × 5 = (moitié de ' + n + ') × 10 = ' + nbFr(n / 2) + ' × 10 = ' + (a * b) + '.'; }
   if (b % 2 === 0) return a + ' × ' + (b / 2) + ' = ' + (a * b / 2) + ', on double → ' + (a * b) + '.';
   if (a % 2 === 0) return b + ' × ' + (a / 2) + ' = ' + (a * b / 2) + ', on double → ' + (a * b) + '.';
   return a + ' × ' + (b - 1) + ' = ' + (a * (b - 1)) + ', puis + ' + a + ' → ' + (a * b) + '.';
@@ -165,11 +170,11 @@ window.CM_FAMS = [
   gen(R){
     const a = R.int(2, 12) * R.pick([1, -1]), b = R.int(2, 12) * R.pick([1, -1]);
     if (Math.random() < .5){
-      const q = '(' + a + ') × (' + b + ')';
+      const q = '(' + nbFr(a) + ') × (' + nbFr(b) + ')';
       return {q: q.replace(/\(([0-9]+)\)/g, '$1'), a: String(a * b), expl: (a * b > 0 ? 'Signes identiques → positif. ' : 'Signes différents → négatif. ') + Math.abs(a) + ' × ' + Math.abs(b) + ' = ' + Math.abs(a * b) + '.'};
     }
     const p = a * b;
-    return {q: '(' + p + ') ÷ (' + a + ')', a: String(b), expl: (b > 0 ? 'Signes identiques → positif. ' : 'Signes différents → négatif. ') + Math.abs(p) + ' ÷ ' + Math.abs(a) + ' = ' + Math.abs(b) + '.'};
+    return {q: ('(' + nbFr(p) + ') ÷ (' + nbFr(a) + ')').replace(/\(([0-9]+)\)/g, '$1'), a: String(b), expl: (b > 0 ? 'Signes identiques → positif. ' : 'Signes différents → négatif. ') + Math.abs(p) + ' ÷ ' + Math.abs(a) + ' = ' + Math.abs(b) + '.'};
   }
 },
 
@@ -277,7 +282,7 @@ window.CM_FAMS = [
 },
 {
   id: 'base', nom: 'Autour d\'un nombre rond', icone: '98', cat: 'Multiplication',
-  astuce: "51 × 49 = 50² − 1² = 2 499. Repère le centre !",
+  astuce: "51 × 49 = 50² − 1² = 2\u202F499. Repère le centre !",
   methode: `<p class="lede">Quand deux nombres sont <mark>à égale distance d'un nombre rond</mark>, leur produit se calcule en une seconde grâce à une identité remarquable.</p>
 <div class="formule">(a − b)(a + b) = a² − b²</div>
 <div class="etapes">
@@ -387,7 +392,7 @@ window.CM_FAMS = [
     const res = base * p / 100;
     const expl = p === 50 ? 'La moitié de ' + base + ' → ' + res + '.'
       : p === 25 ? 'Le quart de ' + base + ' → ' + res + '.'
-      : '10 % de ' + base + ' = ' + (base / 10) + ', donc ' + p + ' % = ' + (p / 10) + ' × ' + (base / 10) + ' = ' + res + '.';
+      : '10 % de ' + base + ' = ' + (base / 10) + ', donc ' + p + ' % = ' + nbFr(p / 10) + ' × ' + (base / 10) + ' = ' + res + '.';
     return {q: p + ' % de ' + base, a: String(res), expl};
   }
 },
@@ -436,8 +441,8 @@ window.CM_FAMS = [
   gen(R){
     const T = [['1/2','0.5','50'],['1/4','0.25','25'],['3/4','0.75','75'],['1/5','0.2','20'],['2/5','0.4','40'],['1/8','0.125','12.5'],['3/8','0.375','37.5'],['1/10','0.1','10'],['1/20','0.05','5'],['3/5','0.6','60'],['7/10','0.7','70'],['5/8','0.625','62.5']];
     const r = R.pick(T), mode = R.int(1, 2);
-    if (mode === 1) return {q: r[0] + ' en pourcentage ? (nombre seul)', a: r[2], expl: r[0] + ' = ' + r[1].replace('.', ',') + ' = ' + r[2] + ' %.'};
-    return {q: r[2] + ' % en écriture décimale ?', a: r[1], accept: [r[0]], expl: r[2] + ' % = ' + r[2] + ' ÷ 100 = ' + r[1].replace('.', ',') + ' (soit ' + r[0] + ').'};
+    if (mode === 1) return {q: r[0] + ' en pourcentage ? (nombre seul)', a: r[2], expl: r[0] + ' = ' + r[1].replace('.', ',') + ' = ' + nbFr(r[2]) + ' %.'};
+    return {q: nbFr(r[2]) + ' % en écriture décimale ?', a: r[1], accept: [r[0]], expl: nbFr(r[2]) + ' % = ' + nbFr(r[2]) + ' ÷ 100 = ' + r[1].replace('.', ',') + ' (soit ' + r[0] + ').'};
   }
 },
 {
@@ -500,13 +505,12 @@ window.CM_FAMS = [
   gen(R){
     const a = R.pick([197, 297, 397, 498, 612, 789, 1980]), b = R.pick([19, 21, 29, 31, 48, 51]);
     const exact = a * b;
-    const mag = Math.pow(10, String(Math.round(exact)).length - 1);
-    const good = Math.round(exact / mag) * mag;
+    /* La bonne réponse est exactement ce que donne la méthode enseignée : chaque facteur arrondi, puis le produit. */
+    const ra = Math.round(a / 100) * 100, rb = Math.round(b / 10) * 10;
+    const good = ra * rb;
     const choix = [good, good * 10, good / 10, good * 2].map(x => String(Math.round(x)));
-    const uniq = [...new Set(choix)];
-    while (uniq.length < 4) uniq.push(String(Math.round(good * (uniq.length + 3))));
-    return {q: 'Environ combien fait ' + a + ' × ' + b + ' ?', a: String(good), choix: uniq.slice(0, 4),
-      expl: 'On arrondit : ≈ ' + Math.round(a / 100) * 100 + ' × ' + Math.round(b / 10) * 10 + ' ≈ ' + good + ' (valeur exacte ' + exact + ').'};
+    return {q: 'Environ combien fait ' + a + ' × ' + b + ' ?', a: String(good), choix: choix,
+      expl: 'On arrondit chaque facteur : ' + a + ' ≈ ' + ra + ' et ' + b + ' ≈ ' + rb + '. Puis ' + ra + ' × ' + rb + ' = ' + good + ' (valeur exacte ' + exact + ').'};
   }
 },
 {
@@ -552,7 +556,7 @@ window.CM_FAMS = [
     const vals = ecarts.map(e => pivot + e);
     const moy = pivot + somme / n;
     return {q: 'Moyenne de ' + vals.join(' ; ') + ' ?', a: String(moy),
-      expl: 'Pivot ' + pivot + ', écarts ' + ecarts.map(e => (e >= 0 ? '+' + e : e)).join(', ') + ' → somme ' + somme + ', ÷ ' + n + ' = ' + (somme / n) + '. Moyenne = ' + pivot + ' + ' + (somme / n) + ' = ' + moy + '.'};
+      expl: 'Pivot ' + pivot + ', écarts ' + ecarts.map(e => (e >= 0 ? '+' + e : nbFr(e))).join(', ') + ' → somme ' + nbFr(somme) + ', ÷ ' + n + ' = ' + nbFr(somme / n) + '. Moyenne = ' + pivot + (somme < 0 ? ' − ' + (-somme / n) : ' + ' + (somme / n)) + ' = ' + moy + '.'};
   }
 },
 {
@@ -571,10 +575,10 @@ window.CM_FAMS = [
 <div class="box retenir"><p class="box-t">À retenir</p><p>Quand tu multiplies des puissances du <mark>même nombre</mark>, tu additionnes les exposants. Jamais on ne multiplie les exposants (sauf pour (a<sup>n</sup>)<sup>p</sup>).</p></div>`,
   gen(R){
     const t = R.int(1, 3);
-    if (t === 1){ const n = R.int(2, 10); return {q: '2^' + n + ' (2 puissance ' + n + ')', a: String(Math.pow(2, n)), expl: 'On double ' + n + ' fois : ' + Math.pow(2, n) + '.'}; }
+    if (t === 1){ const n = R.int(2, 10); return {q: '2' + expo(n) + ' (2 puissance ' + n + ')', a: String(Math.pow(2, n)), expl: 'On double ' + n + ' fois : ' + Math.pow(2, n) + '.'}; }
     if (t === 2){ const n = R.int(11, 20); return {q: n + '²', a: String(n * n), expl: n + ' × ' + n + ' = ' + (n * n) + ' (à connaître par cœur).'}; }
     const a = R.int(2, 5), n = R.int(2, 4), p = R.int(2, 3);
-    return {q: a + '^' + n + ' × ' + a + '^' + p + ' = ' + a + '^ ? (l\'exposant seul)', a: String(n + p), expl: 'Même base : on additionne les exposants, ' + n + ' + ' + p + ' = ' + (n + p) + '.'};
+    return {q: a + expo(n) + ' × ' + a + expo(p) + ' = ' + a + ' puissance combien ? (l\'exposant seul)', a: String(n + p), expl: 'Même base : on additionne les exposants, ' + n + ' + ' + p + ' = ' + (n + p) + '.'};
   }
 }
 

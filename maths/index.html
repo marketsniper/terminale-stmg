@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Maths">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default"><!-- default : iOS dessine sa propre barre d'état et choisit la couleur de l'heure (lisible en Aube comme en Nuit) ; black-translucent imposait une heure blanche sur l'en-tête crème -->
 <script>try{var t=localStorage.getItem('mzs-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t;if(t==='dark'||(!t&&matchMedia('(prefers-color-scheme: dark)').matches))document.getElementById('meta-theme').content='#0C1122';var m=localStorage.getItem('mzs-motion');if(m==='reduit')document.documentElement.dataset.motion=m;}catch(e){}</script>
 <link rel="preload" href="fonts/Fraunces.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/InstrumentSans.woff2" as="font" type="font/woff2" crossorigin>
@@ -19,6 +19,7 @@
 <link rel="stylesheet" href="css/1-socle.css">
 <link rel="stylesheet" href="css/2-composants.css">
 <link rel="stylesheet" href="css/3-vues.css">
+<script>/* Embarquée dans l'app STMG : iframe de même origine, ouvert sur ./maths/?embed=1 dans le cadre #sommet-cadre. Drapeau lu par le CSS et par app.js. Le cadre fait foi si l'adresse a perdu son paramètre (rechargement). Ouverte seule, rien ne change. */try{if(window.parent!==window&&window.parent.location.origin===location.origin&&(/[?&]embed=1(&|$)/.test(location.search)||(window.frameElement&&window.frameElement.parentNode&&window.frameElement.parentNode.id==='sommet-cadre')))document.documentElement.dataset.embed='1';}catch(e){}</script>
 <script>window.SKILLS = []; window.PAPIERS = [];</script>
 <script defer src="techniques.js"></script>
 <script defer src="papier/papier-a.js"></script>
@@ -64,6 +65,7 @@
   <div class="head-row">
     <button class="btn-icon head-back" id="btn-back" type="button" aria-label="Retour" hidden><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-arrow-left"/></svg></button>
     <button class="btn-icon head-quit" id="btn-quit" type="button" aria-label="Quitter" hidden><svg class="ic ic-24" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
+    <button class="btn btn-ghost head-stmg" id="btn-stmg" type="button" data-stmg aria-label="Revenir à l'app STMG" hidden><svg class="ic ic-20" aria-hidden="true" focusable="false"><use href="#i-caret-left"/></svg><span>STMG</span></button>
     <a class="brand" href="#" id="brand" data-v="accueil">De zéro au sommet</a>
     <span class="head-title" id="head-title" hidden></span>
     <nav class="topnav" aria-label="Navigation principale">
