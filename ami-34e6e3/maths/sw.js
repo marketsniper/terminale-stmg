@@ -2,10 +2,10 @@
    Hors-ligne complet, mise à jour annoncée (jamais de skipWaiting silencieux). */
 'use strict';
 
-const CACHE = 'mzs-1de517df11';
+const CACHE = 'mzsa-99769502d3';
 /* Plusieurs apps vivent sur le même domaine (l'app STMG à la racine, celle-ci dans /maths/).
    Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier. */
-const PREFIXE = 'mzs-';
+const PREFIXE = 'mzsa-';
 const PORTEE = new URL('./', self.location).pathname;
 
 const ASSETS = [
@@ -21,7 +21,7 @@ const ASSETS = [
   './app.js', './techniques.js', './assistant.js',
   './papier/papier-a.js', './papier/papier-b.js', './papier/papier-c.js', './papier/papier-d.js',
   './skills/skills-p1.js', './skills/skills-p2.js', './skills/skills-p3.js', './skills/skills-p4.js',
-  './skills/skills-p4b.js', './skills/skills-p5.js', './skills/skills-p6.js', './skills/skills-p7.js',
+  './skills/skills-p4b.js', './skills/skills-p5.js', './skills/skills-ect.js', './skills/skills-p7.js',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'
 ];
 

@@ -1,0 +1,26 @@
+{
+  "id": "/terminale-stmg/ami-34e6e3/maths/",
+  "name": "Maths · De zéro au sommet",
+  "short_name": "Maths",
+  "description": "De la 6e à la terminale STMG, puis la première année de prépa ECT : séance guidée, rappels espacés, coach.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "categories": ["education"],
+  "background_color": "#0C1122",
+  "theme_color": "#0C1122",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Séance du jour", "short_name": "Séance", "url": "./?go=seance", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Calcul mental", "short_name": "Calcul", "url": "./?go=cm", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Cahier d'erreurs", "short_name": "Cahier", "url": "./?go=erreurs", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+  ]
+}
