@@ -190,8 +190,19 @@ function record(id, ok){
 }
 /* Taux de réussite sur les 10 dernières réponses, ou null si la compétence est neuve. */
 function tauxRecent(id){ const h = st(id).hist.slice(-_pedSeuils.last); return h.length ? h.reduce((a, b) => a + b, 0) / h.length : null; }
-/* Une phase est ouverte quand toutes les compétences de la précédente sont acquises. */
-function phaseUnlocked(p){ if (p === 1) return true; const prev = SKILLS.filter(s => s.phase === p - 1); return prev.length > 0 && prev.every(s => st(s.id).mastered); }
+/* Une phase est ouverte quand toutes les compétences de la précédente sont acquises.
+   Phases « libres » (window.MZS_PROFIL.phasesLibres, posé par une copie de l'app, ex. la phase Prépa ECT de la copie
+   du camarade d'Ilan) : ouvertes d'emblée pour prendre de l'avance, et ignorées quand on cherche « la précédente ».
+   Sans profil (app d'Ilan), rien ne change. */
+function _pedLibres(){ try { const l = window.MZS_PROFIL && window.MZS_PROFIL.phasesLibres; return Array.isArray(l) ? l : []; } catch(e){ return []; } }
+function phaseUnlocked(p){
+  const libres = _pedLibres();
+  if (p === 1 || libres.indexOf(p) >= 0) return true;
+  let q = p - 1;
+  for (; q > 1 && libres.indexOf(q) >= 0; q--);
+  const prev = SKILLS.filter(s => s.phase === q);
+  return prev.length > 0 && prev.every(s => st(s.id).mastered);
+}
 /* Prochaine compétence à travailler : la première non acquise d'une phase ouverte. */
 function frontier(){ return SKILLS.find(s => !st(s.id).mastered && phaseUnlocked(s.phase)) || null; }
 /* Compétences à réviser aujourd'hui : les fragiles d'abord, puis le plus grand retard. */
