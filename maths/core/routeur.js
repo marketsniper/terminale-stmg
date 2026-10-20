@@ -107,7 +107,8 @@ async function nav(v, params){
     const copie = vc.v === 'ds' || vc.v === 'epreuveRun' || vc.v === 'albertRun';       // correction différée : rien n'est compté avant la fin
     const i = await ouvrirFeuille({
       titre: 'Quitter ' + (_rtSortie[vc.v] || 'la série') + ' ?',
-      texte: copie ? 'Ta copie ne sera pas corrigée : aucune réponse n\'est comptée.'
+      texte: vc.v === 'albertEntretien' ? 'L\'entretien ne sera pas évalué : rien n\'est enregistré.'
+           : copie ? 'Ta copie ne sera pas corrigée : aucune réponse n\'est comptée.'
                    : 'Ton étape en cours est perdue, les réponses déjà données sont gardées.',
       boutons: [{label: 'Rester'}, {label: 'Quitter', style: 'danger'}]
     });

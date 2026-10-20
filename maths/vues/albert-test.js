@@ -95,7 +95,7 @@ function _altCourbe(tests){
 function _altTableau(tests){
   if (!tests.length) return '';
   return '<details class="alt-histo"><summary>Historique complet (' + tests.length + (tests.length > 1 ? ' tests' : ' test') + ')</summary>' +
-    '<div class="tblwrap"><table class="tbl"><thead><tr><th>Date</th><th>Justes</th><th>Points</th><th>Niveau</th><th>Palier max</th></tr></thead><tbody>' +
+    '<div class="tblwrap"><table class="tbl"><thead><tr><th>Date</th><th>Justes</th><th>Points</th><th>Niveau</th><th>Palier</th></tr></thead><tbody>' +
     tests.slice().reverse().map(t => '<tr><td>' + esc(_altJour(t.date)) + (t.interrompu ? ' <span class="small muted">interrompu</span>' : '') + '</td>' +
       '<td class="num">' + t.ok + ' / ' + t.n + '</td><td class="num">' + (t.points != null ? t.points : '–') + '</td>' +
       '<td class="num">' + esc(fv(t.niveau, 1)) + '</td><td class="num">' + (t.palierMax || '–') + '</td></tr>').join('') +
@@ -109,7 +109,7 @@ function _altJuryHtml(test){
   const N = S.albert.notes || {};
   return '<section class="coach-sec alt-jury"><p class="overline">Le jury peut te les reposer</p>' +
     '<p class="small muted">À l\'entretien, le jury peut revenir sur certaines des questions les plus difficiles de ton test pour vérifier ton raisonnement. ' +
-      'Voici les 3 de plus haut palier : explique ta démarche en 3 phrases, à voix haute puis par écrit, avant de comparer.</p>' +
+      'Voici celles de plus haut palier : explique ta démarche en 3 phrases, à voix haute puis par écrit, avant de comparer.</p>' +
     l.map((j, i) => {
       const cle = 'jury-' + test.id + '-' + i, txt = N[cle] || '', sk = _altSkill(j.sid);
       return '<article class="card card-muted alt-jq">' +

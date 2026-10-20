@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Maths · De zéro au sommet</title>
-<meta name="description" content="Programme complet de remise à niveau en mathématiques : de la 6e à la terminale STMG et aux concours SESAME/ACCÈS, avec coach adaptatif, exercices infinis et suivi de progression.">
+<meta name="description" content="Programme complet de remise à niveau en mathématiques : de la 6e à la terminale STMG et aux concours SESAME/ACCÈS, avec coach adaptatif, exercices infinis, suivi de progression et préparation à l'admission d'Albert School.">
 <meta id="meta-theme" name="theme-color" content="#F5F2EB">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -20,7 +20,7 @@
 <link rel="stylesheet" href="css/2-composants.css">
 <link rel="stylesheet" href="css/3-vues.css">
 <script>/* Embarquée dans l'app STMG : iframe de même origine, ouvert sur ./maths/?embed=1 dans le cadre #sommet-cadre. Drapeau lu par le CSS et par app.js. Le cadre fait foi si l'adresse a perdu son paramètre (rechargement). Ouverte seule, rien ne change. */try{if(window.parent!==window&&window.parent.location.origin===location.origin&&(/[?&]embed=1(&|$)/.test(location.search)||(window.frameElement&&window.frameElement.parentNode&&window.frameElement.parentNode.id==='sommet-cadre')))document.documentElement.dataset.embed='1';}catch(e){}</script>
-<script>window.SKILLS = []; window.PAPIERS = [];</script>
+<script>window.SKILLS = []; window.PAPIERS = []; window.ALBERT_SKILLS = [];</script>
 <script defer src="techniques.js"></script>
 <script defer src="papier/papier-a.js"></script>
 <script defer src="papier/papier-b.js"></script>
@@ -34,6 +34,9 @@
 <script defer src="skills/skills-p5.js"></script>
 <script defer src="skills/skills-p6.js"></script>
 <script defer src="skills/skills-p7.js"></script>
+<!-- Objectif Albert School : piste hors Sentier (window.ALBERT_SKILLS) ; d'autres skills/skills-albert-*.js se placent ici, avant core/base.js -->
+<script defer src="skills/skills-albert.js"></script>
+<script defer src="albert/albert-donnees.js"></script>
 <script defer src="core/base.js"></script>
 <script defer src="core/etat.js"></script>
 <script defer src="core/theme.js"></script>
@@ -54,6 +57,9 @@
 <script defer src="vues/papier.js"></script>
 <script defer src="vues/reglages.js"></script>
 <script defer src="vues/onboarding.js"></script>
+<script defer src="vues/albert.js"></script>
+<script defer src="vues/albert-test.js"></script>
+<script defer src="vues/albert-oral.js"></script>
 <script defer src="app.js"></script>
 <script defer src="assistant.js"></script>
 </head>

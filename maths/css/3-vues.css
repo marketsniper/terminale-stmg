@@ -1701,6 +1701,134 @@ html[data-presentation] .head{ top:32px }
   font-variant-numeric:tabular-nums lining-nums;
 }
 
+/* 7.22 · Objectif Albert (vues/albert.js, albert-test.js, albert-oral.js)
+   Aucun nouveau jeton : texte en jetons *-text / ink, remplissages en jetons existants. */
+.view-albert{ gap:var(--s-6) }
+.view-albert > header > h1{ margin:0 }
+.view-albert > header > .overline{ margin:0 0 var(--s-2) }
+.alb-carte h2{ margin:0 }
+.alb-tete{ display:flex; flex-direction:column; gap:var(--s-4) }
+.alb-tete > .small{ margin:0 }
+.alb-suite{ display:flex; flex-direction:column; gap:var(--s-2) }
+.alb-suite > p{ margin:0 }
+.alb-txt{ min-height:6rem; padding:var(--s-3) var(--s-4); line-height:1.5; resize:vertical; font-family:var(--font-text) }
+.alb-theme{ display:flex; flex-direction:column; gap:var(--s-2) }
+.alb-theme + .alb-theme{ margin-top:var(--s-3) }
+.alb-theme > h3{ margin:0; font-size:1rem; display:flex; align-items:baseline; gap:var(--s-2) }
+.alb-liste{ display:flex; flex-direction:column; gap:var(--s-2) }
+.alb-comp{ display:flex; align-items:center; justify-content:space-between; gap:var(--s-3); min-height:52px; padding-block:var(--s-3) }
+.alb-comp .label{ color:var(--ink); min-width:0 }
+.alb-comp .chip{ flex:none; white-space:nowrap }
+.alb-fait{ margin:0 }
+.alb-fait + .alb-fait{ margin-top:var(--s-3) }
+.alb-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-1) var(--s-3) }
+.alb-src a{ color:var(--glacier-text); text-decoration:underline; text-underline-offset:2px }
+.alb-conf{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-2) }
+.alb-conf .small{ color:var(--warn-text) }
+.alb-plus > summary{ color:var(--ink-2) }
+.alb-plus[open] > summary{ margin-bottom:var(--s-3) }
+.alb-cal{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column }
+.alb-cal-l{ display:grid; grid-template-columns:4.75rem minmax(0, 1fr); gap:var(--s-3); padding:var(--s-3) 0; border-bottom:1px solid var(--line) }
+.alb-cal-l:last-child{ border-bottom:0 }
+.alb-cal-l[data-passe]{ opacity:.55 }
+.alb-cal-d{ display:flex; flex-direction:column; gap:2px; color:var(--ink) }
+.alb-cal-d .small{ color:var(--muted) }
+.alb-cal-t p{ margin:0 0 var(--s-1) }
+.alb-cal-t > p:last-child{ margin-bottom:0 }
+.alb-cal-t .label{ color:var(--ink) }
+.alb-fil{ display:flex; flex-direction:column; gap:var(--s-3) }
+.alb-fil .assist-msg{ max-width:min(88%, 560px) }
+/* Leçon de la piste : sans sommaire (moins de 3 repères), la colonne de lecture prend toute la largeur. */
+.alb-lecon .toc[hidden]{ display:none }
+.alb-lecon .lecon-grid:has(> .toc[hidden]){ grid-template-columns:minmax(0, 1fr) }
+
+/* Test blanc : règles, courbe du niveau, correction, questions du jury. */
+.alt-regles{ list-style:disc; padding-left:1.25em; margin:0; display:flex; flex-direction:column; gap:var(--s-2); color:var(--ink-2) }
+.alt-courbe{ margin:0; display:flex; flex-direction:column; gap:var(--s-2) }
+.alt-courbe figcaption{ margin:0 }
+.alt-courbe-plot{
+  position:relative;
+  display:flex;
+  align-items:flex-end;
+  gap:2px;
+  height:96px;
+  border-bottom:1px solid var(--line-strong);
+}
+.alt-courbe-bar{
+  flex:1 1 0;
+  min-width:3px;
+  max-width:28px;
+  height:calc(var(--h, 0) * 1%);
+  min-height:2px;
+  background:var(--accent-line);
+  border-radius:4px 4px 0 0;
+}
+.alt-courbe-bar[data-interrompu]{ background:var(--muted) }
+.alt-courbe-repere{ position:absolute; left:0; right:0; bottom:70%; border-top:1px dashed var(--line-strong); pointer-events:none }
+.alt-histo .tblwrap{ margin:var(--s-3) 0 0 }
+.alt-histo td{ white-space:nowrap }
+.alt-histo td .small{ display:block }
+.alt-corr .err .rep{ flex-wrap:wrap; column-gap:var(--s-2) }
+.alt-corr .err .meta .chip{ flex:none }
+.alt-jury .alt-jq{ display:flex; flex-direction:column; gap:var(--s-3) }
+.alt-jq > p{ margin:0 }
+.alt-enonce{ color:var(--ink); font-weight:600; white-space:pre-line }
+.alt-jq .box{ margin:0 }
+
+/* Oral : préparation par volet, pitch, entretien blanc. */
+#alo-volet{ display:flex; flex-direction:column; gap:var(--s-4); margin-top:var(--s-4) }
+#alo-volet > p{ margin:0 }
+.alo-qs{ display:flex; flex-direction:column }
+.alo-q{ border-bottom:1px solid var(--line) }
+.alo-q > summary{ display:flex; flex-wrap:wrap; align-items:center; gap:var(--s-2); color:var(--ink) }
+.alo-q-corps{ display:flex; flex-direction:column; gap:var(--s-3); padding:0 0 var(--s-4) }
+.alo-q-corps > p{ margin:0 }
+.alo-q-corps .box{ margin:0 }
+.alo-liste{ list-style:disc; padding-left:1.25em; margin:.25em 0 }
+.alo-liste li{ margin:.15em 0 }
+.alo-bt{ display:flex; flex-direction:column; gap:var(--s-3) }
+.alo-bt > h2,
+.alo-bt > p{ margin:0 }
+.alo-bt-q{ font-size:1.125rem; line-height:1.35 }
+.alo-bt-choix{ align-items:flex-end }
+.alo-bt-choix .field{ min-width:min(100%, 220px) }
+#alo-bt-res{ display:flex; flex-direction:column; gap:var(--s-3) }
+#alo-bt-res .box{ margin:0 }
+.alo-pitch{ display:flex; flex-direction:column; gap:var(--s-2) }
+.alo-pitch > p{ margin:0 }
+.alo-pitch-t{ font-size:2.25rem; line-height:1.1; color:var(--ink) }
+.alo-pitch-t.alo-depasse{ color:var(--ko-text) }
+.alo-pitch .pbar i{ width:0 }
+.alo-run{ gap:var(--s-4) }
+.alo-tete{ display:flex; flex-direction:column; gap:var(--s-3) }
+.alo-tete > p{ margin:0; gap:var(--s-2) var(--s-3) }
+.alo-voix{ display:inline-flex; align-items:center; gap:var(--s-2); min-height:44px; cursor:pointer }
+.alo-voix input{ width:20px; height:20px; accent-color:var(--ok-text) }
+.alo-qui{ margin:0 0 .25em; font-size:.75rem; font-weight:600; letter-spacing:.06em; text-transform:uppercase; opacity:.75 }
+.alo-note{ margin:0; text-align:center }
+.alo-saisie{
+  position:sticky;
+  bottom:0;
+  z-index:var(--z-sticky);
+  display:flex;
+  flex-direction:column;
+  gap:var(--s-2);
+  padding:var(--s-3) 0 calc(var(--s-3) + env(safe-area-inset-bottom, 0px));
+  background:var(--bg);
+  border-top:1px solid var(--line);
+}
+.alo-saisie .assist-row textarea{ min-height:5.5rem; max-height:40vh }
+.alo-actions{ justify-content:space-between }
+.alo-auto{ display:flex; flex-direction:column; gap:var(--s-3) }
+.alo-auto > .overline,
+.alo-auto > p{ margin:0 }
+.alo-crit{ padding:var(--s-2) 0; border-bottom:1px solid var(--line) }
+.alo-crit p{ margin:0 0 var(--s-1) }
+@media (min-width:900px){
+  .view-albert{ max-width:760px; margin-inline:auto; width:100% }
+  .alo-run{ max-width:760px; margin-inline:auto; width:100% }
+}
+
 
 /* =============================================================================
    §6.32 · Filet de securite : aucune classe existante sans style
