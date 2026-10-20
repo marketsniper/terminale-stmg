@@ -36,7 +36,8 @@ function defState(){ return {
   records: { precision: 0, questions: 0, cmSecs: null, seanceMax: 0, serieMax: 0 },
   compteurs: { reparees: 0 },
   bilans: {},                             // 'AAAA-Www' : bilan hebdomadaire
-  cdj: {}                                 // 'AAAA-MM-JJ' : calcul du jour, 400 maximum
+  cdj: {},                                // 'AAAA-MM-JJ' : calcul du jour, 400 maximum
+  albert: { v: 1, dateCible: '', tests: [], enCours: null, entretiens: [], bt: {}, checklist: {}, notes: {} }   // module Objectif Albert
 }; }
 
 /* État courant. Toujours lu par référence : ne jamais le remplacer sans passer par migrer(). */
@@ -68,6 +69,11 @@ function _etatPurger(){
   if (S.reparees.length > 50) S.reparees = S.reparees.slice(-50);
   if (S.tests.length > 60) S.tests = S.tests.slice(-60);
   if (S.epreuves.length > 40) S.epreuves = S.epreuves.slice(-40);
+  const A = S.albert;
+  if (A && typeof A === 'object'){
+    if (Array.isArray(A.tests) && A.tests.length > 40) A.tests = A.tests.slice(-40);
+    if (Array.isArray(A.entretiens) && A.entretiens.length > 30) A.entretiens = A.entretiens.slice(-30);
+  }
   Object.values(S.skills).forEach(s => { if (s.rev && s.rev.length > 12) s.rev = s.rev.slice(-12); });
   const cles = Object.keys(S.cdj);
   if (cles.length > 400) cles.sort().slice(0, cles.length - 400).forEach(k => { delete S.cdj[k]; });
@@ -118,6 +124,19 @@ function _etatAccueillirAjouts(){
   });
 }
 
+/* ---------- module Objectif Albert : S.albert complété sans rien perdre (idempotent) ----------
+   Sous-version propre au module (S.albert.v) : SCHEMA ne bouge jamais pour lui. */
+function _etatAlbert(){
+  const D = defState().albert;
+  if (!S.albert || typeof S.albert !== 'object' || Array.isArray(S.albert)) S.albert = D;
+  const A = S.albert;
+  Object.keys(D).forEach(k => { if (A[k] === undefined) A[k] = D[k]; });
+  ['tests', 'entretiens'].forEach(k => { if (!Array.isArray(A[k])) A[k] = []; });
+  ['bt', 'checklist', 'notes'].forEach(k => { if (!A[k] || typeof A[k] !== 'object' || Array.isArray(A[k])) A[k] = {}; });
+  if (typeof A.dateCible !== 'string') A.dateCible = '';
+  if (A.enCours !== null && (typeof A.enCours !== 'object' || Array.isArray(A.enCours))) A.enCours = null;
+}
+
 /* ---------- migration v1 vers v2 ----------
    Idempotente : deux appels de suite donnent exactement le même état.
    Appelée juste après la lecture de localStorage, après importEtat() et après recupererSiVide(). */
@@ -134,6 +153,7 @@ function migrer(etat){
   ['erreurs', 'reparees', 'tests', 'epreuves'].forEach(k => { if (!Array.isArray(S[k])) S[k] = []; });
   ['journal', 'skills', 'papier', 'typErr', 'jalons', 'succes', 'bilans', 'cdj'].forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   if (!Array.isArray(S.serie.utilises)) S.serie.utilises = [];
+  _etatAlbert();
   _etatAccueillirAjouts();
 
   if (dejaV2){ S.v = SCHEMA; return S; }
@@ -444,6 +464,8 @@ function etatPoids(e){
     Object.values(e.skills || {}).forEach(s => { if (s && s.lu) p++; });
     p += 5 * ((e.tests || []).length + (e.epreuves || []).length + Object.keys(e.papier || {}).length);
     p += Object.keys(e.jalons || {}).length + Object.keys(e.succes || {}).length + ((e.compteurs && e.compteurs.reparees) || 0);
+    const A = (e.albert && typeof e.albert === 'object') ? e.albert : {};
+    p += 5 * ((Array.isArray(A.tests) ? A.tests.length : 0) + (Array.isArray(A.entretiens) ? A.entretiens.length : 0));
   } catch(x){}
   return p;
 }
@@ -481,7 +503,7 @@ async function effacerTout(){
   _etatGele = true;
   if (_etatTimer){ clearTimeout(_etatTimer); _etatTimer = null; }
   clearTimeout(syncTimer);
-  try { [K, 'mzs-theme', 'mzs-motion', K_TOKEN, K_GIST, K_SYNC, K_SIG].forEach(k => localStorage.removeItem(k)); } catch(e){}
+  try { [K, 'mzs-theme', 'mzs-motion', K_TOKEN, K_GIST, K_SYNC, K_SIG, 'mzs-albert-entretien'].forEach(k => localStorage.removeItem(k)); } catch(e){}
   await avecDelai(_etatMiroirFile, 2000, null);
   await avecDelai(new Promise(res => {
     try { const r = indexedDB.deleteDatabase('mzs'); r.onsuccess = r.onerror = r.onblocked = () => res(true); }

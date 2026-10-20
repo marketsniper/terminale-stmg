@@ -68,7 +68,7 @@ const nomFournisseur = f => f === 'groq' ? 'Groq' : f === 'claude' ? 'Claude' : 
    - window.MODE_EXAMEN, posé par l'épreuve blanche et par le bilan ;
    - window.vueCourante {v, enCours}, pour le test et le DS qui ne posent pas MODE_EXAMEN.
    La règle vaut pour les deux moteurs : ni réponse locale, ni appel au modèle. */
-const VUES_EVAL = ['test', 'ds', 'epreuveRun', 'bilan'];
+const VUES_EVAL = ['test', 'ds', 'epreuveRun', 'bilan', 'albertRun'];
 function enEvaluation(){
   try {
     if (window.MODE_EXAMEN === true) return true;
@@ -202,6 +202,12 @@ function buildIndex(){
   (window.SKILLS || []).forEach(s => INDEX.push({
     type: 'fiche', id: s.id, titre: s.titre,
     sous: 'Phase ' + s.phase + ' · compétence ' + s.phase + '.' + s.ordre,
+    texte: [s.titre, s.objectif || '', strip(s.lecon || '')].join(' ')
+  }));
+  /* Piste Objectif Albert (window.ALBERT_SKILLS, hors Sentier) : un lien data-goto-skill="alb-…" ouvre albertLecon (app.js). */
+  (window.ALBERT_SKILLS || []).forEach(s => INDEX.push({
+    type: 'fiche', id: s.id, titre: s.titre,
+    sous: 'Objectif Albert · ' + s.titre,
     texte: [s.titre, s.objectif || '', strip(s.lecon || '')].join(' ')
   }));
   (window.CM_FAMS || []).forEach(f => INDEX.push({
@@ -412,7 +418,7 @@ function ctxCourant(){
   };
   if (c){
     base.ex = c.ex || null;
-    base.skill = c.skillId ? skills.find(s => s.id === c.skillId) || null : null;
+    base.skill = c.skillId ? (skills.find(s => s.id === c.skillId) || (window.ALBERT_SKILLS || []).find(s => s.id === c.skillId) || null) : null;
     base.fam = c.famId ? (window.CM_FAMS || []).find(f => f.id === c.famId) || null : null;
     base.level = c.level || null;
     base.repondu = !!c.repondu; base.juste = !!c.juste;
@@ -549,6 +555,7 @@ const SYSTEME = `Tu es « le Prof », le tuteur de mathématiques intégré à l
 
 QUI EST L'ÉLÈVE
 Un lycéen français en terminale STMG (bac 2027, spécialité Gestion et finance). Il a repris les mathématiques depuis le niveau sixième et progresse par étapes : fondations 6e-5e, collège, seconde, première STMG, terminale, puis les concours SESAME et ACCÈS (avril 2027). Il peut être débutant sur une notion et à l'aise sur une autre : ne présuppose jamais un prérequis, vérifie-le ou explique-le.
+Il prépare aussi le test d'admission d'Albert School (QCM de maths et de logique, sans calculatrice) : aide-le sur ces notions comme sur les autres. N'affirme rien sur l'école elle-même : renvoie-le à l'écran Objectif Albert.
 
 TON RÔLE
 - Tu ne réponds QU'À des questions de mathématiques (y compris les maths appliquées à la gestion : pourcentages, indices, suites, coûts) ou au fonctionnement de l'application. Pour toute autre demande, dis en une phrase que tu es le prof de maths et propose de revenir aux maths.
@@ -607,6 +614,14 @@ function contexteRag(q, ctx){
 
   if (c.typeDominant)
     bouts.push('TYPE D\'ERREUR DOMINANT : ' + c.typeDominant.nom + ' (' + c.typeDominant.part + ' % de ses erreurs classées).');
+
+  try {
+    const A = window.S && S.albert;
+    if (A && A.dateCible){
+      const j = joursAvant(new Date(A.dateCible + 'T12:00:00'));
+      if (j !== null && j >= 0) bouts.push('OBJECTIF ALBERT SCHOOL : test dans ' + j + ' jours.');
+    }
+  } catch(e){}
 
   try {
     const rev = (typeof dueReviews === 'function') ? dueReviews() : [];
@@ -749,6 +764,86 @@ function md(t){
   h = h.replace(/(<li>[\s\S]*<\/li>)/, '<ul>$1</ul>');
   return h.split(/\n{2,}/).map(p => /^<(ul|pre)/.test(p.trim()) ? p : '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('');
 }
+
+/* ============================================================
+   3 bis. PASSERELLE BAS NIVEAU POUR LES AUTRES ÉCRANS (entretien blanc Albert)
+   Ni SYSTEME du Prof, ni contexteRag, ni fil 'mzs-prof', ni localCalc, ni garde d'évaluation :
+   l'appelant fournit tout et gère son propre fil. Rien ne change pour le Prof.
+   messages : [{role:'user'|'assistant'|'system', content}] ; le premier et le dernier tour sont 'user'
+   (un 'system' en milieu de fil suit un tour 'user'). o : {onDelta, signal, effort, max, schema}.
+   Lève les mêmes codes que askGroq / askClaude, plus AbortError (o.signal). */
+async function lireFlux(r, surLigne){
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;){
+    const {done, value} = await reader.read(); if (done) break;
+    buf += dec.decode(value, {stream: true});
+    const lignes = buf.split('\n'); buf = lignes.pop();
+    for (const l of lignes){
+      if (!l.startsWith('data:')) continue;
+      const d = l.slice(5).trim(); if (!d || d === '[DONE]') continue;
+      let ev; try { ev = JSON.parse(d); } catch(e){ continue; }
+      surLigne(ev);
+    }
+  }
+}
+async function appelModele(f, systeme, messages, o){
+  o = o || {};
+  const onDelta = typeof o.onDelta === 'function' ? o.onDelta : () => {};
+  let texte = '', fin = '';
+  if (f === 'groq'){
+    const cle = cleGroq(); if (!cle) throw new Error('PAS_DE_CLE');
+    const corps = {model: GROQ_MODEL, stream: true, max_completion_tokens: o.max || 4000,
+                   reasoning_effort: o.effort === 'medium' ? 'medium' : 'low',
+                   messages: [{role: 'system', content: systeme}].concat(messages)};
+    if (o.schema) corps.response_format = {type: 'json_object'};          // le prompt doit demander du JSON
+    const r = await fetch(GROQ_URL, {method: 'POST', signal: o.signal,
+      headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + cle}, body: JSON.stringify(corps)});
+    if (!r.ok){
+      let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+      const err = new Error(r.status === 401 ? 'CLE_INVALIDE' : r.status === 429 ? 'QUOTA' : 'HTTP ' + r.status + (msg ? ' · ' + msg : ''));
+      err.statut = r.status; err.detail = msg; throw err;
+    }
+    await lireFlux(r, ev => {
+      const ch = ev.choices && ev.choices[0]; if (!ch) return;
+      const dl = ch.delta || {};
+      if (dl.content){ texte += dl.content; onDelta(dl.content); }
+      if (ch.finish_reason) fin = ch.finish_reason;
+    });
+  } else if (f === 'claude'){
+    const cle = cleClaude(); if (!cle) throw new Error('PAS_DE_CLE');
+    /* fallbacks:'default' (bêta server-side-fallback-2026-07-01) : un refus des classifieurs est rejoué côté serveur
+       sur le modèle recommandé, dans le même flux ; s'il reste un refus, stop_reason 'refusal' lève REFUS (repli local). */
+    const body = {model: MODEL_CLAUDE, max_tokens: o.max || 16000, stream: true, fallbacks: 'default',
+      output_config: o.schema ? {effort: o.effort || 'medium', format: {type: 'json_schema', schema: o.schema}} : {effort: o.effort || 'low'},
+      system: [{type: 'text', text: systeme, cache_control: {type: 'ephemeral'}}],
+      messages: messages};
+    const r = await fetch(CLAUDE_URL, {method: 'POST', signal: o.signal, headers: {'content-type': 'application/json',
+      'x-api-key': cle, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'server-side-fallback-2026-07-01',
+      'anthropic-dangerous-direct-browser-access': 'true'}, body: JSON.stringify(body)});
+    if (!r.ok){
+      let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+      if (r.status === 401) throw new Error('CLE_INVALIDE');
+      if (r.status === 429) throw new Error('QUOTA');
+      if (r.status === 400 && /credit|balance/i.test(msg)) throw new Error('CREDIT');
+      throw new Error('HTTP ' + r.status + (msg ? ' · ' + msg : ''));
+    }
+    await lireFlux(r, ev => {
+      if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta'){ texte += ev.delta.text; onDelta(ev.delta.text); }
+      if (ev.type === 'message_delta' && ev.delta && ev.delta.stop_reason) fin = ev.delta.stop_reason;
+      if (ev.type === 'error') throw new Error((ev.error && ev.error.message) || 'erreur de flux');
+    });
+    if (fin === 'refusal') throw new Error('REFUS');
+  } else throw new Error('PAS_DE_CLE');
+  texte = nettoie(texte);
+  if (!texte){ const e = new Error('VIDE'); e.detail = fin || 'aucun texte reçu'; throw e; }
+  return texte;
+}
+window.ASSIST_LLM = {
+  dispo: iaDispo, fournisseur: fournisseur, nom: nomFournisseur,
+  appeler: o => appelModele(fournisseur(), o.systeme, o.messages, o),
+  nettoie: nettoie, md: md
+};
 
 /* ============================================================
    4. CONFIGURATION EXPOSÉE À RÉGLAGES (M12)

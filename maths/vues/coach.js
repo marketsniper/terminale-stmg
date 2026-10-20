@@ -313,7 +313,10 @@ function vCoach(){
       titre: 'Après 3 séances, ton profil apparaît ici.',
       texte: 'Il lui faut un peu de matière : ta vitesse, tes erreurs, tes jours travaillés.',
       action: {label: 'Commencer la séance', fn: () => nav('seance')}
-    }) + '</div>';
+    }) + (typeof window.albertCarte === 'function' ? window.albertCarte('coach') : '') + '</div>';
+    /* le rendu vide n'appelle pas _coBrancher : la carte Albert est branchée ici */
+    const ba = document.getElementById('co-albert');
+    if (ba) ba.addEventListener('click', () => { snd.click(); nav('albert'); });
     return;
   }
 
@@ -479,8 +482,10 @@ function vCoach(){
     '<p class="small muted">' + (jc !== null && jc >= 0 ? 'Concours dans ' + fv(jc) + ' jours' : 'Concours passé') +
       ' · ' + (jb !== null && jb >= 0 ? 'Bac dans ' + fv(jb) + ' jours' : 'Bac passé') + '</p></section>';
 
+  /* Objectif Albert School : carte d'entrée (vues/albert.js), après les épreuves */
+  const blocAlb = typeof window.albertCarte === 'function' ? window.albertCarte('coach') : '';
   cible.innerHTML = '<div class="view view-coach"><h1>Le coach</h1>' + bloc2 + bloc3 + bloc4 + bloc5 + bloc6 + bloc7 + bloc8 + bloc9 +
-    bloc10 + bloc11 + bloc12 + '</div>';
+    bloc10 + blocAlb + bloc11 + bloc12 + '</div>';
 
   _coBrancher();
 }
@@ -519,6 +524,7 @@ function _coBrancher(){
   sur('co-methode', () => nav('methode'));
   sur('co-ds', () => nav('ds'));
   sur('co-test', () => nav('test'));
+  sur('co-albert', () => nav('albert'));
   sur('co-epreuve', () => nav('epreuve', {fmt: _coFmt}));
   sur('co-demo', () => {
     if (typeof window.entrerPresentation === 'function'){ window.entrerPresentation(); return; }
