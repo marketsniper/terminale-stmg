@@ -11510,7 +11510,10 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-13-e12bd3d4","da
       try { const o = replis(); if (replie) o[fid] = 1; else delete o[fid]; localStorage.setItem(K_REPLIS, JSON.stringify(o)); } catch(e){}
     }
     function placerBloc(body, box){
-      const h = Array.prototype.filter.call(body.children, function(x){ return x.tagName === 'H4' && /^À comprendre/i.test(propre(x.textContent)); })[0];
+      const h4 = Array.prototype.filter.call(body.children, function(x){ return x.tagName === 'H4'; });
+      //  avant « À comprendre » ; dans une fiche organisée en parties (I, II…), avant la première partie après « Notions clés »
+      const h = h4.filter(function(x){ return /^À comprendre/i.test(propre(x.textContent)); })[0] ||
+                h4.filter(function(x){ return !/^Notions clés/i.test(propre(x.textContent)); })[0];
       if (h){ body.insertBefore(box, h); return; }
       const fin = body.querySelector(':scope > .box.video') || body.querySelector(':scope > .train-row') || body.querySelector(':scope > .plan-back');
       body.insertBefore(box, fin || null);
