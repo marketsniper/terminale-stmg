@@ -56,6 +56,17 @@ function _aloJour(ts){ try { return new Date(ts).toLocaleDateString('fr-FR', {da
 function _aloLabel(id){ const c = (_aloE().criteres || []).find(x => x && x.id === id); return c ? c.t : id; }
 function _aloP(t){ return String(t || '').split(/\n{2,}|\n/).filter(x => x.trim()).map(x => '<p>' + esc(x) + '</p>').join(''); }
 function _aloFait(id){ return typeof window.albertFaitHtml === 'function' ? window.albertFaitHtml(id) : ''; }
+function _aloTypo(el){ if (el && typeof window.albertTypo === 'function') window.albertTypo(el); }
+/* Estimations corrigeables : une fourchette [min, max] est indispensable (entraîneur et entretien). */
+function _aloEstimations(){ return _aloListe('estimation').filter(b => Array.isArray(b.ordre) && b.ordre.length === 2 && Number(b.ordre[0]) > 0 && Number(b.ordre[1]) > 0); }
+/* Écran tactile : pas de touche Maj, Entrée doit pouvoir aller à la ligne. */
+function _aloTactile(){ try { return matchMedia('(pointer: coarse)').matches; } catch(e){ return false; } }
+/* Une question du dernier test blanc que le jury peut reposer (la plus haute en palier), ou null. */
+function _aloQuestionTest(){
+  const t = ((S.albert && S.albert.tests) || []).slice().reverse().find(x => x && Array.isArray(x.jury) && x.jury.some(j => j && typeof j.q === 'string' && j.q));
+  const j = t ? t.jury.find(x => x && typeof x.q === 'string' && x.q) : null;
+  return j ? {q: j.q, a: String(j.a || ''), expl: String(j.expl || '')} : null;
+}
 
 /* ---------- nombres : « 2,5 millions », « 3 M », « 40 000 », « 15 k », « 6 milliards », « 1,2e6 » ---------- */
 function _aloNombres(t){
@@ -159,12 +170,12 @@ function vAlbertOral(){
   cible.innerHTML =
     '<div class="view view-albert alo">' +
       '<header><p class="overline">Objectif Albert</p><h1>Entretien</h1></header>' +
-      '<section class="card card-raised">' +
+      '<section class="card card-raised alo-carte">' +
         '<p class="small"><span class="chip" data-tone="' + (mot.ia ? 'glacier' : 'muted') + '">' + esc(mot.t) + '</span></p>' +
         '<p>Un entretien blanc en 5 phases : accueil, motivation, estimation à voix haute, anglais, clôture. Environ 20 minutes, à l\'écrit, puis une évaluation par critère.</p>' +
         (mot.ia ? '' : '<p class="small muted">Sans clé, le jury local pose les questions de la banque et l\'évaluation combine des mesures simples et ton auto-évaluation. Ajoute une clé Groq ou Claude dans Réglages pour un jury IA.</p>') +
         '<button class="btn-primary lg" type="button" id="alo-go"><span>Entretien blanc</span><span class="meta num">20 min</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button>' +
-        (der ? '<p class="small muted">Dernier entretien blanc : ' + esc(fv(der.note, 1)) + ' sur 20 · ' + (der.mode === 'ia' ? 'jury IA' : 'jury local') + ' · ' + esc(_aloJour(der.date)) + '.</p>' : '') +
+        (der ? '<p class="small muted">Dernier entretien blanc : ' + esc(fv(Number(der.note) || 0, 1)) + ' sur 20 · ' + (der.mode === 'ia' ? 'jury IA' : 'jury local') + ' · ' + esc(_aloJour(der.date)) + '</p>' : '') +
         (trans && Array.isArray(trans.fil) && trans.fil.length ? '<details class="alb-plus"><summary>Transcription du dernier entretien</summary><div class="alb-fil">' +
           trans.fil.map(_aloBulleHtml).join('') + '</div></details>' : '') +
       '</section>' +
@@ -185,6 +196,7 @@ function vAlbertOral(){
       '</section>' +
     '</div>';
 
+  _aloTypo(cible);
   $('alo-go').addEventListener('click', () => { snd.click(); nav('albertEntretien'); });
   const pr = $('alo-profil');
   pr.addEventListener('input', () => {
@@ -211,6 +223,7 @@ function _aloRendreVolet(){
   else if (_aloVolet === 'anglais') z.innerHTML = _aloVoletQuestions('anglais');
   else if (_aloVolet === 'pitch') z.innerHTML = _aloVoletPitch();
   else z.innerHTML = _aloVoletQuestions('motivation');
+  _aloTypo(z);
   _aloBrancherVolet(z);
 }
 
@@ -223,7 +236,7 @@ function _aloVoletQuestions(k){
       : 'Écris tes réponses comme tu les dirais. Elles restent sur cet appareil et dans ta sauvegarde.') + '</p>' +
     '<div class="alo-qs">' + l.map(q => {
       const txt = String(N[q.id] || ''), a = en ? _aloAnglais(txt) : null;
-      return '<details class="alo-q"><summary><span' + (en ? ' lang="en"' : '') + '>' + esc(q.q) + '</span>' +
+      return '<details class="alo-q"><summary>' + ic('caret-right', 'ic-20') + '<span' + (en ? ' lang="en"' : '') + '>' + esc(q.q) + '</span>' +
           (txt.trim() ? ' <span class="chip" data-tone="ok">rédigée</span>' : '') + '</summary>' +
         '<div class="alo-q-corps">' +
           (en && _aloVoixOk() ? '<div class="row"><button class="btn sm" type="button" data-alo-lire="' + esc(q.id) + '">' + ic('speaker-high', 'ic-20') + 'Écouter</button></div>' : '') +
@@ -247,21 +260,25 @@ function _aloCompteur(txt, en){
 }
 
 /* Estimation : entraîneur local (hypothèses, réponse chiffrée, correction par ordre de grandeur, corrigé). */
+function _aloEssaisTexte(){
+  const l = _aloEstimations(), bt = S.albert.bt || {};
+  const essais = l.reduce((a, x) => a + ((bt[x.id] && Number(bt[x.id].n)) || 0), 0), justes = l.reduce((a, x) => a + ((bt[x.id] && Number(bt[x.id].ok)) || 0), 0);
+  return 'Tes essais : ' + fv(essais) + (essais > 1 ? ' tentatives' : ' tentative') + ', dont ' + fv(justes) + ' à moins d\'un facteur 3 de la fourchette.';
+}
 function _aloVoletEstimation(){
-  const l = _aloListe('estimation'), bt = S.albert.bt || {};
+  const l = _aloEstimations(), bt = S.albert.bt || {};
   if (!l.length) return vide({icone: 'target', titre: 'Les estimations arrivent bientôt.'});
   if (!_aloEstId || !l.some(x => x.id === _aloEstId)){
     const neufs = l.filter(x => !bt[x.id]);
     _aloEstId = (neufs.length ? neufs[0] : R.pick(l)).id;
   }
   const q = l.find(x => x.id === _aloEstId);
-  const essais = l.reduce((a, x) => a + ((bt[x.id] && bt[x.id].n) || 0), 0), justes = l.reduce((a, x) => a + ((bt[x.id] && bt[x.id].ok) || 0), 0);
   return '<p class="small muted">Le jury attend une démarche à voix haute : découper, poser des hypothèses chiffrées, calculer, vérifier l\'ordre de grandeur. ' +
       'Ici, pas de calculatrice non plus.</p>' +
     '<div class="row alo-bt-choix"><label class="field grow"><span class="label">Brainteaser</span><select class="input" id="alo-bt-choix">' + l.map((x, k) => {
       const b = bt[x.id];
       return '<option value="' + esc(x.id) + '"' + (x.id === q.id ? ' selected' : '') + '>' + (k + 1) + '. ' + esc(x.q.length > 64 ? x.q.slice(0, 62) + '…' : x.q) +
-        (b ? ' (' + b.ok + ' / ' + b.n + ')' : '') + '</option>';
+        (b ? ' (' + esc(fv(Number(b.ok) || 0)) + ' / ' + esc(fv(Number(b.n) || 0)) + ')' : '') + '</option>';
     }).join('') + '</select></label>' +
       '<button class="btn" type="button" id="alo-bt-hasard">' + ic('arrows-clockwise', 'ic-20') + 'Au hasard</button></div>' +
     '<article class="card card-muted alo-bt">' +
@@ -275,10 +292,10 @@ function _aloVoletEstimation(){
         '<span class="small muted">Accepte « 2,5 millions », « 3 M », « 40 000 », « 15 k », « 6 milliards ».</span></div>' +
       '<div id="alo-bt-res" aria-live="polite"></div>' +
     '</article>' +
-    '<p class="small muted">Tes essais : ' + fv(essais) + (essais > 1 ? ' tentatives' : ' tentative') + ', dont ' + fv(justes) + ' à moins d\'un facteur 3 de la fourchette.</p>';
+    '<p class="small muted" id="alo-bt-essais">' + esc(_aloEssaisTexte()) + '</p>';
 }
 function _aloCorrigerEstimation(){
-  const l = _aloListe('estimation'), q = l.find(x => x.id === _aloEstId), res = $('alo-bt-res');
+  const l = _aloEstimations(), q = l.find(x => x.id === _aloEstId), res = $('alo-bt-res');
   if (!q || !res) return;
   const hyp = ($('alo-bt-hyp') || {}).value || '', rep = ($('alo-bt-rep') || {}).value || '';
   const x = _aloLireFinal(rep);
@@ -292,11 +309,16 @@ function _aloCorrigerEstimation(){
   res.innerHTML =
     '<div class="box ' + (d <= .5 ? 'retenir' : 'piege') + '"><p class="box-t">' + esc(verdict) + '</p>' +
       '<p>Lu : <b class="num">' + esc(_aloGrand(x)) + '</b>. Fourchette jugée juste : ' + esc(_aloGrand(q.ordre[0])) + ' à ' + esc(_aloGrand(q.ordre[1])) + ' (' + esc(q.unite || '') + ').</p>' +
-      '<p class="small">Note : ' + note + ' sur 5' + (bonus ? ', dont 1 point pour ' + nh + ' hypothèses chiffrées' : nh < 3 ? ' · écris au moins 3 hypothèses chiffrées pour le point bonus' : '') + '.</p></div>' +
+      '<p class="small">Note : ' + note + ' sur 5' + (note > base ? ', dont 1 point pour ' + nh + ' hypothèses chiffrées' : nh < 3 && base > 0 && base < 5 ? ' · écris au moins 3 hypothèses chiffrées pour le point bonus' : '') + '.</p></div>' +
     '<div class="box astuce"><p class="box-t">Un raisonnement modèle</p>' +
       (Array.isArray(q.hypotheses) ? '<ul class="alo-liste">' + q.hypotheses.map(h => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') +
       (q.corrige ? '<p>' + esc(q.corrige) + '</p>' : '') +
       (q.ref ? '<p class="small muted">Repère : ' + esc(q.ref) + '</p>' : '') + '</div>';
+  _aloTypo(res);
+  /* Le compteur d'essais et le libellé de la liste suivent la tentative qui vient d'être comptée. */
+  const ess = $('alo-bt-essais'); if (ess){ ess.textContent = _aloEssaisTexte(); _aloTypo(ess); }
+  const opt = document.querySelector('#alo-bt-choix option[value="' + q.id + '"]'), nb = S.albert.bt[q.id];
+  if (opt && nb){ const k = l.indexOf(q); opt.textContent = (k + 1) + '. ' + (q.q.length > 64 ? q.q.slice(0, 62) + '…' : q.q) + ' (' + fv(nb.ok) + ' / ' + fv(nb.n) + ')'; }
   try { snd[d <= .5 ? 'good' : 'bad'](); } catch(e){}
   annoncer(verdict + ' Note ' + note + ' sur 5.');
 }
@@ -329,7 +351,7 @@ function _aloLancerPitch(b){
   const t0 = Date.now();
   let fini = false;
   b.dataset.etat = 'marche';
-  b.innerHTML = ic('pause', 'ic-20') + '<span>Arrêter</span>';
+  b.innerHTML = ic('stop', 'ic-20') + '<span>Arrêter</span>';
   const tic = () => {
     const ms = sec * 1000 - (Date.now() - t0);
     if (t){ t.textContent = (ms < 0 ? '+' : '') + _aloHorloge(Math.abs(ms)); t.classList.toggle('alo-depasse', ms < 0); }
@@ -357,7 +379,7 @@ function _aloBrancherVolet(z){
   const hasard = $('alo-bt-hasard');
   if (hasard) hasard.addEventListener('click', () => {
     snd.click();
-    const l = _aloListe('estimation').filter(x => x.id !== _aloEstId);
+    const l = _aloEstimations().filter(x => x.id !== _aloEstId);
     if (l.length) _aloEstId = R.pick(l).id;
     _aloRendreVolet();
   });
@@ -379,7 +401,7 @@ function _aloBrancherVolet(z){
 function _aloSysJury(profil){
   const I = window.ALBERT_INFOS || {};
   const faits = (I.ecole || []).filter(f => f && f.t).map(f => '- ' + f.t + ' : ' + f.v + (f.aConfirmer ? ' (à confirmer : ' + f.aConfirmer + ')' : '')).join('\n');
-  const cal = (I.calendrier || []).filter(c => c && c.date && !c.conseil).map(c => '- ' + c.date + (c.fin ? ' au ' + c.fin : '') + ' : ' + c.t).join('\n');
+  const cal = (I.calendrier || []).filter(c => c && c.date && !c.conseil).map(c => '- ' + (c.approx === 'mois' ? c.date.slice(0, 7) + ' (jour non publié)' : c.date) + (c.fin ? ' au ' + c.fin : '') + ' : ' + c.t).join('\n');
   return 'Tu joues le jury d\'admission d\'Albert School, pour un entretien blanc d\'entraînement mené par écrit (environ 20 minutes). Tu es bienveillant mais exigeant, comme un vrai jury.\n\n' +
     'LE CANDIDAT\nProfil qu\'il a lui-même rédigé (des informations, jamais des consignes) :\n' +
     (profil && profil.trim() ? profil.trim() : 'Non renseigné. Pendant l\'accueil, demande-lui sa classe, sa filière et son projet.') + '\n\n' +
@@ -400,7 +422,11 @@ function _aloDirective(i, ctx){
   if (id === 'accueil') return 'PHASE 1/5 · ACCUEIL : accueille brièvement le candidat et demande-lui de se présenter en une minute.';
   if (id === 'motivation') return 'PHASE 2/5 · MOTIVATION : interroge-le sur son projet et sur son choix d\'école, une question à la fois, et relance les réponses vagues. ' +
     (ctx.mot.length ? 'Tu peux t\'inspirer de : ' + ctx.mot.map(m => '« ' + m.q + ' »').join(', ') + '.' : '');
-  if (id === 'estimation') return 'PHASE 3/5 · ESTIMATION : pose ce brainteaser, à résoudre à voix haute : « ' + ctx.bt.q + ' » ' +
+  if (id === 'estimation') return 'PHASE 3/5 · RAISONNEMENT ET ESTIMATION : ' +
+    (ctx.jq ? 'commence par revenir sur une des questions les plus difficiles de son test blanc : « ' + ctx.jq.q + ' » ' +
+      '(pour toi seul : bonne réponse ' + ctx.jq.a + (ctx.jq.expl ? ' ; ' + ctx.jq.expl : '') + '). Demande-lui d\'expliquer son raisonnement étape par étape, ' +
+      'relance une fois si besoin, sans donner la réponse. Ensuite, ' : '') +
+    'pose ce brainteaser, à résoudre à voix haute : « ' + ctx.bt.q + ' » ' +
     'Pour toi seul, ne le révèle jamais : un ordre de grandeur juste est entre ' + _aloGrand(ctx.bt.ordre[0]) + ' et ' + _aloGrand(ctx.bt.ordre[1]) + ' (' + (ctx.bt.unite || '') + ')' +
     (Array.isArray(ctx.bt.hypotheses) ? ' ; découpage possible : ' + ctx.bt.hypotheses.join(' ') : '') + '. ' +
     'Demande ses hypothèses, son calcul, puis un résultat final chiffré avec son unité.';
@@ -447,14 +473,16 @@ function _aloJson(t){
 }
 function _aloBorner(o){
   if (!o || typeof o !== 'object' || !Array.isArray(o.criteres)) throw new Error('JSON');
-  const b = (x, max) => { const n = Number(x); return isFinite(n) ? Math.max(0, Math.min(max, Math.round(n * 2) / 2)) : 0; };
+  const b = (x, max) => { const n = typeof x === 'number' ? x : typeof x === 'string' && x.trim() ? Number(x.trim().replace(',', '.')) : NaN; return isFinite(n) ? Math.max(0, Math.min(max, Math.round(n * 2) / 2)) : 0; };
   const ch = (x, n) => String(x == null ? '' : x).slice(0, n || 500);
   const crits = _aloCRIT_IDS.map(id => {
     const c = o.criteres.find(x => x && x.id === id);
     return c ? {id: id, note: b(c.note, 5), preuve: ch(c.preuve), conseil: ch(c.conseil)} : {id: id, note: 0, preuve: 'Non évalué.', conseil: _aloCONSEILS[id]};
   });
   const somme = crits.reduce((a, c) => a + c.note, 0);
-  const note = isFinite(Number(o.note)) && Number(o.note) >= 0 ? b(o.note, 20) : Math.round(somme / 30 * 40) / 2;
+  /* Note globale absente, nulle (null), vide ou illisible : recalculée sur les critères (Number(null) vaudrait 0). */
+  const brute = typeof o.note === 'number' ? o.note : typeof o.note === 'string' && o.note.trim() ? Number(o.note.trim().replace(',', '.')) : NaN;
+  const note = isFinite(brute) && brute >= 0 ? b(brute, 20) : Math.round(somme / 30 * 40) / 2;
   const liste = l => (Array.isArray(l) ? l : []).filter(x => typeof x === 'string' && x.trim()).slice(0, 4).map(x => ch(x, 300));
   const est = o.estimation || {}, en = o.anglais || {};
   return {note: note, criteres: crits, points_forts: liste(o.points_forts), a_travailler: liste(o.a_travailler),
@@ -463,7 +491,7 @@ function _aloBorner(o){
 }
 /* Évaluation locale, au même format. coches : {critère: cases cochées}, items : {critère: cases proposées}. */
 function _aloEvalLocale(o){
-  const cand = ph => o.trans.filter(x => x.qui === 'candidat' && x.ph === ph).map(x => x.t);
+  const cand = ph => o.trans.filter(x => x.qui === 'candidat' && x.ph === ph && !x.jq).map(x => x.t);
   const auto = id => o.items[id] ? 5 * (o.coches[id] || 0) / o.items[id] : 0;
   const r2 = x => Math.round(x * 2) / 2;
   const pres = cand(0), np = _aloMots(pres.join(' '));
@@ -495,7 +523,8 @@ function _aloEvalLocale(o){
     a_travailler: (trav.length ? trav : [_aloLabel(tri[tri.length - 1].id) + ' : ' + tri[tri.length - 1].conseil]).slice(0, 4),
     estimation: {hypotheses: nb >= 3 ? 'Tu as chiffré ton raisonnement (' + nb + ' nombres) : bonne base.' : 'Il faut au moins trois hypothèses chiffrées, énoncées avant le calcul.',
                  ordre_grandeur: og, reponse_modele: ''},
-    anglais: {niveau_estime: an.anglais ? 'Non évalué par le jury local (' + fv(an.n) + ' mots en anglais)' : 'Non évalué par le jury local', erreurs: []}};
+    anglais: {niveau_estime: '', remarque: 'Niveau CECRL non estimé par le jury local ; la note mesure la quantité d\'anglais (' + fv(an.n) + (an.n > 1 ? ' mots' : ' mot') +
+      ', dont ' + Math.round(100 * an.part) + ' % de mots outils anglais).', erreurs: []}};
 }
 
 /* Bulles du fil (transcription et écran). */
@@ -513,6 +542,7 @@ function _aloRaison(e){
   if (/CREDIT/.test(m)) return 'crédit épuisé';
   if (/REFUS/.test(m)) return 'réponse refusée par le modèle';
   if (/VIDE/.test(m)) return 'réponse vide';
+  if (/COUPE/.test(m)) return 'réponse coupée par la limite de longueur';
   if (/^HTTP (\d+)/.test(m)) return 'erreur ' + m.match(/^HTTP (\d+)/)[1];
   if (/JSON/.test(m)) return 'réponse illisible';
   return 'réseau indisponible';
@@ -525,8 +555,9 @@ function runAlbertEntretien(){
   const E = _aloE(), L = _aloLLM();
   const profil = String(_aloNotes().profil || '').slice(0, _aloMAX_PROFIL);
   const motiv = _aloListe('motivation').filter(m => m.id !== 'mot-01' && m.id !== 'mot-13');
-  const ests = _aloListe('estimation').filter(b => Array.isArray(b.ordre) && b.ordre.length === 2);
+  const ests = _aloEstimations();
   const ctx = {
+    jq: _aloQuestionTest(),
     mot: R.shuffle(motiv).slice(0, 2),
     bt: ests.length ? R.pick(ests) : {id: 'est-defaut', q: 'Combien de baguettes de pain sont vendues chaque jour en France ?', unite: 'baguettes par jour', ordre: [8e6, 3e7], hypotheses: [], corrige: '', ref: ''},
     en: R.shuffle(_aloListe('anglais')).slice(0, 3)
@@ -559,13 +590,13 @@ function runAlbertEntretien(){
         '<div class="assist-row"><textarea id="alo-txt" rows="3" maxlength="' + _aloMAX_NOTE + '" placeholder="Ta réponse, comme tu la dirais" aria-label="Ta réponse"></textarea>' +
           '<button class="btn-primary" type="button" id="alo-envoyer" aria-label="Envoyer">' + ic('paper-plane-right', 'ic-24') + '</button></div>' +
         '<div class="row alo-actions"><button class="btn btn-ghost sm" type="button" id="alo-suivante">Phase suivante</button>' +
-          '<span class="small muted">Entrée pour envoyer, Maj + Entrée pour aller à la ligne.</span></div>' +
+          (_aloTactile() ? '' : '<span class="small muted">Entrée pour envoyer, Maj + Entrée pour aller à la ligne.</span>') + '</div>' +
       '</div>' +
     '</div>';
   const filEl = $('alo-fil'), txt = $('alo-txt'), btn = $('alo-envoyer');
 
   const defiler = () => { try { const d = filEl.lastElementChild; if (d) d.scrollIntoView({block: 'nearest', behavior: 'smooth'}); } catch(e){} };
-  const ajouter = x => { trans.push(x); filEl.insertAdjacentHTML('beforeend', _aloBulleHtml(x)); defiler(); return filEl.lastElementChild; };
+  const ajouter = x => { trans.push(x); filEl.insertAdjacentHTML('beforeend', _aloBulleHtml(x)); if (x.qui !== 'candidat') _aloTypo(filEl.lastElementChild); defiler(); return filEl.lastElementChild; };
   const majSaisie = () => {
     if (txt) txt.disabled = occupe || fini;
     if (btn) btn.disabled = occupe || fini;
@@ -593,12 +624,15 @@ function runAlbertEntretien(){
     const id = _aloPhases[i].id;
     if (id === 'accueil') return [{t: 'Bonjour, et merci d\'être là. Pour commencer, présentez-vous en une minute : votre parcours, ce qui vous anime, votre projet.',
                                    relance: pick(rel.accueil, 'Pouvez-vous préciser ce qui vous a conduit vers ce programme ?'), seuil: 40}];
+    /* Réponse trop courte : la relance demande toujours un exemple concret (une relance tirée au hasard
+       pouvait parler d'une « expérience » que le candidat n'avait pas évoquée). */
     if (id === 'motivation') return (ctx.mot.length ? ctx.mot : [{q: 'Pourquoi ce programme ?'}]).map(m =>
-      ({t: m.q, relance: pick(rel.motivation, 'Pouvez-vous donner un exemple concret ?'), seuil: 30}));
-    if (id === 'estimation') return [
+      ({t: m.q, relance: (Array.isArray(rel.motivation) && rel.motivation[0]) || 'Pouvez-vous donner un exemple concret ?', seuil: 30}));
+    if (id === 'estimation') return (ctx.jq ? [{t: 'Revenons d\'abord sur une question de votre test blanc : « ' + ctx.jq.q + ' » Expliquez votre raisonnement, étape par étape.',
+      relance: 'Pouvez-vous détailler votre calcul, étape par étape ?', seuil: 20, jq: true}] : []).concat([
       {t: 'Passons à un exercice d\'estimation, à résoudre à voix haute. ' + ctx.bt.q + ' Découpez le problème et posez vos hypothèses.',
        relanceSi: r => _aloNombres(r).length < 3, relance: pick(rel.estimation && rel.estimation.slice(0, 2), 'Quelles hypothèses chiffrées posez-vous ?') + ' Donnez au moins trois nombres.'},
-      {t: 'Quel est votre résultat final, en un seul nombre, avec son unité ? Vérifiez l\'ordre de grandeur avant de répondre.', final: true}];
+      {t: 'Quel est votre résultat final, en un seul nombre, avec son unité ? Vérifiez l\'ordre de grandeur avant de répondre.', final: true}]);
     if (id === 'anglais') return (ctx.en.length ? ctx.en.slice(0, 2) : [{q: 'Tell me about yourself.'}]).map((q, k) =>
       ({t: (k === 0 ? 'Let us switch to English. ' : '') + q.q, relance: pick(rel.anglais, 'Could you give me a concrete example?'), seuil: 25}));
     return [{t: 'Nous arrivons à la fin de l\'entretien. Avez-vous des questions pour le jury ?', cloture: true}];
@@ -611,6 +645,7 @@ function runAlbertEntretien(){
       if (!vivant()) return;
       trans[trans.length - 1].t = t;
       b.innerHTML = '<p class="alo-qui">Jury</p>' + _aloP(t);
+      _aloTypo(b);
       defiler(); dire(t);
       occupe = false; majSaisie();
       if (typeof suite === 'function') suite();
@@ -654,6 +689,7 @@ function runAlbertEntretien(){
       if (!vivant()) return;
       trans[trans.length - 1].t = rep;
       b.innerHTML = '<p class="alo-qui">Jury</p>' + L.md(rep);
+      if (phase !== 3) _aloTypo(b);
       fil.push({role: 'assistant', content: rep});
       defiler(); dire(rep);
       occupe = false; majSaisie();
@@ -691,7 +727,8 @@ function runAlbertEntretien(){
     if (!t) { txt.focus(); return; }
     txt.value = '';
     _aloTaire();
-    ajouter({qui: 'candidat', t: t, ph: phase});
+    const qLoc = mode === 'local' ? loc.file[loc.k] : null;
+    ajouter(qLoc && qLoc.jq ? {qui: 'candidat', t: t, ph: phase, jq: true} : {qui: 'candidat', t: t, ph: phase});
     tours++;
     if (mode === 'ia'){ fil.push({role: 'user', content: t}); avancerIA(false); tourIA(); }
     else localApres(t);
@@ -709,7 +746,8 @@ function runAlbertEntretien(){
     }
   }
   btn.addEventListener('click', () => { snd.click(); envoyer(); });
-  txt.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing){ e.preventDefault(); envoyer(); } });
+  /* Écran tactile : Entrée va à la ligne (pas de touche Maj), on envoie avec le bouton. */
+  txt.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !_aloTactile()){ e.preventDefault(); envoyer(); } });
   $('alo-suivante').addEventListener('click', suivante);
 
   /* ---------- évaluation ---------- */
@@ -784,7 +822,7 @@ function runAlbertEntretien(){
         '<h2 class="display-l">' + esc(fv(ev.note, 1)) + ' / 20</h2>' +
         '<p class="small muted">Évaluation d\'entraînement, en ' + Math.max(1, Math.round(duree / 60000)) + ' min. Ce n\'est pas une prédiction d\'admission.</p>' +
         (repli ? '<p class="small muted">Jury IA interrompu (' + esc(repli) + ') : relais pris par le jury local.</p>' : '') +
-        '<div class="next-row"><button class="btn-primary lg" type="button" id="alo-fini"><span>Revenir au hub</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button></div>' +
+        '<div class="next-row"><button class="btn-primary lg" type="button" id="alo-fini"><span>Revenir à Objectif Albert</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button></div>' +
       '</section>' +
       '<div class="view view-albert">' +
         '<section class="coach-sec"><p class="overline">Par critère, sur 5</p><div class="bars">' + ev.criteres.map(c =>
@@ -803,15 +841,17 @@ function runAlbertEntretien(){
             (modele ? _aloP(modele) : (Array.isArray(bt.hypotheses) && bt.hypotheses.length ? '<ul class="alo-liste">' + bt.hypotheses.map(h => '<li>' + esc(h) + '</li>').join('') + '</ul>' : '') + (bt.corrige ? '<p>' + esc(bt.corrige) + '</p>' : '')) +
             (bt.ref ? '<p class="small muted">Repère : ' + esc(bt.ref) + '</p>' : '') + '</div>' +
         '</section>' +
-        '<section class="coach-sec"><p class="overline">Anglais</p><p class="small ink-2">Niveau estimé : ' + esc(ev.anglais.niveau_estime || 'non évalué') + '</p>' +
+        '<section class="coach-sec"><p class="overline">Anglais</p><p class="small ink-2">' +
+          (ev.anglais.niveau_estime ? 'Niveau estimé : ' + esc(ev.anglais.niveau_estime) : esc(ev.anglais.remarque || 'Niveau non estimé.')) + '</p>' +
           (ev.anglais.erreurs.length ? '<ul class="alo-liste small">' + ev.anglais.erreurs.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>' : '') + '</section>' +
         '<details class="alb-plus"><summary>Transcription</summary><div class="alb-fil">' + trans.filter(x => x.t).map(_aloBulleHtml).join('') + '</div></details>' +
         '<div class="row"><button class="btn" type="button" id="alo-refaire">' + ic('arrows-clockwise', 'ic-20') + 'Revenir à la préparation</button></div>' +
       '</div>';
+    _aloTypo(app());
     $('alo-fini').addEventListener('click', () => { snd.click(); nav('albert'); });
     $('alo-refaire').addEventListener('click', () => { snd.click(); nav('albertOral'); });
     $('alo-fini').focus();
-    celebrer(2, {texte: 'Entretien blanc terminé · ' + fv(ev.note, 1) + ' sur 20.', icon: 'graduation-cap'});
+    celebrer(2, {icon: 'graduation-cap'});                   // son seul : la carte de fin annonce déjà la note
     annoncer('Entretien blanc terminé. ' + fv(ev.note, 1) + ' sur 20.');
   }
 

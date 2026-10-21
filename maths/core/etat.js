@@ -73,6 +73,11 @@ function _etatPurger(){
   if (A && typeof A === 'object'){
     if (Array.isArray(A.tests) && A.tests.length > 40) A.tests = A.tests.slice(-40);
     if (Array.isArray(A.entretiens) && A.entretiens.length > 30) A.entretiens = A.entretiens.slice(-30);
+    /* Raisonnements « jury-<id du test>-n » d'un test sorti de l'historique : orphelins, ils ne partent plus au Gist. */
+    if (Array.isArray(A.tests) && A.notes && typeof A.notes === 'object'){
+      const ids = new Set(A.tests.map(t => t && t.id));
+      Object.keys(A.notes).forEach(k => { const m = /^jury-(.+)-\d+$/.exec(k); if (m && !ids.has(m[1])) delete A.notes[k]; });
+    }
   }
   Object.values(S.skills).forEach(s => { if (s.rev && s.rev.length > 12) s.rev = s.rev.slice(-12); });
   const cles = Object.keys(S.cdj);
@@ -134,7 +139,37 @@ function _etatAlbert(){
   ['tests', 'entretiens'].forEach(k => { if (!Array.isArray(A[k])) A[k] = []; });
   ['bt', 'checklist', 'notes'].forEach(k => { if (!A[k] || typeof A[k] !== 'object' || Array.isArray(A[k])) A[k] = {}; });
   if (typeof A.dateCible !== 'string') A.dateCible = '';
-  if (A.enCours !== null && (typeof A.enCours !== 'object' || Array.isArray(A.enCours))) A.enCours = null;
+  /* Historique : champs numériques forcés en nombres finis (un état importé ou le Gist ne doit pas injecter de HTML). */
+  const fini = x => { const n = Number(x); return isFinite(n) ? n : 0; };
+  A.tests = A.tests.filter(t => t && typeof t === 'object' && !Array.isArray(t));
+  A.tests.forEach(t => {
+    if (typeof t.id !== 'string') t.id = String(t.id == null ? '' : t.id);
+    ['date', 'duree', 'n', 'ok', 'vides', 'depart', 'palierMax', 'palierFin', 'niveau', 'sorties'].forEach(k => { if (t[k] !== undefined) t[k] = fini(t[k]); });
+    if (t.points !== undefined && t.points !== null) t.points = fini(t.points);
+    if (!Array.isArray(t.parQ)) t.parQ = [];
+    t.parQ = t.parQ.filter(q => q && typeof q === 'object');
+    t.parQ.forEach(q => { q.p = fini(q.p); if (q.v !== undefined) q.v = fini(q.v); });
+    if (t.jury !== undefined && !Array.isArray(t.jury)) t.jury = [];
+    if (Array.isArray(t.jury)){ t.jury = t.jury.filter(j => j && typeof j === 'object'); t.jury.forEach(j => { j.p = fini(j.p); }); }
+  });
+  A.entretiens = A.entretiens.filter(e => e && typeof e === 'object' && !Array.isArray(e));
+  A.entretiens.forEach(e => {
+    if (e.note !== undefined) e.note = fini(e.note);
+    if (Array.isArray(e.criteres)) e.criteres.forEach(c => { if (c && typeof c === 'object') c.note = fini(c.note); });
+  });
+  /* Test en cours illisible (pas de parQ, bornes invalides ou plus de 2 h) : écarté, sinon il bloquerait le test blanc. */
+  const E = A.enCours;
+  if (E !== null){
+    const ok = E && typeof E === 'object' && !Array.isArray(E) && Array.isArray(E.parQ) &&
+      typeof E.debut === 'number' && typeof E.limite === 'number' && isFinite(E.debut) && isFinite(E.limite) &&
+      E.limite - E.debut >= 0 && E.limite - E.debut <= 2 * 3600000;
+    if (!ok) A.enCours = null;
+    else {
+      E.parQ = E.parQ.filter(q => q && typeof q === 'object');
+      E.palier = Math.max(1, Math.min(5, Math.round(fini(E.palier)) || 2));
+      if (E.courant !== undefined && E.courant !== null && (typeof E.courant !== 'object' || Array.isArray(E.courant))) E.courant = null;
+    }
+  }
 }
 
 /* ---------- migration v1 vers v2 ----------

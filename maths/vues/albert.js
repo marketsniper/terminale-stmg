@@ -1,6 +1,6 @@
 /* ===== Maths · Objectif Albert School : hub, leçons et rappels de la piste =====
    Script classique : portée globale partagée. Ce fichier déclare : vAlbert, vAlbertLecon.
-   Tout le reste est préfixé _alb ; passerelles par window : albertCarte, albertPreparation, albertDate, albertFaitHtml.
+   Tout le reste est préfixé _alb ; passerelles par window : albertCarte, albertPreparation, albertDate, albertFaitHtml, albertTypo.
    La piste vit dans window.ALBERT_SKILLS, jamais dans SKILLS : ni altitude, ni camps, ni frontière, ni épreuve.
    Les faits sur l'école viennent UNIQUEMENT de window.ALBERT_INFOS (albert/albert-donnees.js), affichés via esc().
    S.albert est relu à chaque usage : migrer() peut remplacer S (import, récupération). */
@@ -10,7 +10,7 @@
 const _albTHEMES = {calcul: 'Calcul', logique: 'Logique', suites: 'Suites', stats: 'Statistiques', proba: 'Probabilités',
   fonctions: 'Fonctions', algebre: 'Algèbre', geometrie: 'Géométrie', donnees: 'Lecture de données', autres: 'Autres'};
 /* Faits affichés d'emblée sur le hub ; les autres sont repliés sous « Toutes les infos ». */
-const _albFAITS_CLES = ['format', 'conditions', 'tentative', 'moment', 'janvier', 'fil-eau'];
+const _albFAITS_CLES = ['eligibilite', 'format', 'conditions', 'tentative', 'moment', 'janvier', 'fil-eau'];
 
 /* ---------- lectures sans effet de bord ---------- */
 function _albA(){ return S.albert || {tests: [], entretiens: [], checklist: {}, notes: {}, bt: {}, enCours: null, dateCible: ''}; }
@@ -35,6 +35,31 @@ function _albJourFr(iso, o){
 }
 function _albCourt(d){ try { return d.toLocaleDateString('fr-FR', {day: 'numeric', month: 'short'}); } catch(e){ return ''; } }
 function _albTheme(th){ const k = String(th || 'autres'); return _albTHEMES[k] || (k.charAt(0).toUpperCase() + k.slice(1)); }
+/* Nombre affiché : fini, sinon 0 (un état importé ne doit jamais injecter de HTML). */
+function _albN(x){ const n = Number(x); return isFinite(n) ? n : 0; }
+/* Tests qui comptent pour la préparation : pas ceux arrêtés faute de question valable (piste trop courte). */
+function _albTestsValides(){ return (_albA().tests || []).filter(t => t && !t.epuise); }
+let _albMinuterie = null;          // compte à rebours du test en cours sur le hub (une seule minuterie à la fois)
+
+/* ---------- typographie française du module ----------
+   Appliquée après le rendu (texte déjà échappé par esc()) : espace fine insécable U+202F entre les milliers,
+   devant % € : ; ? ! » et après «. Jamais dans un champ de saisie, du code, du SVG ni un passage en anglais.
+   Partagée par vues/albert-test.js et vues/albert-oral.js via window.albertTypo. */
+const _albPasTypo = 'textarea, input, select, script, style, code, pre, kbd, svg, [lang^="en"], [data-typo="non"]';
+window.albertTypo = function(racine){
+  if (!racine || !document.createTreeWalker) return racine;
+  const w = document.createTreeWalker(racine, NodeFilter.SHOW_TEXT);
+  let n;
+  while ((n = w.nextNode())){
+    const t = n.nodeValue;
+    if (!t || t.indexOf(' ') < 0) continue;
+    const pa = n.parentElement;
+    if (!pa || pa.closest(_albPasTypo)) continue;
+    const u = t.replace(/(\d) (?=\d{3}(?!\d))/g, '$1\u202F').replace(/(\S) (?=[%€:;?!»])/g, '$1\u202F').replace(/« /g, '«\u202F');
+    if (u !== t) n.nodeValue = u;
+  }
+  return racine;
+};
 
 /* ---------- sources et faits ---------- */
 /* Sources d'un fait : liens https uniquement ; sans source (et hors conseil) : pastille « à confirmer ». */
@@ -87,8 +112,8 @@ function _albDus(){
 function _albPreparation(){
   const A = _albA(), sk = _albSkills();
   const comp = sk.length ? sk.filter(s => { const x = _albFiche(s.id); return x.mastered && !x.fragile; }).length / sk.length : 0;
-  const t = (A.tests || []).slice(-2), test = t.length ? t.reduce((a, x) => a + (Number(x.niveau) || 0), 0) / t.length / 5 : 0;
-  const e = (A.entretiens || []).slice(-1)[0], oral = e && typeof e.note === 'number' ? Math.min(1, Math.max(0, e.note / 20)) : 0;
+  const t = _albTestsValides().slice(-2), test = t.length ? t.reduce((a, x) => a + Math.max(0, Math.min(5, _albN(x.niveau))), 0) / t.length / 5 : 0;
+  const e = (A.entretiens || []).slice(-1)[0], oral = e && typeof e.note === 'number' && isFinite(e.note) ? Math.min(1, Math.max(0, e.note / 20)) : 0;
   const dos = (_albInfos().dossier || []), dossier = dos.length ? dos.filter(d => A.checklist && A.checklist[d.id]).length / dos.length : 0;
   const piliers = [['Compétences', comp, .4], ['Test blanc', test, .35], ['Entretien', oral, .15], ['Dossier', dossier, .1]];
   return {total: Math.round(100 * piliers.reduce((a, p) => a + p[1] * p[2], 0)), piliers: piliers};
@@ -97,14 +122,14 @@ window.albertPreparation = _albPreparation;
 
 /* ---------- plan en 5 étapes ---------- */
 function _albPlan(){
-  const A = _albA(), sk = _albSkills(), now = Date.now(), tests = A.tests || [];
+  const A = _albA(), sk = _albSkills(), now = Date.now(), tests = _albTestsValides();
   const verr = sk.filter(s => { const x = _albFiche(s.id); return x.mastered && !x.fragile; }).length;
   const recents = tests.filter(t => t && now - (t.date || 0) <= 14 * JOUR), der = tests.slice(-1)[0];
   const dos = (_albInfos().dossier || []);
   const etapes = [
     {id: 'diag',    t: 'Diagnostic',   f: 0,   fait: tests.length >= 1},
     {id: 'piste',   t: 'Piste',        f: .6,  fait: sk.length > 0 && verr / sk.length >= .7},
-    {id: 'tests',   t: 'Tests blancs', f: .85, fait: recents.length >= 2 && !!der && (Number(der.niveau) || 0) >= 3.5},
+    {id: 'tests',   t: 'Tests blancs', f: .85, fait: recents.length >= 2 && !!der && _albN(der.niveau) >= 3.5},
     {id: 'oral',    t: 'Entretien',    f: .9,  fait: (A.entretiens || []).length >= 2},
     {id: 'dossier', t: 'Dossier',      f: .95, fait: dos.length > 0 && dos.every(d => A.checklist && A.checklist[d.id])}
   ];
@@ -131,7 +156,7 @@ function _albVisee(){
 function _albProchaine(){
   const A = _albA(), plan = _albPlan(), dus = _albDus();
   if (!(A.tests || []).length)
-    return {t: 'Passe un premier test blanc en conditions réelles : il sert de diagnostic et oriente la suite du travail.', label: 'Préparer le test blanc', go: 'albertTest'};
+    return {t: 'Passe un premier test blanc en conditions réelles : il sert de diagnostic et oriente la suite du travail.', label: null};
   if (dus.length)
     return {t: 'Rappel du jour : « ' + dus[0].titre + ' ». Trois questions pour garder la compétence.', label: 'Faire le rappel', rappel: dus[0].id};
   if (!plan.etapes[1].fait){
@@ -141,7 +166,7 @@ function _albProchaine(){
                    label: 'Ouvrir la leçon', go: 'albertLecon', id: v.skill.id};
   }
   if (!plan.etapes[2].fait)
-    return {t: 'Passe un test blanc cette semaine : deux tests en 14 jours, avec un niveau d\'au moins 3,5 sur 5 au dernier.', label: 'Préparer le test blanc', go: 'albertTest'};
+    return {t: 'Passe un test blanc cette semaine : deux tests en 14 jours, avec un niveau d\'au moins 3,5 sur 5 au dernier.', label: null};
   if (!plan.etapes[3].fait)
     return {t: 'Entraîne-toi à l\'oral : motivation, estimation, anglais, puis un entretien blanc.', label: 'Préparer l\'entretien', go: 'albertOral'};
   if (!plan.etapes[4].fait){
@@ -158,7 +183,8 @@ window.albertCarte = function(lieu){
     return '<section class="card alb-carte"' + (lieu === 'coach' ? ' data-bento="3"' : '') + '>' +
       '<p class="overline">Objectif Albert School</p>' +
       '<h2>' + (j !== null && j >= 0 ? 'J−' + fv(j) : 'Prépare ton admission') + '</h2>' +
-      '<p class="small muted">Préparation ' + p.total + ' % · test blanc 40 min · entretien</p>' +
+      '<p class="small muted">' + (j !== null && j >= 0 ? (_albIso(_albA().dateCible) ? 'Avant ta date visée, le ' : 'Avant la date conseillée (pas une date de l\'école), le ') +
+        esc(d.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long'})) + ' · p' : 'P') + 'réparation ' + p.total + '\u202F% · test blanc 40 min · entretien</p>' +
       '<div class="row"><button class="btn" type="button" data-v="albert" id="' + (lieu === 'coach' ? 'co-albert' : 'acc-albert') + '">' +
         ic('graduation-cap') + '<span>Ouvrir</span></button></div></section>';
   } catch(e){ return ''; }
@@ -171,6 +197,7 @@ function vAlbert(){
   const cible = app();
   if (!cible) return;
   if (typeof window.albertCloreTest === 'function') window.albertCloreTest();   // test resté ouvert, temps écoulé
+  if (_albMinuterie !== null){ clearInterval(_albMinuterie); _albMinuterie = null; }
   setCtx('outil');
   cible.dataset.density = 'outil';
   const A = _albA(), I = _albInfos(), sk = _albSkills(), d = _albDate(), j = d ? joursAvant(d) : null;
@@ -189,16 +216,16 @@ function vAlbert(){
         '<div class="figure"><b class="num">' + (j !== null && j >= 0 ? 'J−' + fv(j) : '–') + '</b><span class="k">' +
           (d ? (j !== null && j < 0 ? 'date passée : choisis-en une autre' : 'avant le ' + esc(d.toLocaleDateString('fr-FR', {day: 'numeric', month: 'long'}))) : 'date à choisir') + '</span></div>' +
         '<div class="figure"><b class="num">' + prep.total + ' %</b><span class="k">préparation</span></div>' +
-        '<div class="figure"><b class="num">' + (dernier ? esc(fv(dernier.niveau, 1)) : '–') + '</b><span class="k">niveau du dernier test, sur 5</span></div>' +
+        '<div class="figure"><b class="num">' + (dernier ? esc(fv(_albN(dernier.niveau), 1)) : '–') + '</b><span class="k">niveau du dernier test, sur 5</span></div>' +
         '<div class="figure"><b class="num">' + fv(plan.verr) + ' / ' + fv(plan.total) + '</b><span class="k">compétences verrouillées</span></div>' +
       '</div>' +
       '<label class="field"><span class="label">Date visée pour ton test' + (A.dateCible ? '' : (cibleCal ? ' (par défaut : ' + esc(_albJourFr(cibleCal.date, {day: 'numeric', month: 'long'})) + ', conseil)' : '')) + '</span>' +
         '<input class="input" id="alb-date" type="date" value="' + esc(A.dateCible || '') + '"></label>' +
       (A.dateCible && cibleCal ? '<div class="row"><button class="btn btn-ghost sm" type="button" id="alb-date-raz">Revenir à la date conseillée</button></div>' : '') +
       '<button class="btn-primary lg" type="button" id="alb-test"><span>' + (enCours ? 'Reprendre le test blanc' : 'Passer le test blanc') +
-        '</span><span class="meta num">' + (enCours ? esc(horloge(resteMs)) : '40 min') + '</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button>' +
-      (dernier ? '<p class="small muted">Dernier test : ' + fv(dernier.ok) + ' / ' + fv(dernier.n) + ' · niveau ' + esc(fv(dernier.niveau, 1)) + ' sur 5' +
-        (dernier.points != null ? ' · ' + fv(dernier.points) + ' points pondérés' : '') + '.</p>' : '') +
+        '</span><span class="meta num" id="alb-test-t">' + (enCours ? esc(horloge(resteMs)) : '40 min') + '</span><span class="ic-wrap">' + ic('arrow-right', 'ic-20') + '</span></button>' +
+      (dernier ? '<p class="small muted">Dernier test : ' + esc(fv(_albN(dernier.ok))) + ' / ' + esc(fv(_albN(dernier.n))) + ' · niveau ' + esc(fv(_albN(dernier.niveau), 1)) + ' sur 5' +
+        (dernier.points != null ? ' · ' + esc(fv(_albN(dernier.points))) + ' points pondérés' : '') + (dernier.epuise ? ' · arrêté faute de questions, hors préparation' : '') + '.</p>' : '') +
     '</section>';
 
   /* 2. prochaine étape */
@@ -210,8 +237,9 @@ function vAlbert(){
   /* 3. plan en étapes */
   const blocPlan = '<section class="coach-sec"><p class="overline">Plan</p><ol class="steps alb-steps">' + plan.etapes.map((e, i) =>
     '<li class="step' + (e.fait ? ' done' : (i === plan.cur ? ' cur' : '')) + '"' + (i === plan.cur ? ' aria-current="step"' : '') + '>' +
-      '<span class="node">' + ic('check') + '</span><span class="step-t">' + esc(e.t) + '</span>' +
-      '<span class="step-m">' + (e.fait ? 'fait' : e.vise ? esc(_albCourt(e.vise)) : '') + '</span></li>').join('') + '</ol>' +
+      '<span class="node">' + ic('check') + '</span><span class="step-t">' + esc(e.t) +
+        '<span class="sr-only">' + (e.fait ? ' : fait' : e.vise ? ' : visé le ' + esc(_albCourt(e.vise)) : '') + (i === plan.cur ? ', étape en cours' : '') + '</span></span>' +
+      '<span class="step-m" aria-hidden="true">' + (e.fait ? 'fait' : e.vise ? esc(_albCourt(e.vise)) : '') + '</span></li>').join('') + '</ol>' +
     '<p class="small muted">Diagnostic : un premier test. Piste : 70 % des compétences verrouillées. Tests blancs : deux en 14 jours, niveau 3,5 au dernier. ' +
       'Entretien : deux entretiens blancs. Dossier : checklist complète. Les dates visées découlent de ta date.</p></section>';
 
@@ -222,10 +250,10 @@ function vAlbert(){
     '<p class="small muted">Indicateur de travail, pas une prédiction d\'admission.</p></section>';
 
   /* 5. rappels espacés de la piste */
-  const blocRappels = dus.length ? '<section class="coach-sec"><p class="overline">Rappels du jour</p><ul class="todo">' + dus.map(s =>
-    '<li class="todo-l"><button class="todo-chk" type="button" data-alb-rappel="' + esc(s.id) + '" aria-label="Réviser ' + esc(s.titre) + '"></button>' +
-    '<span class="todo-t">' + esc(s.titre) + (_albFiche(s.id).fragile ? ' <span class="chip" data-tone="warn">fragile</span>' : '') + '</span>' +
-    '<span class="num">3 q.</span></li>').join('') + '</ul></section>' : '';
+  const blocRappels = dus.length ? '<section class="coach-sec"><p class="overline">Rappels du jour</p><ul class="alb-rappels">' + dus.map(s =>
+    '<li class="alb-rappel"><span class="todo-t">' + esc(s.titre) + (_albFiche(s.id).fragile ? ' <span class="chip" data-tone="warn">fragile</span>' : '') + '</span>' +
+    '<button class="btn sm" type="button" data-alb-rappel="' + esc(s.id) + '" aria-label="Réviser ' + esc(s.titre) + ' : 3 questions">' + ic('arrows-clockwise', 'ic-20') +
+      '<span>Réviser · 3 questions</span></button></li>').join('') + '</ul></section>' : '';
 
   /* 6. compétences de la piste, par thème */
   const groupes = {};
@@ -233,7 +261,7 @@ function vAlbert(){
   const ordreTh = Object.keys(groupes).sort((a, b) => (groupes[a][0].ordre || 0) - (groupes[b][0].ordre || 0));
   const blocPiste = '<section class="coach-sec"><p class="overline">Compétences de la piste</p>' + (sk.length ? ordreTh.map(th => {
     const l = groupes[th], v = l.filter(s => { const x = _albFiche(s.id); return x.mastered && !x.fragile; }).length;
-    return '<div class="alb-theme"><h3>' + esc(_albTheme(th)) + ' <span class="num small muted">' + fv(v) + ' / ' + fv(l.length) + '</span></h3><div class="alb-liste">' +
+    return '<div class="alb-theme"><h2>' + esc(_albTheme(th)) + ' <span class="num small muted">' + fv(v) + ' / ' + fv(l.length) + '</span></h2><div class="alb-liste">' +
       l.map(s => { const e = _albEtat(s.id);
         return '<button class="card card-link alb-comp" type="button" data-alb-lecon="' + esc(s.id) + '">' +
           '<span class="label">' + esc(s.titre) + '</span><span class="chip" data-tone="' + e.ton + '">' + esc(e.libelle) + '</span></button>'; }).join('') +
@@ -243,8 +271,8 @@ function vAlbert(){
   /* 7. entretien */
   const der = (A.entretiens || []).slice(-1)[0];
   const blocOral = '<section class="coach-sec"><p class="overline">Entretien</p>' +
-    '<p class="small muted">Motivation, estimation, anglais, pitch : entraîne-toi seul, puis passe un entretien blanc.' +
-    (der ? ' Dernier entretien blanc : ' + esc(fv(der.note, 1)) + ' sur 20.' : '') + '</p>' +
+    '<p class="small muted">Motivation, estimation, anglais, pitch : entraîne-toi en autonomie, puis passe un entretien blanc.' +
+    (der ? ' Dernier entretien blanc : ' + esc(fv(_albN(der.note), 1)) + ' sur 20.' : '') + '</p>' +
     '<div class="row"><button class="btn" type="button" id="alb-oral">' + ic('question') + '<span>Préparer l\'entretien</span></button></div></section>';
 
   /* 8. dossier */
@@ -260,10 +288,11 @@ function vAlbert(){
   const avenir = cal.filter(x => !x.passe).sort((a, b) => a.c.date < b.c.date ? -1 : 1);
   const passes = cal.filter(x => x.passe).sort((a, b) => a.c.date < b.c.date ? 1 : -1);
   const ligneCal = x => {
-    const c = x.c, an = c.date.slice(0, 4);
-    const quand = x.passe ? 'passé' : x.enCours ? 'en cours' : x.jd === 0 ? 'aujourd\'hui' : 'J−' + fv(x.jd);
+    const c = x.c, an = c.date.slice(0, 4), mois = c.approx === 'mois';
+    /* Date approximative (« à partir de janvier ») : le mois seul, sans compte à rebours au jour près. */
+    const quand = x.passe ? 'passé' : x.enCours ? 'en cours' : mois ? 'date exacte non publiée' : x.jd === 0 ? 'aujourd\'hui' : 'J−' + fv(x.jd);
     return '<li class="alb-cal-l"' + (x.passe ? ' data-passe' : '') + '>' +
-      '<span class="alb-cal-d"><b class="num">' + esc(_albJourFr(c.date, {day: 'numeric', month: 'short'})) + '</b>' +
+      '<span class="alb-cal-d"><b class="num">' + esc(mois ? _albJourFr(c.date, {month: 'short'}) : _albJourFr(c.date, {day: 'numeric', month: 'short'})) + '</b>' +
         (_albIso(c.fin) ? '<span class="small">au ' + esc(_albJourFr(c.fin, {day: 'numeric', month: 'short'})) + '</span>' : '') +
         '<span class="small num">' + esc(an) + '</span></span>' +
       '<div class="alb-cal-t"><p><span class="label">' + esc(c.t) + '</span> <span class="small muted num">' + esc(quand) + '</span></p>' +
@@ -286,6 +315,16 @@ function vAlbert(){
 
   cible.innerHTML = '<div class="view view-albert">' + tete + blocSuite + blocPlan + blocPrep + blocRappels + blocPiste + blocOral +
     blocDossier + blocCal + blocInfos + '</div>';
+  window.albertTypo(cible);
+  /* Test en cours : le temps restant défile chaque seconde ; à zéro, le hub se redessine (test archivé). */
+  if (enCours){
+    const id = _albMinuterie = every(1000, () => {
+      if (window.vueCourante.v !== 'albert' || _albMinuterie !== id){ clearInterval(id); return; }
+      const r = enCours.limite - Date.now(), t = $('alb-test-t');
+      if (r <= 0 || S.albert.enCours !== enCours){ clearInterval(id); _albMinuterie = null; vAlbert(); return; }
+      if (t) t.textContent = horloge(r);
+    });
+  }
 
   /* ---------- branchements ---------- */
   const z = app();
@@ -367,6 +406,7 @@ function vAlbertLecon(p){
         '</div>' +
       '</article></div></div>';
   window.espacesInsecables(document.querySelector('.lecon-body'));
+  window.albertTypo(document.querySelector('.alb-lecon'));
   _albToc();
   $('alb-exos').addEventListener('click', () => {
     snd.click();
@@ -421,7 +461,7 @@ function _albSerie(skill){
       '<h2>' + fv(ok) + ' sur ' + fv(r.res.length) + '</h2>' + crampons(x.hist, {courant: false}) +
       (x.mastered ? '<p class="k k-gold">Verrouillé à 90 %</p>' : '<p class="small muted">Verrou : 12 réponses, dont 9 justes sur les 10 dernières.</p>') +
       '<div class="row"><button class="btn-primary" type="button" id="alb-encore">Relancer une série</button>' +
-      '<button class="btn" type="button" id="alb-retour">Revenir au hub</button></div></div>';
+      '<button class="btn" type="button" id="alb-retour">Revenir à Objectif Albert</button></div></div>';
     try { snd.win(ok / (r.res.length || 1)); majAnneauJour(); } catch(e){}
     $('alb-encore').addEventListener('click', () => { snd.click(); _albSerie(skill); });
     $('alb-retour').addEventListener('click', () => { snd.click(); nav('albert'); });

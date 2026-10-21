@@ -27,12 +27,16 @@ window.ALBERT_INFOS = {
     {id: 'portail',    titre: 'Espace candidat (consignes affichées après connexion)', url: 'https://admission.albertschool.com', vu: VU},
     {id: 'parcoursup', titre: 'Parcoursup · fiche de la formation', url: 'https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=52797&typeBac=0&originePc=0', vu: VU},
     {id: 'calpsup',    titre: 'L\'Étudiant · calendrier Parcoursup 2027', url: 'https://www.letudiant.fr/etudes/parcoursup/on-connait-le-calendrier-de-parcoursup-2027.html', vu: VU},
-    {id: 'licence',    titre: 'Albert School · actualité sur le grade de licence', url: 'https://www.albertschool.com/fr/blog/bachelor-science-engineering-mines-paris-albert-school-grade-de-licence-recognition/', vu: VU}
+    {id: 'licence',    titre: 'Albert School · actualité sur le grade de licence', url: 'https://www.albertschool.com/fr/blog/bachelor-science-engineering-mines-paris-albert-school-grade-de-licence-recognition/', vu: VU},
+    {id: 'flashcards', titre: 'Albert School · fiches du guide de candidature (2026)', url: 'https://www.albertschool.com/fr/guidance-kit/flashcards/', vu: VU}
   ],
 
   /* Faits sur l'école. id stable (référencé par les vues), t : titre court, v : texte,
      src : id de source ou liste d'ids, aConfirmer (facultatif) : pourquoi ce point reste à vérifier. */
   ecole: [
+    {id: 'eligibilite', t: 'Éligibilité selon ta filière et tes spécialités', src: ['flashcards', 'parcoursup'],
+     v: 'Les sources ne concordent pas : une fiche officielle de 2026 indique que la spécialité mathématiques est exigée ; d\'autres sources, dont la fiche Parcoursup, n\'en font pas une condition.',
+     aConfirmer: 'Fais confirmer par écrit à l\'école que ta filière et tes spécialités sont acceptées, avant ta seule tentative au test.'},
     {id: 'fil-eau', t: 'Admission au fil de l\'eau', src: ['kit', 'programme'],
      v: 'Les candidatures sont étudiées au fil de l\'eau, jusqu\'à ce que les places soient pourvues. Les places de chaque campus sont attribuées dans l\'ordre d\'arrivée des dossiers : « plus vous candidatez tôt, plus vos chances sont élevées ».'},
     {id: 'janvier', t: 'À partir de janvier', src: 'kit',
@@ -46,7 +50,7 @@ window.ALBERT_INFOS = {
     {id: 'langue', t: 'Langue des questions', src: 'portail',
      v: 'Les questions s\'affichent en français ou en anglais, selon la langue choisie sur le portail.'},
     {id: 'moment', t: 'Quand passer le test', src: 'portail',
-     v: 'Le test est proposé juste après l\'envoi du dossier : ne le lance que lorsque tu es prêt.'},
+     v: 'Le test est proposé juste après l\'envoi du dossier : ne le lance qu\'une fois ta préparation terminée.'},
     {id: 'verrou', t: 'Documents verrouillés après l\'envoi', src: 'portail',
      v: 'Une fois envoyés, les documents obligatoires ne peuvent plus être ajoutés, modifiés ni supprimés. Les documents facultatifs restent modifiables.'},
     {id: 'pieces', t: 'Pièces du dossier', src: ['kit', 'portail'],
@@ -55,36 +59,42 @@ window.ALBERT_INFOS = {
      v: 'Selon le programme, une conversation vidéo avec un agent IA peut suivre le test (enregistrée et transmise au jury).',
      aConfirmer: 'Dépend du programme : vérifie dans ton espace candidat.'},
     {id: 'entretien', t: 'Entretien', src: ['portail', 'kit'],
-     v: 'Si tu es déclaré admissible : environ 30 minutes, en visio ou sur un campus, langue au choix. On y parle de ton parcours, de tes motivations et de certaines des questions les plus difficiles de ton test, pour vérifier ton raisonnement (espace candidat). Le guide de candidature décrit 3 temps (présentation, brainteaser d\'estimation à voix haute, motivation) et, à Paris, 2/3 en français et 1/3 en anglais.',
+     v: 'En cas d\'admissibilité : environ 30 minutes, en visio ou sur un campus, langue au choix. On y parle de ton parcours, de tes motivations et de certaines des questions les plus difficiles de ton test, pour vérifier ton raisonnement (espace candidat). Le guide de candidature décrit 3 temps (présentation, brainteaser d\'estimation à voix haute, motivation) et, à Paris, 2/3 en français et 1/3 en anglais.',
      aConfirmer: 'Les deux sources ne décrivent pas la même répartition des langues : prépare-toi aux deux.'},
     {id: 'decision', t: 'Délai de décision', src: ['kit', 'portail'],
      v: 'Environ 20 jours en moyenne entre le dépôt et la décision (guide de candidature) ; au plus tard 30 jours après la dernière étape (espace candidat).'},
-    {id: 'admis', t: 'Si tu es admis', src: ['faq', 'portail'],
+    {id: 'admis', t: 'En cas d\'admission', src: ['faq', 'portail'],
      v: 'Place réservée 10 jours ; acompte de 3' + M + '000 € ; contrat avec 14 jours de rétractation, au-delà les arrhes risquent d\'être perdues : lis le contrat avant de signer.',
      aConfirmer: 'Les sources parlent d\'acompte puis d\'arrhes, deux régimes différents : fais-toi confirmer les conditions par écrit.'},
     {id: 'bourses', t: 'Bourses', src: ['faq', 'frais'],
-     v: 'À demander APRÈS l\'admission et AVANT l\'inscription, jamais avant ni après. Jusqu\'à 50 % des frais ; Talent Scholarships jusqu\'à 6' + M + '000 € par an.'},
+     v: 'À demander entre l\'admission et l\'inscription, pas à un autre moment. Jusqu\'à 50 % des frais ; Talent Scholarships jusqu\'à 6' + M + '000 € par an.'},
     {id: 'frais', t: 'Frais affichés', src: 'frais',
      v: '14' + M + '900 € par an (UE) pour le Bachelor à Paris et à Marseille.'},
     {id: 'selectivite', t: 'Sélectivité', src: 'faq',
-     v: 'Moins de 10 % des candidatures acceptées l\'an dernier.'},
+     v: 'Moins de 10 % des candidatures acceptées, d\'après la FAQ consultée le 20 octobre 2026 (année de référence non précisée).'},
     {id: 'scores', t: 'SAT, ACT ou TOLC', src: 'programme',
      v: 'Un bon score SAT, ACT ou TOLC peut remplacer le test (seuil non publié).'},
     {id: 'parcoursup', t: 'Aussi sur Parcoursup en 2026', src: 'parcoursup',
      v: 'En 2026, le Bachelor était aussi sur Parcoursup via Mines Paris – PSL (Paris, 40 places, 667 vœux).',
      aConfirmer: 'Reconduction en 2027 à vérifier à partir du 17 décembre 2026.'},
     {id: 'licence', t: 'Grade de licence', src: 'licence',
-     v: 'Grade de licence depuis le 1er septembre 2026 (site de Paris).'}
+     v: 'Grade de licence depuis le 1ᵉʳ septembre 2026 (site de Paris).'}
   ],
 
   /* Réglages du test blanc : c'est la spécification produit, appuyée sur les faits « format » et « conditions ».
      questions : nombre officiel s'il est un jour vérifié ; null = on enchaîne jusqu'à la fin du temps. */
   test: {minutes: 40, questions: null, qcm: 4, malus: false, calculatrice: false, retourArriere: false,
-         pause: false, adaptatif: true, uneTentative: true, src: ['portail', 'faq']},
+         pause: false, adaptatif: true, uneTentative: true, src: ['portail', 'faq'],
+         /* Écran « Prêt ? » du test blanc : le jour J en bref (reformulation des faits « format » et « conditions »). */
+         jourJ: ['Chaque bonne réponse rend la question suivante plus difficile et mieux notée ; une erreur ne retire aucun point.',
+                 'Une question à la fois, sans retour en arrière : relis l\'énoncé et ta réponse avant de valider.',
+                 'Sur ordinateur, caméra, micro et partage d\'écran activés ; arrêt automatique à 40 minutes.'],
+         materiel: 'sur ordinateur, avec caméra et micro'},
 
   entretien: {minutes: 30, environ: true, anglais: true, src: 'portail'},
 
-  /* Calendrier : date 'AAAA-MM-JJ' (fin facultative pour une période). cible : date proposée par défaut
+  /* Calendrier : date 'AAAA-MM-JJ' (fin facultative pour une période ; approx: 'mois' quand seul le mois est publié :
+     affiché « janv. » sans compte à rebours). cible : date proposée par défaut
      pour le compte à rebours. conseil : recommandation de préparation, pas une règle de l'école. */
   calendrier: [
     {id: 'webinaire-fr', date: '2026-11-03', t: 'Webinaire en français, 18 h', src: 'evenements'},
@@ -96,7 +106,7 @@ window.ALBERT_INFOS = {
     {id: 'objectif-test', date: '2026-12-15', t: 'Objectif : test passé au plus tard', cible: true, conseil: true,
      note: 'C\'est un conseil de préparation, pas une règle de l\'école : avant la mise à jour de janvier, et tôt dans l\'ordre d\'arrivée des dossiers.'},
     {id: 'carte-psup', date: '2026-12-17', t: 'Carte Parcoursup 2027 en ligne', src: 'calpsup'},
-    {id: 'test-janvier', date: '2027-01-01', t: 'Test mis à jour et plus difficile', src: 'kit',
+    {id: 'test-janvier', date: '2027-01-01', approx: 'mois', t: 'Test mis à jour et plus difficile', src: 'kit',
      note: 'Date exacte non précisée : « à partir de janvier ».'},
     {id: 'voeux-psup', date: '2027-01-18', fin: '2027-03-11', t: 'Vœux Parcoursup', src: 'calpsup'},
     {id: 'confirmation-psup', date: '2027-04-01', t: 'Confirmation des vœux Parcoursup', src: 'calpsup'},
@@ -105,13 +115,14 @@ window.ALBERT_INFOS = {
 
   /* Checklist du dossier : ids STABLES, clés de S.albert.checklist. */
   dossier: [
+    {id: 'eligibilite', t: 'Éligibilité de ta filière et de tes spécialités confirmée par écrit par l\'école, avant le vrai test'},
     {id: 'identite',  t: 'Pièce d\'identité scannée'},
     {id: 'bulletins', t: 'Deux derniers bulletins de Première (puis T1 de Terminale en document supplémentaire)'},
     {id: 'cv',        t: 'CV d\'une page'},
     {id: 'lettre',    t: 'Lettre de 300 à 400 mots, 4 paragraphes, citant un événement de l\'école'},
     {id: 'relu',      t: 'Tout relu avant l\'envoi (documents obligatoires verrouillés ensuite)'},
     {id: 'webinaire', t: 'Webinaire ou portes ouvertes suivis'},
-    {id: 'questions', t: 'E-mail à admission@albertschool.com (contrat, acompte, calculatrice, Parcoursup)'},
+    {id: 'questions', t: 'E-mail à admission@albertschool.com (contrat, acompte, Parcoursup)'},
     {id: 'budget',    t: 'Budget validé avec la famille (14' + M + '900 €/an + logement)'},
     {id: 'bourse',    t: 'Justificatifs prêts pour la demande de bourse (avis d\'imposition)'},
     {id: 'materiel',  t: 'Ordinateur, webcam, micro, pièce calme testés pour le jour J'}
@@ -125,7 +136,8 @@ window.ALBERT_INFOS = {
                      hypotheses:[…] (découpage modèle, chiffré), corrige, ref (d'où vient l'ordre de grandeur)}
      La correction locale lit le nombre final de l'élève et mesure l'écart en puissances de 10 à [min, max].
    - anglais[]    : {id:'en-NN', q (en anglais), attendus:[…] (en français), aide:[…] (tournures utiles)}
-   - relances     : {accueil, motivation, estimation, anglais, cloture} : listes de relances du jury local.
+   - relances     : {accueil, motivation, estimation, anglais, cloture} : listes de relances du jury local
+                    (motivation[0] sert de relance fixe aux réponses trop courtes).
    - pitch        : {formats:[{id, t, sec, consigne, aConfirmer?}], checklist:[{id, t}]}
    - criteres     : libellés des 6 critères de l'évaluation (ids fixes : schéma de l'évaluation IA).
    - autoEval     : auto-évaluation du mode local, par critère : {id, items:[…]}.
@@ -152,7 +164,7 @@ window.ALBERT_ENTRETIEN = {
                 'La conscience que les maths sont l\'outil central, et la preuve que tu t\'y prépares.'],
      pieges: ['« Parce que c\'est l\'avenir », sans exemple.', 'Confondre la data avec l\'informatique pure.',
               'Annoncer un métier que tu ne sais pas décrire.']},
-    {id: 'mot-04', q: 'Parlez-moi d\'un projet dont vous êtes fier.',
+    {id: 'mot-04', q: 'Parlez-moi d\'un projet dont vous êtes fier ou fière.',
      attendus: ['Situation, ton rôle précis, tes actions, le résultat.', 'Au moins un chiffre : budget, nombre de personnes, résultat obtenu.',
                 'Ce que tu ferais différemment aujourd\'hui.'],
      pieges: ['Dire « on » tout le temps : le jury veut savoir ce que toi, tu as fait.', 'Un projet sans résultat ni apprentissage.',
@@ -178,14 +190,14 @@ window.ALBERT_ENTRETIEN = {
      pieges: ['Un sujet que tu ne maîtrises pas : le jury creuse.', 'Une opinion sans argument.', 'Une actualité vieille de plusieurs années.']},
     {id: 'mot-10', q: 'Racontez une expérience de travail en équipe.',
      attendus: ['Ton rôle exact dans l\'équipe.', 'Une difficulté (désaccord, retard) et la façon dont vous l\'avez réglée.', 'Le résultat obtenu ensemble.'],
-     pieges: ['Te présenter comme le seul qui travaillait.', 'Ne parler que de l\'ambiance.', 'Aucun exemple concret.']},
-    {id: 'mot-11', q: 'Comment vous êtes-vous renseigné sur l\'école et sur le programme ?',
+     pieges: ['Te présenter comme la seule personne qui travaillait.', 'Ne parler que de l\'ambiance.', 'Aucun exemple concret.']},
+    {id: 'mot-11', q: 'Quelles démarches avez-vous faites pour connaître l\'école et le programme ?',
      attendus: ['Des démarches concrètes : site, webinaire, portes ouvertes, échange avec un étudiant.',
                 'Un élément précis retenu lors de ces échanges.', 'Ce que cela a confirmé ou changé dans ton choix.'],
      pieges: ['Tout tirer des réseaux sociaux.', 'Citer un événement auquel tu n\'as pas assisté.', 'Réciter la plaquette.']},
     {id: 'mot-12', q: 'Pourquoi devrions-nous vous choisir ?',
      attendus: ['Trois atouts, chacun appuyé par une preuve.', 'Ce que tu apporteras aux autres étudiants.', 'De la conviction, sans arrogance.'],
-     pieges: ['« Parce que je suis motivé », sans preuve.', 'Te comparer aux autres candidats.', 'Une liste de qualités sans exemple.']},
+     pieges: ['« Parce que j\'ai la motivation », sans preuve.', 'Te comparer aux autres candidats.', 'Une liste de qualités sans exemple.']},
     {id: 'mot-13', q: 'Avez-vous des questions pour le jury ?',
      attendus: ['Une ou deux questions préparées, précises, dont la réponse n\'est pas sur le site.',
                 'Une question qui montre ton projet : stages, projets, vie associative.'],
@@ -201,9 +213,9 @@ window.ALBERT_ENTRETIEN = {
      ref: 'Ordre de grandeur largement repris lors de l\'inscription de la baguette au patrimoine de l\'UNESCO (2022) : environ 6 milliards de baguettes par an, soit environ 16 millions par jour. Population : INSEE.'},
     {id: 'est-02', q: 'Combien de balles de tennis faut-il pour remplir une salle de classe ?', unite: 'balles', ordre: [3e5, 1.5e6],
      hypotheses: ['Une salle de 8 m × 7 m × 3 m, soit environ 170 m³.',
-                  'Une balle de tennis mesure environ 6,7 cm de diamètre : rangée en cubes, elle occupe environ 300 cm³, soit 0,000 3 m³.',
+                  'Une balle de tennis mesure environ 6,7 cm de diamètre : rangée en cubes, elle occupe environ 300 cm³, soit 0,000' + M + '3 m³.',
                   'On ne retire pas les tables : elles prennent peu de place.'],
-     corrige: '170 ÷ 0,000 3 ≈ 570 000 balles rangées en cubes ; en les tassant un peu mieux, environ 700 000. Réponse : de l\'ordre de 500 000 à 1 million.',
+     corrige: '170 ÷ 0,000' + M + '3 ≈ 570' + M + '000 balles rangées en cubes ; en les tassant un peu mieux, environ 700' + M + '000. Réponse : de l\'ordre de 500' + M + '000 à 1 million.',
      ref: 'Pas de statistique : calcul géométrique (diamètre réglementaire d\'une balle : environ 6,5 à 6,9 cm).'},
     {id: 'est-03', q: 'Combien d\'entrées au cinéma sont vendues en France en un an ?', unite: 'entrées par an', ordre: [1e8, 3e8],
      hypotheses: ['Environ 68 millions d\'habitants.', 'Un peu plus de la moitié va au cinéma au moins une fois par an.',
@@ -214,29 +226,29 @@ window.ALBERT_ENTRETIEN = {
      hypotheses: ['Environ 68 millions d\'habitants et une espérance de vie d\'environ 80 ans.',
                   'Si la population était stable, chaque année « remplacerait » 1/80 de la population.',
                   'La fécondité baisse : on retire environ 15 %.'],
-     corrige: '68 millions ÷ 80 ≈ 850 000, moins 15 % : environ 700 000 naissances par an.',
+     corrige: '68 millions ÷ 80 ≈ 850' + M + '000, moins 15 % : environ 700' + M + '000 naissances par an.',
      ref: 'INSEE (bilan démographique 2024) : environ 660' + M + '000 naissances en 2024.'},
     {id: 'est-05', q: 'Combien de voitures particulières circulent en France ?', unite: 'voitures', ordre: [2.5e7, 5e7],
      hypotheses: ['Environ 30 millions de foyers.', 'Plus de 8 foyers sur 10 ont au moins une voiture, et environ un tiers en ont deux.',
                   'On ajoute les voitures d\'entreprise et de location : environ 10 %.'],
      corrige: '30 millions × (0,85 + 0,35) ≈ 36 millions, plus 10 % : un peu moins de 40 millions de voitures.',
-     ref: 'Ministère de la Transition écologique (SDES) : près de 39 millions de voitures particulières en circulation au 1er janvier 2024.'},
+     ref: 'Ministère de la Transition écologique (SDES) : près de 39 millions de voitures particulières en circulation au 1ᵉʳ janvier 2024.'},
     {id: 'est-06', q: 'Combien de litres d\'eau un foyer de 4 personnes consomme-t-il à la maison en un an ?', unite: 'litres par an', ordre: [1e5, 3e5],
      hypotheses: ['Une douche de 5 minutes à 10 litres par minute : 50 litres par personne et par jour.',
                   'Les toilettes : 5 passages à 6 litres, soit 30 litres.', 'Cuisine, vaisselle, linge, ménage : environ 50 litres.',
                   '4 personnes, 365 jours.'],
-     corrige: '130 litres × 4 personnes × 365 jours ≈ 190 000 litres, soit environ 190 m³ par an.',
-     ref: 'Repère souvent cité par les services de l\'eau : de l\'ordre de 150 litres par personne et par jour.'},
+     corrige: '130 litres × 4 personnes × 365 jours ≈ 190' + M + '000 litres, soit environ 190 m³ par an.',
+     ref: 'Souvent cité par les services de l\'eau : de l\'ordre de 150 litres par personne et par jour.'},
     {id: 'est-07', q: 'Combien de candidats passent le baccalauréat chaque année en France ?', unite: 'candidats', ordre: [5e5, 1e6],
-     hypotheses: ['Une génération compte environ 800 000 jeunes (naissances d\'il y a 18 ans).',
+     hypotheses: ['Une génération compte environ 800' + M + '000 jeunes (naissances d\'il y a 18 ans).',
                   'Environ 85 % d\'une génération se présente à un bac, toutes voies confondues.'],
-     corrige: '800 000 × 0,85 ≈ 700 000 candidats par an.',
+     corrige: '800' + M + '000 × 0,85 ≈ 700' + M + '000 candidats par an.',
      ref: 'Ministère de l\'Éducation nationale : de l\'ordre de 700' + M + '000 candidats par session, toutes voies confondues.'},
     {id: 'est-08', q: 'Combien de trains circulent chaque jour en France ?', unite: 'trains par jour', ordre: [5e3, 3e4],
      hypotheses: ['Trains régionaux : une douzaine de régions, environ 700 trains par région et par jour.',
-                  'Trains de banlieue en Île-de-France : environ 5 000 par jour.', 'Grandes lignes : environ 1 000 par jour.',
-                  'Fret : environ 1 000 par jour.'],
-     corrige: '8 000 + 5 000 + 1 000 + 1 000 ≈ 15 000 trains par jour.',
+                  'Trains de banlieue en Île-de-France : environ 5' + M + '000 par jour.', 'Grandes lignes : environ 1' + M + '000 par jour.',
+                  'Fret : environ 1' + M + '000 par jour.'],
+     corrige: '8' + M + '000 + 5' + M + '000 + 1' + M + '000 + 1' + M + '000 ≈ 15' + M + '000 trains par jour.',
      ref: 'SNCF : environ 15' + M + '000 trains par jour sur le réseau ferré national.'},
     {id: 'est-09', q: 'Combien de voyages sont effectués chaque jour dans le métro parisien ?', unite: 'voyages par jour', ordre: [3e6, 7e6],
      hypotheses: ['Environ 12 millions d\'habitants en Île-de-France, dont 2 millions à Paris.',
@@ -245,8 +257,8 @@ window.ALBERT_ENTRETIEN = {
      ref: 'RATP : de l\'ordre de 4 à 5 millions de voyages par jour ouvré.'},
     {id: 'est-10', q: 'Quel est le chiffre d\'affaires annuel d\'un café de quartier à Paris ?', unite: 'euros par an', ordre: [1.5e5, 1e6],
      hypotheses: ['Environ 300 clients par jour, du café du matin au déjeuner.', 'Un ticket moyen de 5 €.', 'Environ 330 jours d\'ouverture par an.'],
-     corrige: '300 × 5 € × 330 ≈ 500 000 € par an.',
-     ref: 'Pas de chiffre officiel : la correction porte sur la démarche. Une fourchette de 150 000 € à 1 million d\'euros est cohérente.'},
+     corrige: '300 × 5 € × 330 ≈ 500' + M + '000 € par an.',
+     ref: 'Pas de chiffre officiel : la correction porte sur la démarche. Une fourchette de 150' + M + '000 € à 1 million d\'euros est cohérente.'},
     {id: 'est-11', q: 'Combien de smartphones sont utilisés en France ?', unite: 'smartphones', ordre: [4e7, 8e7],
      hypotheses: ['Environ 68 millions d\'habitants, dont environ 58 millions de 12 ans et plus.',
                   'Près de 9 personnes sur 10 de 12 ans et plus ont un smartphone.', 'Environ 10 % ont en plus un téléphone professionnel.'],

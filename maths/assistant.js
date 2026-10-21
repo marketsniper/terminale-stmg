@@ -771,7 +771,8 @@ function md(t){
    l'appelant fournit tout et gère son propre fil. Rien ne change pour le Prof.
    messages : [{role:'user'|'assistant'|'system', content}] ; le premier et le dernier tour sont 'user'
    (un 'system' en milieu de fil suit un tour 'user'). o : {onDelta, signal, effort, max, schema}.
-   Lève les mêmes codes que askGroq / askClaude, plus AbortError (o.signal). */
+   Lève les mêmes codes que askGroq / askClaude, plus AbortError (o.signal) et COUPE (sortie structurée
+   tronquée par la limite de jetons : un JSON coupé est illisible, mieux vaut le dire que le deviner). */
 async function lireFlux(r, surLigne){
   const reader = r.body.getReader(), dec = new TextDecoder();
   let buf = '';
@@ -793,10 +794,12 @@ async function appelModele(f, systeme, messages, o){
   let texte = '', fin = '';
   if (f === 'groq'){
     const cle = cleGroq(); if (!cle) throw new Error('PAS_DE_CLE');
-    const corps = {model: GROQ_MODEL, stream: true, max_completion_tokens: o.max || 4000,
+    /* Sortie structurée : pas de response_format. Le mode JSON de Groq n'est pas garanti en streaming, et le prompt
+       demande déjà l'objet JSON (lecture tolérante côté appelant). Le raisonnement compte dans max_completion_tokens :
+       8 000 jetons pour l'évaluation, 4 000 pour un tour de conversation. */
+    const corps = {model: GROQ_MODEL, stream: true, max_completion_tokens: o.max || (o.schema ? 8000 : 4000),
                    reasoning_effort: o.effort === 'medium' ? 'medium' : 'low',
                    messages: [{role: 'system', content: systeme}].concat(messages)};
-    if (o.schema) corps.response_format = {type: 'json_object'};          // le prompt doit demander du JSON
     const r = await fetch(GROQ_URL, {method: 'POST', signal: o.signal,
       headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + cle}, body: JSON.stringify(corps)});
     if (!r.ok){
@@ -835,6 +838,7 @@ async function appelModele(f, systeme, messages, o){
     });
     if (fin === 'refusal') throw new Error('REFUS');
   } else throw new Error('PAS_DE_CLE');
+  if (o.schema && (fin === 'length' || fin === 'max_tokens')){ const e = new Error('COUPE'); e.detail = fin; throw e; }
   texte = nettoie(texte);
   if (!texte){ const e = new Error('VIDE'); e.detail = fin || 'aucun texte reçu'; throw e; }
   return texte;
