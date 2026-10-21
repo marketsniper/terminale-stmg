@@ -7,8 +7,9 @@
 'use strict';
 
 /* Libellés des thèmes de la piste (champ theme des compétences). Un thème inconnu garde son nom, capitalisé. */
-const _albTHEMES = {calcul: 'Calcul', logique: 'Logique', suites: 'Suites', stats: 'Statistiques', proba: 'Probabilités',
-  fonctions: 'Fonctions', algebre: 'Algèbre', geometrie: 'Géométrie', donnees: 'Lecture de données', autres: 'Autres'};
+const _albTHEMES = {calcul: 'Calcul', arithmetique: 'Arithmétique', denombrement: 'Dénombrement', logique: 'Logique', suites: 'Suites',
+  stats: 'Statistiques', proba: 'Probabilités', fonctions: 'Fonctions', algebre: 'Algèbre', geometrie: 'Géométrie',
+  donnees: 'Lecture de données', autres: 'Autres'};
 /* Faits affichés d'emblée sur le hub ; les autres sont repliés sous « Toutes les infos ». */
 const _albFAITS_CLES = ['eligibilite', 'format', 'conditions', 'tentative', 'moment', 'janvier', 'fil-eau'];
 
