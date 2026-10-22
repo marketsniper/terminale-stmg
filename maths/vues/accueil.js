@@ -673,6 +673,9 @@ function vAccueil(){
     /* 4. la phrase du coach */
     '<div class="coach-msg"><p>' + esc(_accContextuel(prog, abs)) + '</p></div>' +
 
+    /* Objectif Albert School : carte d'entrée (vues/albert.js), bouton .btn branché par [data-v] */
+    (typeof window.albertCarte === 'function' ? window.albertCarte('accueil') : '') +
+
     /* 10. le test de la semaine, le dimanche */
     (dimanche && acquises >= 3
       ? '<section class="card"><h2>Test de la semaine</h2>' +

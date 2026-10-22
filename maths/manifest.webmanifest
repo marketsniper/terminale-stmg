@@ -21,6 +21,7 @@
   "shortcuts": [
     { "name": "Séance du jour", "short_name": "Séance", "url": "./?go=seance", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
     { "name": "Calcul mental", "short_name": "Calcul", "url": "./?go=cm", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
-    { "name": "Cahier d'erreurs", "short_name": "Cahier", "url": "./?go=erreurs", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] }
+    { "name": "Cahier d'erreurs", "short_name": "Cahier", "url": "./?go=erreurs", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Objectif Albert School", "short_name": "Albert", "url": "./?go=albert", "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }
