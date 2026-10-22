@@ -6160,6 +6160,7 @@ html.sommet-ouvert, html.sommet-ouvert body{overflow:hidden}
 <div class="sc-corps"></div>
 <button class="sc-go" id="sommet-go" type="button">Ouvrir les maths</button>
 </aside>
+<p class="sommet-lien" id="albert-lien-maths"><a class="sommet-btn" href="#sommet/albert">🎯 Objectif Albert School</a> <span>Test blanc adaptatif de 40 min, 30 familles de questions avec leçons, entretien blanc : tout pour préparer l’admission, dans De zéro au sommet.</span></p>
 
 <details class="fiche" id="maths-1">
 <summary><span class="f-num">Chap. 1</span><span class="f-title">Automatismes et pourcentages</span></summary>
@@ -8847,6 +8848,7 @@ html.sommet-ouvert, html.sommet-ouvert body{overflow:hidden}
 <h2>Le bac STMG 2027</h2>
 <p class="m-intro">Comment ta note finale se construit, à quoi ressemblent les épreuves, et comment utiliser ces fiches pour t'avancer avant la rentrée.</p>
 </header>
+<p class="sommet-lien" id="albert-lien-bac"><a class="sommet-btn" href="#sommet/albert">🎯 Objectif Albert School</a> <span>Ton espace de préparation à l’admission : calendrier et infos vérifiées, test blanc de 40 min comme le vrai, leçons sur les 30 familles de questions, entretien blanc.</span></p>
 
 <details class="fiche" id="bac-1">
 <summary><span class="f-num">Épreuves</span><span class="f-title">Les épreuves et les coefficients</span></summary>
@@ -9183,7 +9185,7 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-20-d5de7752","da
      Messages échangés avec l'app maths (même origine uniquement, voir maths/app.js « Mode embarqué ») :
         maths vers ici : {source:'mzs', type:'pret' | 'theme' | 'fermer', theme, couleur}
         ici vers maths : {source:'stmg', type:'aller', go:'ds', skill:'<id>'} */
-  const SOMMET_RE = /^#sommet(?:\/ds\/([a-z0-9-]+))?$/;
+  const SOMMET_RE = /^#sommet(?:\/ds\/([a-z0-9-]+)|\/(albert))?$/;   //  #sommet · #sommet/ds/<skill> · #sommet/albert
   const SOMMET_FOND = { light: '#F5F2EB', dark: '#0C1122' };            // maths/core/theme.js, _themeMeta
   const SOMMET_CAMPS = [0, 800, 1600, 2400, 3200, 3900, 4300, 4810];    // maths/core/pedagogie.js, CAMPS
   const SOMMET_NB = [0, 10, 10, 9, 10, 8, 3, 3];                         // compétences par phase (maths/skills/*.js) : table de secours, voir sommetNb
@@ -9222,12 +9224,12 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-20-d5de7752","da
     } catch(e){}
     ['haut', 'droite', 'bas', 'gauche'].forEach(function(n, i){ sommet.cadre.style.setProperty('--sommet-' + n, v[i] + 'px'); });
   }
-  function sommetAdresse(skill){ return './maths/?embed=1' + (skill ? '&go=ds&skill=' + encodeURIComponent(skill) : ''); }
-  function sommetCharger(skill){
+  function sommetAdresse(skill, cible){ return './maths/?embed=1' + (cible === 'albert' ? '&go=albert' : skill ? '&go=ds&skill=' + encodeURIComponent(skill) : ''); }
+  function sommetCharger(skill, cible){
     if (sommet.frame) sommet.frame.remove();
     const f = document.createElement('iframe');
     f.title = 'Maths · De zéro au sommet';
-    f.src = sommetAdresse(skill);
+    f.src = sommetAdresse(skill, cible);
     sommet.frame = f; sommet.pret = false; sommet.attente = '';
     sommet.cadre.appendChild(f);
     const retour = sommet.cadre.querySelector('.sommet-retour'), lent = sommet.cadre.querySelector('.sommet-lent');
@@ -9251,14 +9253,16 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-20-d5de7752","da
     document.body.appendChild(c);
     sommet.cadre = c;
   }
-  function sommetAller(skill){
-    if (!skill || !sommet.frame) return;
-    if (!sommet.pret){ sommet.attente = skill; return; }
-    try { sommet.frame.contentWindow.postMessage({ source: 'stmg', type: 'aller', go: 'ds', skill: skill }, location.origin); } catch(e){}
+  //  cible : '' (accueil des maths), un id de compétence (DS en vue) ou 'albert' (écran Objectif Albert School)
+  function sommetAller(skill, cible){
+    if ((!skill && cible !== 'albert') || !sommet.frame) return;
+    if (!sommet.pret){ sommet.attente = cible === 'albert' ? 'albert' : skill; return; }
+    try { sommet.frame.contentWindow.postMessage(cible === 'albert' ? { source: 'stmg', type: 'aller', go: 'albert' }
+                                               : { source: 'stmg', type: 'aller', go: 'ds', skill: skill }, location.origin); } catch(e){}
   }
-  function sommetOuvrir(skill){
+  function sommetOuvrir(skill, cible){
     if (!sommet.cadre) sommetCreer();
-    if (!sommet.frame) sommetCharger(skill); else sommetAller(skill);
+    if (!sommet.frame) sommetCharger(skill, cible); else sommetAller(skill, cible);
     if (sommet.ouvert) return;
     sommet.ouvert = true;
     sommet.focus = document.activeElement;
@@ -9308,7 +9312,7 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-20-d5de7752","da
       sommet.avant = SOMMET_RE.test(avant) ? '' : avant;
       sommet.pousse = !!e;
     }
-    sommetOuvrir(m[1] || '');
+    sommetOuvrir(m[1] || '', m[2] || '');
   }
   window.addEventListener('hashchange', sommetSync);
   window.addEventListener('message', function(e){
@@ -9321,7 +9325,7 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-20-d5de7752","da
       sommet.cadre.querySelector('.sommet-lent').hidden = true;
       sommetCouleurs(d.theme, d.couleur);
       sommetMarges();
-      if (sommet.attente){ const s = sommet.attente; sommet.attente = ''; sommetAller(s); }
+      if (sommet.attente){ const s = sommet.attente; sommet.attente = ''; if (s === 'albert') sommetAller('', 'albert'); else sommetAller(s); }
       if (sommet.ouvert){ try { sommet.frame.focus(); } catch(x){} }
     }
     else if (d.type === 'theme') sommetCouleurs(d.theme, d.couleur);

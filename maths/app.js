@@ -118,11 +118,12 @@ function _appInitEmbarque(){
     if (e.origin !== location.origin || e.source !== window.parent) return;
     const d = e.data;
     if (!d || d.source !== 'stmg') return;
-    if (d.type === 'aller' && d.go === 'ds'){
-      let onboarde = false;
-      try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
-      if (onboarde) _appAllerDS(d.skill);
-    }
+    if (d.type !== 'aller') return;
+    let onboarde = false;
+    try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
+    if (!onboarde) return;
+    if (d.go === 'ds') _appAllerDS(d.skill);
+    else if (d.go === 'albert') nav('albert');
   });
 
   /* Premier écran affiché (bus « vue » du routeur) : l'app STMG est prévenue, puis la demande de l'adresse
