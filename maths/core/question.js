@@ -255,8 +255,7 @@ function askQuestion(box, opts, cb){
       (modeQcm
         ? '<div class="opts" role="group" aria-label="Réponses">' + choix.map((c, i) =>
             '<button class="opt" type="button" data-c="' + _qEsc(c) + '"><span class="letter num">' + lettres[i] +
-            '</span><span class="opt-txt">' + _qEsc(_qExpr(c)) + '</span><kbd>' + (i + 1) + '</kbd></button>').join('') + '</div>' +
-          (indicesOk ? '<button class="btn btn-ghost q-hint" type="button" data-hint>' + _qIc('lightbulb', 20) + '<span>Indice</span></button>' : '')
+            '</span><span class="opt-txt">' + _qEsc(_qExpr(c)) + '</span><kbd>' + (i + 1) + '</kbd></button>').join('') + '</div>'
         : '<form class="answer-row" autocomplete="off">' +
             '<input type="text" inputmode="' + inputmode + '" enterkeyhint="done" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Ta réponse" aria-label="Réponse">' +
             '<button class="btn-primary sm" type="submit" data-role="validate"><span>' + (differe ? 'Suivante' : 'Valider') +
@@ -489,10 +488,8 @@ function askQuestion(box, opts, cb){
     zone.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
       if (repondu) return;
       const val = b.dataset.c, ok = normStr(val) === normStr(ex.a);
-      if (btnIndice) btnIndice.disabled = true;
       zone.querySelectorAll('.opt').forEach(x => {
         x.disabled = true; x.tabIndex = -1;
-        if (differe) return;                               // évaluation : rien ne trahit la bonne réponse
         if (normStr(x.dataset.c) === normStr(ex.a)) x.classList.add('good');
         else if (x === b) x.classList.add('bad');
       });

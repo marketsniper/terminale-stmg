@@ -2,7 +2,7 @@
    Hors-ligne complet, mise à jour annoncée (jamais de skipWaiting silencieux). */
 'use strict';
 
-const CACHE = 'mzs-e8670a38a6';
+const CACHE = 'mzs-1de517df11';
 /* Plusieurs apps vivent sur le même domaine (l'app STMG à la racine, celle-ci dans /maths/).
    Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier. */
 const PREFIXE = 'mzs-';
@@ -18,41 +18,10 @@ const ASSETS = [
   './vues/accueil.js', './vues/programme.js', './vues/seance.js', './vues/calcul-mental.js',
   './vues/test.js', './vues/erreurs.js', './vues/coach.js', './vues/micro-ds.js',
   './vues/epreuve.js', './vues/papier.js', './vues/reglages.js', './vues/onboarding.js',
-  './vues/albert.js', './vues/albert-test.js', './vues/albert-oral.js', './albert/albert-donnees.js',
   './app.js', './techniques.js', './assistant.js',
   './papier/papier-a.js', './papier/papier-b.js', './papier/papier-c.js', './papier/papier-d.js',
   './skills/skills-p1.js', './skills/skills-p2.js', './skills/skills-p3.js', './skills/skills-p4.js',
   './skills/skills-p4b.js', './skills/skills-p5.js', './skills/skills-p6.js', './skills/skills-p7.js',
-  './skills/skills-albert.js',
-  './skills/skills-albert-02-calcul-mental.js',
-  './skills/skills-albert-03-moyennes.js',
-  './skills/skills-albert-04-ordres-grandeur.js',
-  './skills/skills-albert-05-compter-intervalles.js',
-  './skills/skills-albert-06-denombrement.js',
-  './skills/skills-albert-07-probabilites.js',
-  './skills/skills-albert-08-unites-cycles-restes.js',
-  './skills/skills-albert-09-factorielles.js',
-  './skills/skills-albert-10-suites-recurrences.js',
-  './skills/skills-albert-11-equations-carre.js',
-  './skills/skills-albert-12-courbes-regions.js',
-  './skills/skills-albert-13-permutations.js',
-  './skills/skills-albert-14-calendriers-horloges.js',
-  './skills/skills-albert-15-aires-effet-carre.js',
-  './skills/skills-albert-16-logique.js',
-  './skills/skills-albert-17-chiffres-ecriture.js',
-  './skills/skills-albert-18-puissances.js',
-  './skills/skills-albert-19-parite-invariants.js',
-  './skills/skills-albert-20-mise-en-equation.js',
-  './skills/skills-albert-21-tiroirs.js',
-  './skills/skills-albert-22-vitesses-debits.js',
-  './skills/skills-albert-23-optimisation.js',
-  './skills/skills-albert-24-classements.js',
-  './skills/skills-albert-25-suites-logiques.js',
-  './skills/skills-albert-26-grilles.js',
-  './skills/skills-albert-27-geometrie-plane.js',
-  './skills/skills-albert-28-cubes-espace.js',
-  './skills/skills-albert-29-visuel-2d.js',
-  './skills/skills-albert-30-fonctions-variations.js',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'
 ];
 

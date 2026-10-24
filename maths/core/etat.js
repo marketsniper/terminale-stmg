@@ -36,8 +36,7 @@ function defState(){ return {
   records: { precision: 0, questions: 0, cmSecs: null, seanceMax: 0, serieMax: 0 },
   compteurs: { reparees: 0 },
   bilans: {},                             // 'AAAA-Www' : bilan hebdomadaire
-  cdj: {},                                // 'AAAA-MM-JJ' : calcul du jour, 400 maximum
-  albert: { v: 1, dateCible: '', tests: [], enCours: null, entretiens: [], bt: {}, checklist: {}, notes: {} }   // module Objectif Albert
+  cdj: {}                                 // 'AAAA-MM-JJ' : calcul du jour, 400 maximum
 }; }
 
 /* État courant. Toujours lu par référence : ne jamais le remplacer sans passer par migrer(). */
@@ -69,16 +68,6 @@ function _etatPurger(){
   if (S.reparees.length > 50) S.reparees = S.reparees.slice(-50);
   if (S.tests.length > 60) S.tests = S.tests.slice(-60);
   if (S.epreuves.length > 40) S.epreuves = S.epreuves.slice(-40);
-  const A = S.albert;
-  if (A && typeof A === 'object'){
-    if (Array.isArray(A.tests) && A.tests.length > 40) A.tests = A.tests.slice(-40);
-    if (Array.isArray(A.entretiens) && A.entretiens.length > 30) A.entretiens = A.entretiens.slice(-30);
-    /* Raisonnements « jury-<id du test>-n » d'un test sorti de l'historique : orphelins, ils ne partent plus au Gist. */
-    if (Array.isArray(A.tests) && A.notes && typeof A.notes === 'object'){
-      const ids = new Set(A.tests.map(t => t && t.id));
-      Object.keys(A.notes).forEach(k => { const m = /^jury-(.+)-\d+$/.exec(k); if (m && !ids.has(m[1])) delete A.notes[k]; });
-    }
-  }
   Object.values(S.skills).forEach(s => { if (s.rev && s.rev.length > 12) s.rev = s.rev.slice(-12); });
   const cles = Object.keys(S.cdj);
   if (cles.length > 400) cles.sort().slice(0, cles.length - 400).forEach(k => { delete S.cdj[k]; });
@@ -129,49 +118,6 @@ function _etatAccueillirAjouts(){
   });
 }
 
-/* ---------- module Objectif Albert : S.albert complété sans rien perdre (idempotent) ----------
-   Sous-version propre au module (S.albert.v) : SCHEMA ne bouge jamais pour lui. */
-function _etatAlbert(){
-  const D = defState().albert;
-  if (!S.albert || typeof S.albert !== 'object' || Array.isArray(S.albert)) S.albert = D;
-  const A = S.albert;
-  Object.keys(D).forEach(k => { if (A[k] === undefined) A[k] = D[k]; });
-  ['tests', 'entretiens'].forEach(k => { if (!Array.isArray(A[k])) A[k] = []; });
-  ['bt', 'checklist', 'notes'].forEach(k => { if (!A[k] || typeof A[k] !== 'object' || Array.isArray(A[k])) A[k] = {}; });
-  if (typeof A.dateCible !== 'string') A.dateCible = '';
-  /* Historique : champs numériques forcés en nombres finis (un état importé ou le Gist ne doit pas injecter de HTML). */
-  const fini = x => { const n = Number(x); return isFinite(n) ? n : 0; };
-  A.tests = A.tests.filter(t => t && typeof t === 'object' && !Array.isArray(t));
-  A.tests.forEach(t => {
-    if (typeof t.id !== 'string') t.id = String(t.id == null ? '' : t.id);
-    ['date', 'duree', 'n', 'ok', 'vides', 'depart', 'palierMax', 'palierFin', 'niveau', 'sorties'].forEach(k => { if (t[k] !== undefined) t[k] = fini(t[k]); });
-    if (t.points !== undefined && t.points !== null) t.points = fini(t.points);
-    if (!Array.isArray(t.parQ)) t.parQ = [];
-    t.parQ = t.parQ.filter(q => q && typeof q === 'object');
-    t.parQ.forEach(q => { q.p = fini(q.p); if (q.v !== undefined) q.v = fini(q.v); });
-    if (t.jury !== undefined && !Array.isArray(t.jury)) t.jury = [];
-    if (Array.isArray(t.jury)){ t.jury = t.jury.filter(j => j && typeof j === 'object'); t.jury.forEach(j => { j.p = fini(j.p); }); }
-  });
-  A.entretiens = A.entretiens.filter(e => e && typeof e === 'object' && !Array.isArray(e));
-  A.entretiens.forEach(e => {
-    if (e.note !== undefined) e.note = fini(e.note);
-    if (Array.isArray(e.criteres)) e.criteres.forEach(c => { if (c && typeof c === 'object') c.note = fini(c.note); });
-  });
-  /* Test en cours illisible (pas de parQ, bornes invalides ou plus de 2 h) : écarté, sinon il bloquerait le test blanc. */
-  const E = A.enCours;
-  if (E !== null){
-    const ok = E && typeof E === 'object' && !Array.isArray(E) && Array.isArray(E.parQ) &&
-      typeof E.debut === 'number' && typeof E.limite === 'number' && isFinite(E.debut) && isFinite(E.limite) &&
-      E.limite - E.debut >= 0 && E.limite - E.debut <= 2 * 3600000;
-    if (!ok) A.enCours = null;
-    else {
-      E.parQ = E.parQ.filter(q => q && typeof q === 'object');
-      E.palier = Math.max(1, Math.min(5, Math.round(fini(E.palier)) || 2));
-      if (E.courant !== undefined && E.courant !== null && (typeof E.courant !== 'object' || Array.isArray(E.courant))) E.courant = null;
-    }
-  }
-}
-
 /* ---------- migration v1 vers v2 ----------
    Idempotente : deux appels de suite donnent exactement le même état.
    Appelée juste après la lecture de localStorage, après importEtat() et après recupererSiVide(). */
@@ -188,7 +134,6 @@ function migrer(etat){
   ['erreurs', 'reparees', 'tests', 'epreuves'].forEach(k => { if (!Array.isArray(S[k])) S[k] = []; });
   ['journal', 'skills', 'papier', 'typErr', 'jalons', 'succes', 'bilans', 'cdj'].forEach(k => { if (!S[k] || typeof S[k] !== 'object') S[k] = {}; });
   if (!Array.isArray(S.serie.utilises)) S.serie.utilises = [];
-  _etatAlbert();
   _etatAccueillirAjouts();
 
   if (dejaV2){ S.v = SCHEMA; return S; }
@@ -499,8 +444,6 @@ function etatPoids(e){
     Object.values(e.skills || {}).forEach(s => { if (s && s.lu) p++; });
     p += 5 * ((e.tests || []).length + (e.epreuves || []).length + Object.keys(e.papier || {}).length);
     p += Object.keys(e.jalons || {}).length + Object.keys(e.succes || {}).length + ((e.compteurs && e.compteurs.reparees) || 0);
-    const A = (e.albert && typeof e.albert === 'object') ? e.albert : {};
-    p += 5 * ((Array.isArray(A.tests) ? A.tests.length : 0) + (Array.isArray(A.entretiens) ? A.entretiens.length : 0));
   } catch(x){}
   return p;
 }
@@ -538,7 +481,7 @@ async function effacerTout(){
   _etatGele = true;
   if (_etatTimer){ clearTimeout(_etatTimer); _etatTimer = null; }
   clearTimeout(syncTimer);
-  try { [K, 'mzs-theme', 'mzs-motion', K_TOKEN, K_GIST, K_SYNC, K_SIG, 'mzs-albert-entretien'].forEach(k => localStorage.removeItem(k)); } catch(e){}
+  try { [K, 'mzs-theme', 'mzs-motion', K_TOKEN, K_GIST, K_SYNC, K_SIG].forEach(k => localStorage.removeItem(k)); } catch(e){}
   await avecDelai(_etatMiroirFile, 2000, null);
   await avecDelai(new Promise(res => {
     try { const r = indexedDB.deleteDatabase('mzs'); r.onsuccess = r.onerror = r.onblocked = () => res(true); }

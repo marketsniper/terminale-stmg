@@ -31,13 +31,7 @@ const VUES = {
   methode:    'vMethode',
   regles:     'vRegles',
   onboarding: 'vOnboarding',
-  bilan:      'vBilanAltitude',
-  albert:          'vAlbert',
-  albertLecon:     'vAlbertLecon',
-  albertTest:      'vAlbertTest',
-  albertRun:       'runAlbertTest',
-  albertOral:      'vAlbertOral',
-  albertEntretien: 'runAlbertEntretien'
+  bilan:      'vBilanAltitude'
 };
 
 /* Onglet parent de chaque route (pour aria-current). */
@@ -45,23 +39,21 @@ const _rtParent = {
   skill:'programme', papier:'programme', papierEx:'programme', techniques:'programme', technique:'programme',
   cm:'accueil', seance:'accueil', micro:'accueil',
   test:'coach', ds:'coach', epreuve:'coach', epreuveRun:'coach', methode:'coach', regles:'coach',
-  reglages:null, bilan:null, onboarding:null,
-  albert:'coach', albertLecon:'coach', albertTest:'coach', albertRun:'coach', albertOral:'coach', albertEntretien:'coach'
+  reglages:null, bilan:null, onboarding:null
 };
 
 /* Routes qu'un rechargement ne doit jamais restaurer (un parcours ne reprend pas à froid). */
-const _rtVolatiles = ['seance', 'epreuveRun', 'bilan', 'onboarding', 'ds', 'micro', 'albertRun', 'albertEntretien'];
+const _rtVolatiles = ['seance', 'epreuveRun', 'bilan', 'onboarding', 'ds', 'micro'];
 
 /* Parcours qui démarrent dès leur rendu : l'historique (retour, avance) ne les relance jamais,
    il rend leur écran de départ. Les autres vues reçoivent params.retour et décident
    (épreuve et DS rouvrent leur dernière correction). */
-const _rtRetour = {seance: 'accueil', micro: 'accueil', albertEntretien: 'albertOral'};
+const _rtRetour = {seance: 'accueil', micro: 'accueil'};
 
 /* Feuille de sortie : le nom du parcours en cours (la série d'une leçon par défaut). */
 const _rtSortie = {seance: 'la séance', micro: 'les 5 minutes', cm: 'le sprint', test: 'le test', ds: 'le DS',
                    epreuveRun: 'l\'épreuve', erreurs: 'le cahier', accueil: 'le rappel', papierEx: 'l\'exercice',
-                   bilan: 'le bilan', onboarding: 'le bilan',
-                   albertRun: 'le test blanc', albertEntretien: 'l\'entretien blanc'};
+                   bilan: 'le bilan', onboarding: 'le bilan'};
 
 /* État de la vue courante : une vue pose sa garde et son drapeau « parcours en cours ».
    Propriété de window (jamais de déclaration lexicale) pour rester accessible partout. */
@@ -104,11 +96,10 @@ async function nav(v, params){
   /* 1. garde de sortie du parcours en cours */
   const vc = window.vueCourante;
   if (vc && typeof vc.garde === 'function' && !vc.garde()){
-    const copie = vc.v === 'ds' || vc.v === 'epreuveRun' || vc.v === 'albertRun';       // correction différée : rien n'est compté avant la fin
+    const copie = vc.v === 'ds' || vc.v === 'epreuveRun';       // correction différée : rien n'est compté avant la fin
     const i = await ouvrirFeuille({
       titre: 'Quitter ' + (_rtSortie[vc.v] || 'la série') + ' ?',
-      texte: vc.v === 'albertEntretien' ? 'L\'entretien ne sera pas évalué : rien n\'est enregistré.'
-           : copie ? 'Ta copie ne sera pas corrigée : aucune réponse n\'est comptée.'
+      texte: copie ? 'Ta copie ne sera pas corrigée : aucune réponse n\'est comptée.'
                    : 'Ton étape en cours est perdue, les réponses déjà données sont gardées.',
       boutons: [{label: 'Rester'}, {label: 'Quitter', style: 'danger'}]
     });

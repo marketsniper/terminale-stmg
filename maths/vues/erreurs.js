@@ -16,7 +16,7 @@ let _errVisibles = _errPAGE;
 /* ============================================================
    1. Petits utilitaires
    ============================================================ */
-function _errSkill(sid){ try { return (window.SKILLS || []).find(s => s.id === sid) || (window.ALBERT_SKILLS || []).find(s => s.id === sid) || null; } catch(e){ return null; } }
+function _errSkill(sid){ try { return (window.SKILLS || []).find(s => s.id === sid) || null; } catch(e){ return null; } }
 function _errTitre(sid){ const s = _errSkill(sid); return s ? s.titre : 'compétence archivée'; }
 function _errType(id){ try { return TYPES_ERR.find(t => t.id === id) || null; } catch(e){ return null; } }
 
@@ -341,7 +341,7 @@ function _errBrancher(liste){
 
   zone.querySelectorAll('[data-lecon]').forEach(b => b.addEventListener('click', () => {
     const e = S.erreurs[Number(b.dataset.lecon)];
-    if (e) nav(/^alb-/.test(e.sid) ? 'albertLecon' : 'skill', {id: e.sid});   // erreur de la piste Albert : sa leçon
+    if (e) nav('skill', {id: e.sid});
   }));
 
   zone.querySelectorAll('[data-classer]').forEach(b => b.addEventListener('click', () => {
