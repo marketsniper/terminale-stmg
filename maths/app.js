@@ -7,7 +7,7 @@
    ------------------------------------------------------------ */
 window.ASSIST_GO = function(quoi, id){
   try { snd.click(); } catch(e){}
-  if (quoi === 'skill') nav('skill', {id});
+  if (quoi === 'skill') nav(/^alb-/.test(String(id)) ? 'albertLecon' : 'skill', {id});   // piste Albert : sa propre leçon
   else nav('techniques', {ouvrir: id});
 };
 
@@ -118,11 +118,12 @@ function _appInitEmbarque(){
     if (e.origin !== location.origin || e.source !== window.parent) return;
     const d = e.data;
     if (!d || d.source !== 'stmg') return;
-    if (d.type === 'aller' && d.go === 'ds'){
-      let onboarde = false;
-      try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
-      if (onboarde) _appAllerDS(d.skill);
-    }
+    if (d.type !== 'aller') return;
+    let onboarde = false;
+    try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
+    if (!onboarde) return;
+    if (d.go === 'ds') _appAllerDS(d.skill);
+    else if (d.go === 'albert') nav('albert');
   });
 
   /* Premier écran affiché (bus « vue » du routeur) : l'app STMG est prévenue, puis la demande de l'adresse
@@ -311,7 +312,8 @@ function raccourcis(){
     if (e.key === 'Escape'){
       if (dialogueOuvert){ return; }                        // le <dialog> gère lui-même (cancel → bouton secondaire)
       if (document.body.dataset.ctx === 'parcours'){ e.preventDefault(); quitterParcours(); return; }
-      if (document.body.dataset.ctx === 'lecon'){ e.preventDefault(); nav('programme'); return; }
+      /* vers le parent déclaré par setCtx : programme pour vSkill, albert pour vAlbertLecon */
+      if (document.body.dataset.ctx === 'lecon'){ e.preventDefault(); nav((_uiCtx && _uiCtx.parent) || 'programme'); return; }
       return;
     }
     if (e.key === 'Enter' && !meta){
@@ -334,10 +336,10 @@ function raccourcis(){
       else if (/^Key[A-D]$/.test(e.code)) idx = e.code.charCodeAt(3) - 65;
       if (idx >= 0){ e.preventDefault(); q.choisir(idx); return; }
     }
-    if (_appAccord && /^Key[APCE]$/.test(e.code)){
+    if (_appAccord && /^Key[APCEB]$/.test(e.code)){
       e.preventDefault();
       _appAccord = 0;
-      nav({A: 'accueil', P: 'programme', C: 'erreurs', E: 'coach'}[e.code.slice(3)]);
+      nav({A: 'accueil', P: 'programme', C: 'erreurs', E: 'coach', B: 'albert'}[e.code.slice(3)]);
       return;
     }
     if (e.code === 'KeyG'){ _appAccord = 1; setTimeout(() => { _appAccord = 0; }, 800); return; }
@@ -354,7 +356,7 @@ function raccourcis(){
 function _appAide(){
   const l = [['↵', 'Valider puis continuer'], ['1 à 4', 'Choisir une réponse'], ['Échap', 'Fermer, ou quitter le parcours'],
              ['⌘K', 'Palette de recherche'], ['⌘J', 'Le Prof'], ['⌘,', 'Réglages'],
-             ['T', 'Changer de thème'], ['S', 'Couper ou remettre les sons'], ['G puis A P C E', 'Aller à un onglet']];
+             ['T', 'Changer de thème'], ['S', 'Couper ou remettre les sons'], ['G puis A P C E B', 'Aller à un onglet (B : Objectif Albert)']];
   ouvrirFeuille({
     classe: 'sheet-aide', titre: 'Raccourcis clavier',
     contenu: '<dl class="kbd-list">' + l.map(x => '<div><dt><kbd>' + x[0] + '</kbd></dt><dd>' + x[1] + '</dd></div>').join('') + '</dl>',
@@ -377,6 +379,11 @@ function palette(){
   push('Actions', 'Cahier d\'erreurs', '', () => nav('erreurs'));
   push('Actions', 'Réglages', '', () => nav('reglages'));
   push('Actions', 'Comment ça marche', '', () => nav('methode'));
+  /* Groupe « Albert » : le groupe Actions est déjà plein (8 entrées affichées par groupe au plus). */
+  push('Albert', 'Objectif Albert School', 'hub', () => nav('albert'));
+  push('Albert', 'Test blanc Albert', '40 min', () => nav('albertTest'));
+  push('Albert', 'Entretien Albert', 'oral', () => nav('albertOral'));
+  try { (window.ALBERT_SKILLS || []).forEach(s => push('Albert', s.titre, 'piste Albert', () => nav('albertLecon', {id: s.id}))); } catch(e){}
   try { (window.SKILLS || []).forEach(s => push('Compétences', s.titre, 'Phase ' + s.phase, () => nav('skill', {id: s.id}))); } catch(e){}
   try { (window.CM_FAMS || []).forEach(f => push('Techniques', f.nom || f.titre || f.id, f.cat || '', () => nav('techniques', {ouvrir: f.id}))); } catch(e){}
   try { (S.erreurs || []).slice(0, 5).forEach(er => push('Erreurs', er.q.split('\n')[0].slice(0, 60), '', () => nav('erreurs'))); } catch(e){}
@@ -384,7 +391,7 @@ function palette(){
   const rendu = q => {
     const mots = norm(q).split(/\s+/).filter(Boolean);
     const gardes = items.filter(it => mots.every(m => it.idx.indexOf(m) >= 0));
-    const groupes = ['Actions', 'Compétences', 'Techniques', 'Erreurs'];
+    const groupes = ['Actions', 'Albert', 'Compétences', 'Techniques', 'Erreurs'];   // un groupe absent d'ici est filtré en silence
     items.forEach(it => { it._k = -1; });       // sinon un numéro d'un rendu précédent lançait la mauvaise action
     let h = '', k = 0;
     groupes.forEach(g => {
@@ -508,7 +515,7 @@ async function initApp(){
   raccourcis();
 
   const params = new URLSearchParams(location.search);
-  const go = {seance: 'seance', cm: 'cm', erreurs: 'erreurs', ds: 'ds'}[params.get('go') || ''] || null;
+  const go = {seance: 'seance', cm: 'cm', erreurs: 'erreurs', ds: 'ds', albert: 'albert'}[params.get('go') || ''] || null;
   /* ./?go=ds&skill=<id de compétence> (ou &q=<mot>) : « DS en vue » ouvert sur ce chapitre (lien depuis l'app STMG). */
   const goParams = go === 'ds' ? {remplace: true, skill: params.get('skill') || '', q: params.get('q') || ''} : {remplace: true};
 
