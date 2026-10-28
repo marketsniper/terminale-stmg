@@ -68,7 +68,7 @@ const nomFournisseur = f => f === 'groq' ? 'Groq' : f === 'claude' ? 'Claude' : 
    - window.MODE_EXAMEN, posé par l'épreuve blanche et par le bilan ;
    - window.vueCourante {v, enCours}, pour le test et le DS qui ne posent pas MODE_EXAMEN.
    La règle vaut pour les deux moteurs : ni réponse locale, ni appel au modèle. */
-const VUES_EVAL = ['test', 'ds', 'epreuveRun', 'bilan'];
+const VUES_EVAL = ['test', 'ds', 'epreuveRun', 'bilan', 'albertRun'];
 function enEvaluation(){
   try {
     if (window.MODE_EXAMEN === true) return true;
@@ -202,6 +202,12 @@ function buildIndex(){
   (window.SKILLS || []).forEach(s => INDEX.push({
     type: 'fiche', id: s.id, titre: s.titre,
     sous: 'Phase ' + s.phase + ' · compétence ' + s.phase + '.' + s.ordre,
+    texte: [s.titre, s.objectif || '', strip(s.lecon || '')].join(' ')
+  }));
+  /* Piste Objectif Albert (window.ALBERT_SKILLS, hors Sentier) : un lien data-goto-skill="alb-…" ouvre albertLecon (app.js). */
+  (window.ALBERT_SKILLS || []).forEach(s => INDEX.push({
+    type: 'fiche', id: s.id, titre: s.titre,
+    sous: 'Objectif Albert · ' + s.titre,
     texte: [s.titre, s.objectif || '', strip(s.lecon || '')].join(' ')
   }));
   (window.CM_FAMS || []).forEach(f => INDEX.push({
@@ -412,7 +418,7 @@ function ctxCourant(){
   };
   if (c){
     base.ex = c.ex || null;
-    base.skill = c.skillId ? skills.find(s => s.id === c.skillId) || null : null;
+    base.skill = c.skillId ? (skills.find(s => s.id === c.skillId) || (window.ALBERT_SKILLS || []).find(s => s.id === c.skillId) || null) : null;
     base.fam = c.famId ? (window.CM_FAMS || []).find(f => f.id === c.famId) || null : null;
     base.level = c.level || null;
     base.repondu = !!c.repondu; base.juste = !!c.juste;
@@ -609,6 +615,14 @@ function contexteRag(q, ctx){
     bouts.push('TYPE D\'ERREUR DOMINANT : ' + c.typeDominant.nom + ' (' + c.typeDominant.part + ' % de ses erreurs classées).');
 
   try {
+    const A = window.S && S.albert;
+    if (A && A.dateCible){
+      const j = joursAvant(new Date(A.dateCible + 'T12:00:00'));
+      if (j !== null && j >= 0) bouts.push('OBJECTIF ALBERT SCHOOL : test dans ' + j + ' jours.');
+    }
+  } catch(e){}
+
+  try {
     const rev = (typeof dueReviews === 'function') ? dueReviews() : [];
     if (rev.length) bouts.push('RAPPELS DU JOUR : ' + rev.slice(0, 5).map(s => s.titre).join(', ') + '.');
   } catch(e){}
@@ -749,6 +763,90 @@ function md(t){
   h = h.replace(/(<li>[\s\S]*<\/li>)/, '<ul>$1</ul>');
   return h.split(/\n{2,}/).map(p => /^<(ul|pre)/.test(p.trim()) ? p : '<p>' + p.replace(/\n/g, '<br>') + '</p>').join('');
 }
+
+/* ============================================================
+   3 bis. PASSERELLE BAS NIVEAU POUR LES AUTRES ÉCRANS (entretien blanc Albert)
+   Ni SYSTEME du Prof, ni contexteRag, ni fil 'mzsa-prof', ni localCalc, ni garde d'évaluation :
+   l'appelant fournit tout et gère son propre fil. Rien ne change pour le Prof.
+   messages : [{role:'user'|'assistant'|'system', content}] ; le premier et le dernier tour sont 'user'
+   (un 'system' en milieu de fil suit un tour 'user'). o : {onDelta, signal, effort, max, schema}.
+   Lève les mêmes codes que askGroq / askClaude, plus AbortError (o.signal) et COUPE (sortie structurée
+   tronquée par la limite de jetons : un JSON coupé est illisible, mieux vaut le dire que le deviner). */
+async function lireFlux(r, surLigne){
+  const reader = r.body.getReader(), dec = new TextDecoder();
+  let buf = '';
+  for (;;){
+    const {done, value} = await reader.read(); if (done) break;
+    buf += dec.decode(value, {stream: true});
+    const lignes = buf.split('\n'); buf = lignes.pop();
+    for (const l of lignes){
+      if (!l.startsWith('data:')) continue;
+      const d = l.slice(5).trim(); if (!d || d === '[DONE]') continue;
+      let ev; try { ev = JSON.parse(d); } catch(e){ continue; }
+      surLigne(ev);
+    }
+  }
+}
+async function appelModele(f, systeme, messages, o){
+  o = o || {};
+  const onDelta = typeof o.onDelta === 'function' ? o.onDelta : () => {};
+  let texte = '', fin = '';
+  if (f === 'groq'){
+    const cle = cleGroq(); if (!cle) throw new Error('PAS_DE_CLE');
+    /* Sortie structurée : pas de response_format. Le mode JSON de Groq n'est pas garanti en streaming, et le prompt
+       demande déjà l'objet JSON (lecture tolérante côté appelant). Le raisonnement compte dans max_completion_tokens :
+       8 000 jetons pour l'évaluation, 4 000 pour un tour de conversation. */
+    const corps = {model: GROQ_MODEL, stream: true, max_completion_tokens: o.max || (o.schema ? 8000 : 4000),
+                   reasoning_effort: o.effort === 'medium' ? 'medium' : 'low',
+                   messages: [{role: 'system', content: systeme}].concat(messages)};
+    const r = await fetch(GROQ_URL, {method: 'POST', signal: o.signal,
+      headers: {'content-type': 'application/json', 'authorization': 'Bearer ' + cle}, body: JSON.stringify(corps)});
+    if (!r.ok){
+      let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+      const err = new Error(r.status === 401 ? 'CLE_INVALIDE' : r.status === 429 ? 'QUOTA' : 'HTTP ' + r.status + (msg ? ' · ' + msg : ''));
+      err.statut = r.status; err.detail = msg; throw err;
+    }
+    await lireFlux(r, ev => {
+      const ch = ev.choices && ev.choices[0]; if (!ch) return;
+      const dl = ch.delta || {};
+      if (dl.content){ texte += dl.content; onDelta(dl.content); }
+      if (ch.finish_reason) fin = ch.finish_reason;
+    });
+  } else if (f === 'claude'){
+    const cle = cleClaude(); if (!cle) throw new Error('PAS_DE_CLE');
+    /* fallbacks:'default' (bêta server-side-fallback-2026-07-01) : un refus des classifieurs est rejoué côté serveur
+       sur le modèle recommandé, dans le même flux ; s'il reste un refus, stop_reason 'refusal' lève REFUS (repli local). */
+    const body = {model: MODEL_CLAUDE, max_tokens: o.max || 16000, stream: true, fallbacks: 'default',
+      output_config: o.schema ? {effort: o.effort || 'medium', format: {type: 'json_schema', schema: o.schema}} : {effort: o.effort || 'low'},
+      system: [{type: 'text', text: systeme, cache_control: {type: 'ephemeral'}}],
+      messages: messages};
+    const r = await fetch(CLAUDE_URL, {method: 'POST', signal: o.signal, headers: {'content-type': 'application/json',
+      'x-api-key': cle, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'server-side-fallback-2026-07-01',
+      'anthropic-dangerous-direct-browser-access': 'true'}, body: JSON.stringify(body)});
+    if (!r.ok){
+      let msg = ''; try { const j = await r.json(); msg = (j.error && j.error.message) || ''; } catch(e){}
+      if (r.status === 401) throw new Error('CLE_INVALIDE');
+      if (r.status === 429) throw new Error('QUOTA');
+      if (r.status === 400 && /credit|balance/i.test(msg)) throw new Error('CREDIT');
+      throw new Error('HTTP ' + r.status + (msg ? ' · ' + msg : ''));
+    }
+    await lireFlux(r, ev => {
+      if (ev.type === 'content_block_delta' && ev.delta && ev.delta.type === 'text_delta'){ texte += ev.delta.text; onDelta(ev.delta.text); }
+      if (ev.type === 'message_delta' && ev.delta && ev.delta.stop_reason) fin = ev.delta.stop_reason;
+      if (ev.type === 'error') throw new Error((ev.error && ev.error.message) || 'erreur de flux');
+    });
+    if (fin === 'refusal') throw new Error('REFUS');
+  } else throw new Error('PAS_DE_CLE');
+  if (o.schema && (fin === 'length' || fin === 'max_tokens')){ const e = new Error('COUPE'); e.detail = fin; throw e; }
+  texte = nettoie(texte);
+  if (!texte){ const e = new Error('VIDE'); e.detail = fin || 'aucun texte reçu'; throw e; }
+  return texte;
+}
+window.ASSIST_LLM = {
+  dispo: iaDispo, fournisseur: fournisseur, nom: nomFournisseur,
+  appeler: o => appelModele(fournisseur(), o.systeme, o.messages, o),
+  nettoie: nettoie, md: md
+};
 
 /* ============================================================
    4. CONFIGURATION EXPOSÉE À RÉGLAGES (M12)
