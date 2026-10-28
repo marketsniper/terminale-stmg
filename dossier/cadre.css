@@ -1,0 +1,55 @@
+/* ===== Mode Parcoursup « Mon dossier » : styles côté app STMG (carte d'accueil, bouton de mode, cadre) =====
+   Chargée par cadre.js. Jetons de l'app (--bg --card --ink --muted --line --ok --acc --shadow) ; couleurs dures
+   limitées à l'orange #DD8A17 et au rouge #D8433B avec leur double bloc sombre. */
+.dossier-carte{--acc:#4A5568; --dc-orange:#9A5B00; --dc-rouge:#D8433B; --dc-vert:#0B7259; cursor:pointer; margin:1rem 0 0; padding:.9rem 1rem 1rem; overflow:visible; border-top:3px solid var(--acc)}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .dossier-carte{--dc-orange:#DD8A17; --dc-vert:var(--ok); --acc:#8C98AB} }
+:root[data-theme="dark"] .dossier-carte{--dc-orange:#DD8A17; --dc-vert:var(--ok); --acc:#8C98AB}
+.dossier-carte .dc-kicker{margin:0; font-size:.72rem; font-weight:650; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+.dossier-carte h3{margin:.2rem 0 0; font-size:1.15rem; line-height:1.3; color:var(--ink); text-wrap:pretty; max-width:62ch}
+.dossier-carte .dc-chiffres{display:grid; grid-template-columns:repeat(3, minmax(0, max-content)); gap:.5rem 1.5rem; margin:.75rem 0 0}
+@media (max-width:420px){ .dossier-carte .dc-chiffres{grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.5rem .8rem} }
+.dossier-carte .dc-chiffres div{display:flex; flex-direction:column; min-width:0}
+.dossier-carte .dc-chiffres b{font-size:1.3rem; line-height:1.2; font-variant-numeric:tabular-nums; white-space:nowrap}
+.dossier-carte .dc-chiffres span{font-size:.78rem; line-height:1.3; color:var(--muted)}
+.dossier-carte .dc-vert{color:var(--dc-vert)} .dossier-carte .dc-orange,.dossier-carte .dc-j14{color:var(--dc-orange)} .dossier-carte .dc-rouge,.dossier-carte .dc-j7{color:var(--dc-rouge)}
+.dossier-carte .dc-barre{height:5px; margin:.75rem 0 0; background:var(--line); border-radius:3px; overflow:hidden}
+.dossier-carte .dc-barre span{display:block; height:100%; background:var(--acc); border-radius:3px; transition:width .3s}
+.dossier-carte .dc-texte{margin:.6rem 0 0; font-size:.9rem; color:var(--muted); max-width:62ch}
+.dossier-carte .dc-action{margin-top:.25rem; color:var(--ink)}
+.dossier-carte .dc-go{margin-top:.85rem; min-height:44px; padding:.55rem 1.1rem; font-weight:650; color:#fff; background:#353E4B; border-color:transparent; border-radius:7px}
+.dossier-carte .dc-go:hover{background:#2A313C}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .dossier-carte .dc-go{color:#12161C; background:#E7EAEF} :root:not([data-theme="light"]) .dossier-carte .dc-go:hover{background:#C9CFD8} }
+:root[data-theme="dark"] .dossier-carte .dc-go{color:#12161C; background:#E7EAEF}
+:root[data-theme="dark"] .dossier-carte .dc-go:hover{background:#C9CFD8}
+.dossier-carte:focus-within,.dossier-carte:hover{border-color:var(--muted)}
+/* bouton de mode : la pilule iPhone est pleine à quatre boutons ; sur téléphone l'entrée principale est la carte.
+   Pour activer la pilule sur iPhone après essai sur l'appareil : retirer la règle ci-dessous et ajouter
+   @media (max-width:480px){ .mode-switch button{font-size:.84rem; padding:.42rem .35rem} } */
+@media (max-width:479px){ #mode-dossier{display:none} }
+/* les autres boutons de mode portent une icône (emoji) ; ce mode n'en a pas (pas d'emoji dans le module) : une petite
+   fiche dessinée en CSS lui donne le même poids visuel */
+#mode-dossier::before{content:""; display:inline-block; width:.62em; height:.8em; margin-right:.38em; vertical-align:-.08em; border:2px solid currentColor; border-radius:2px;
+  background:linear-gradient(currentColor, currentColor) 50% 32% / 55% 2px no-repeat, linear-gradient(currentColor, currentColor) 50% 62% / 55% 2px no-repeat; opacity:.8}
+/* le bandeau « nouvelle version » de l'app reste visible mais passe au-dessus du pied du dossier */
+html.dossier-ouvert #maj-dispo{bottom:calc(env(safe-area-inset-bottom,0px) + 84px) !important}
+/* cadre plein écran : au-dessus des panneaux séance (90) et cours (91), sous les modales (98-99) et le cadre Maths (1000) */
+.dossier-cadre{
+  --dossier-fond:#EDF0F4; --dossier-encre:#1B2430; --dossier-carte:#FFFFFF; --dossier-filet:#D7DDE5;
+  position:fixed; inset:0; z-index:92; box-sizing:border-box;
+  padding:max(0px, env(safe-area-inset-top,0px) - var(--dossier-haut,0px)) max(0px, env(safe-area-inset-right,0px) - var(--dossier-droite,0px))
+          max(0px, env(safe-area-inset-bottom,0px) - var(--dossier-bas,0px)) max(0px, env(safe-area-inset-left,0px) - var(--dossier-gauche,0px));
+  background:var(--dossier-fond); color:var(--dossier-encre); transition:opacity .16s ease;
+}
+.dossier-cadre[data-theme="dark"]{--dossier-fond:#12161C; --dossier-encre:#E7EAEF; --dossier-carte:#1B222C; --dossier-filet:#2B3442}
+.dossier-cadre.ferme{opacity:0; visibility:hidden; pointer-events:none; transition:opacity .16s ease, visibility 0s linear .16s}
+.dossier-cadre iframe{display:block; width:100%; height:100%; border:0}
+html.dossier-ouvert, html.dossier-ouvert body{overflow:hidden}
+html.dossier-ouvert .seance-pastille{visibility:hidden}
+.dossier-retour{position:absolute; z-index:2; top:calc(env(safe-area-inset-top,0px) + 6px); left:calc(env(safe-area-inset-left,0px) + 8px); min-height:44px; padding:0 .8rem 0 .5rem; border:none; border-radius:99px; background:var(--dossier-fond); color:var(--dossier-encre); font-size:.94rem; font-weight:600}
+.dossier-lent{position:absolute; z-index:1; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.9rem; padding:1.5rem; text-align:center; background:var(--dossier-fond); color:var(--dossier-encre)}
+.dossier-lent[hidden]{display:none}
+.dossier-lent p{margin:0; max-width:32ch}
+.dossier-lent button{min-height:44px; padding:.55rem 1.1rem; font-weight:600; color:var(--dossier-encre); background:var(--dossier-carte); border-color:var(--dossier-filet)}
+.dossier-sr{position:absolute !important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0}
+@media (prefers-reduced-motion: reduce){ .dossier-cadre,.dossier-cadre.ferme,.dossier-carte .dc-barre span{transition:none} }
+@media print{ .dossier-cadre,.dossier-carte,#mode-dossier{display:none} }
