@@ -11,11 +11,13 @@
 'use strict';
 
 const VU = '2026-10-20';
+/* Webinaire de candidature suivi en direct le 28 octobre 2026 (diaporama relevé sur captures d'écran). */
+const VU2 = '2026-10-28';
 /* Espace fine insécable pour les milliers (comme fv() dans core/base.js, chargé après ce fichier). */
 const M = ' ';
 
 window.ALBERT_INFOS = {
-  verifieLe: VU,
+  verifieLe: VU2,
 
   /* Sources : id stable, titre affiché, url (https uniquement), date de consultation. */
   sources: [
@@ -28,7 +30,8 @@ window.ALBERT_INFOS = {
     {id: 'parcoursup', titre: 'Parcoursup · fiche de la formation', url: 'https://dossierappel.parcoursup.fr/Candidats/public/fiches/afficherFicheFormation?g_ta_cod=52797&typeBac=0&originePc=0', vu: VU},
     {id: 'calpsup',    titre: 'L\'Étudiant · calendrier Parcoursup 2027', url: 'https://www.letudiant.fr/etudes/parcoursup/on-connait-le-calendrier-de-parcoursup-2027.html', vu: VU},
     {id: 'licence',    titre: 'Albert School · actualité sur le grade de licence', url: 'https://www.albertschool.com/fr/blog/bachelor-science-engineering-mines-paris-albert-school-grade-de-licence-recognition/', vu: VU},
-    {id: 'flashcards', titre: 'Albert School · fiches du guide de candidature (2026)', url: 'https://www.albertschool.com/fr/guidance-kit/flashcards/', vu: VU}
+    {id: 'flashcards', titre: 'Albert School · fiches du guide de candidature (2026)', url: 'https://www.albertschool.com/fr/guidance-kit/flashcards/', vu: VU},
+    {id: 'webinaire',  titre: 'Albert School · webinaire « Kit de candidature Bachelor & International BBA » (diaporama)', url: '', vu: VU2}
   ],
 
   /* Faits sur l'école. id stable (référencé par les vues), t : titre court, v : texte,
@@ -37,20 +40,20 @@ window.ALBERT_INFOS = {
     {id: 'eligibilite', t: 'Éligibilité selon ta filière et tes spécialités', src: ['flashcards', 'parcoursup'],
      v: 'Les sources ne concordent pas : une fiche officielle de 2026 indique que la spécialité mathématiques est exigée ; d\'autres sources, dont la fiche Parcoursup, n\'en font pas une condition.',
      aConfirmer: 'Fais confirmer par écrit à l\'école que ta filière et tes spécialités sont acceptées, avant ta seule tentative au test.'},
-    {id: 'fil-eau', t: 'Admission au fil de l\'eau', src: ['kit', 'programme'],
+    {id: 'fil-eau', t: 'Admission au fil de l\'eau', src: ['kit', 'programme', 'webinaire'],
      v: 'Les candidatures sont étudiées au fil de l\'eau, jusqu\'à ce que les places soient pourvues. Les places de chaque campus sont attribuées dans l\'ordre d\'arrivée des dossiers : « plus vous candidatez tôt, plus vos chances sont élevées ».'},
-    {id: 'janvier', t: 'À partir de janvier', src: 'kit',
+    {id: 'janvier', t: 'À partir de janvier', src: ['kit', 'webinaire'],
      v: 'Le test est mis à jour : il devient plus difficile, et la sélectivité augmente.'},
-    {id: 'tentative', t: 'Une seule tentative', src: ['portail', 'faq'],
+    {id: 'tentative', t: 'Une seule tentative', src: ['portail', 'faq', 'webinaire'],
      v: 'Le test ne peut être ni mis en pause ni repassé. En cas d\'échec, on recandidate l\'année suivante. Le résultat est partagé avec chaque programme demandé.'},
-    {id: 'format', t: 'Format du test', src: ['portail', 'faq'],
+    {id: 'format', t: 'Format du test', src: ['portail', 'faq', 'webinaire'],
      v: '40 minutes, QCM. Les mauvaises réponses ne pénalisent pas ; chaque bonne réponse rend la question suivante plus difficile et mieux notée.'},
     {id: 'conditions', t: 'Conditions de passage', src: 'portail',
      v: 'Sur ordinateur, stylo et papier à portée de main. Calculatrice, outils d\'IA, recherches et aide d\'une autre personne interdits. Caméra, micro et partage d\'écran demandés. Il faut rester sur la page, et il est impossible de revenir à une question précédente. Arrêt automatique à 40 minutes.'},
-    {id: 'langue', t: 'Langue des questions', src: 'portail',
+    {id: 'langue', t: 'Langue des questions', src: ['portail', 'webinaire'],
      v: 'Les questions s\'affichent en français ou en anglais, selon la langue choisie sur le portail.'},
-    {id: 'moment', t: 'Quand passer le test', src: 'portail',
-     v: 'Le test est proposé juste après l\'envoi du dossier : ne le lance qu\'une fois ta préparation terminée.'},
+    {id: 'moment', t: 'Quand passer le test', src: ['portail', 'webinaire'],
+     v: 'Le test se passe une fois le dossier complet, juste après l\'envoi ou bien plus tard : ne le lance qu\'une fois ta préparation terminée.'},
     {id: 'verrou', t: 'Documents verrouillés après l\'envoi', src: 'portail',
      v: 'Une fois envoyés, les documents obligatoires ne peuvent plus être ajoutés, modifiés ni supprimés. Les documents facultatifs restent modifiables.'},
     {id: 'pieces', t: 'Pièces du dossier', src: ['kit', 'portail'],
@@ -58,10 +61,10 @@ window.ALBERT_INFOS = {
     {id: 'video-ia', t: 'Conversation vidéo avec un agent IA', src: 'portail',
      v: 'Selon le programme, une conversation vidéo avec un agent IA peut suivre le test (enregistrée et transmise au jury).',
      aConfirmer: 'Dépend du programme : vérifie dans ton espace candidat.'},
-    {id: 'entretien', t: 'Entretien', src: ['portail', 'kit'],
+    {id: 'entretien', t: 'Entretien', src: ['portail', 'kit', 'webinaire'],
      v: 'En cas d\'admissibilité : environ 30 minutes, en visio ou sur un campus, langue au choix. On y parle de ton parcours, de tes motivations et de certaines des questions les plus difficiles de ton test, pour vérifier ton raisonnement (espace candidat). Le guide de candidature décrit 3 temps (présentation, brainteaser d\'estimation à voix haute, motivation) et, à Paris, 2/3 en français et 1/3 en anglais.',
      aConfirmer: 'Les deux sources ne décrivent pas la même répartition des langues : prépare-toi aux deux.'},
-    {id: 'decision', t: 'Délai de décision', src: ['kit', 'portail'],
+    {id: 'decision', t: 'Délai de décision', src: ['kit', 'portail', 'webinaire'],
      v: 'Environ 20 jours en moyenne entre le dépôt et la décision (guide de candidature) ; au plus tard 30 jours après la dernière étape (espace candidat).'},
     {id: 'admis', t: 'En cas d\'admission', src: ['faq', 'portail'],
      v: 'Place réservée 10 jours ; acompte de 3' + M + '000 € ; contrat avec 14 jours de rétractation, au-delà les arrhes risquent d\'être perdues : lis le contrat avant de signer.',
@@ -77,8 +80,23 @@ window.ALBERT_INFOS = {
     {id: 'parcoursup', t: 'Aussi sur Parcoursup en 2026', src: 'parcoursup',
      v: 'En 2026, le Bachelor était aussi sur Parcoursup via Mines Paris – PSL (Paris, 40 places, 667 vœux).',
      aConfirmer: 'Reconduction en 2027 à vérifier à partir du 17 décembre 2026.'},
-    {id: 'licence', t: 'Grade de licence', src: 'licence',
-     v: 'Grade de licence depuis le 1ᵉʳ septembre 2026 (site de Paris).'}
+    {id: 'licence', t: 'Grade de licence et diplôme conjoint avec Mines Paris', src: ['licence', 'webinaire'],
+     v: 'Grade de licence depuis le 1ᵉʳ septembre 2026. Le webinaire du 28 octobre présente le Bachelor Business, Data & AI comme un Bac+3 grade de licence, diplôme conjoint avec Mines Paris – PSL, sur un campus au choix parmi les cinq.',
+     aConfirmer: 'L\'actualité officielle cite le site de Paris : confirmation écrite pour Marseille demandée à l\'école.'},
+    {id: 'ecole-bref', t: 'L\'école en bref', src: 'webinaire',
+     v: 'Créée en 2022. 5 campus : Paris, Marseille, Milan, Genève et Madrid. 4 piliers : mathématiques, business, data & IA, humanités. 8 Business Deep Dives par an (un défi réel posé par une entreprise partenaire). 2 stages intégrés au cursus. Plus de 45 nationalités.'},
+    {id: 'programmes', t: 'Deux programmes, un même socle', src: 'webinaire',
+     v: 'Bachelor Business, Data & AI : 3 ans, un campus au choix, langue selon le campus (français, anglais, italien ou espagnol). International BBA : 3 ans, trois campus (un par année), 100 % en anglais. Année de césure au choix : un semestre dans une université partenaire, le double diplôme avec l\'EDHEC, ou des stages. Ensuite : le Master Albert School avec Mines Paris.'},
+    {id: 'differenciant', t: 'Ce qui fait la différence dans le dossier', src: 'webinaire',
+     v: 'Obligatoire : bulletins de Première et de Terminale (si disponibles), CV d\'une page, lettre de motivation. Un dossier incomplet n\'est pas évalué. Optionnel mais différenciant : certifications (SAT, tests de langue), projets personnels (site, e-commerce, association), distinctions, concours, olympiades.'},
+    {id: 'cv', t: 'Le CV : cinq règles', src: 'webinaire',
+     v: 'Une page. État civil sobre : nom, ville, e-mail professionnel, téléphone, pas de photo ; LinkedIn est un vrai plus. La formation en premier. L\'expérience au sens large (jobs, stages, bénévolat, tutorat) avec des verbes d\'action et des chiffres. Extrascolaire et leadership : la durée de l\'engagement compte plus que le nombre de lignes. Compétences et langues : niveaux explicites, trois soft skills au maximum, honnêteté. Conseil du jury : une approche data-driven, quantifie tes résultats.'},
+    {id: 'lettre', t: 'La lettre en quatre paragraphes', src: 'webinaire',
+     v: 'Une page, 300 à 400 mots. 1. Pourquoi toi : ce qui t\'a amené à candidater (le jury évalue une candidature réfléchie, pas opportuniste). 2. Tes expériences : deux ou trois réalisations, chacune avec son résultat (aller au bout, mesurer). 3. Pourquoi Albert : le socle Business, Data & AI, les Business Deep Dives, le campus visé (le sérieux de ta recherche). 4. La suite : ton projet après le Bachelor et ce que tu apporteras à la promotion (la cohérence). Astuce : viens aux événements de l\'école et mentionne-les.'},
+    {id: 'avant-entretien', t: 'Avant l\'entretien : quatre cases à cocher', src: 'webinaire',
+     v: 'Ta cible : le programme et le campus précis, et connaître le jury. Tes estimations : t\'être entraîné à deux ou trois brainteasers à voix haute. Tes motivations : ce qui te différencie et la valeur que tu apporteras. Ta curiosité : suivre l\'actualité de la data et de l\'IA (entreprises, usages).'},
+    {id: 'brainteaser', t: 'Le brainteaser : cinq réflexes', src: 'webinaire',
+     v: 'Pense à voix haute. Énonce tes hypothèses. Arrondis pour simplifier. Montre ton raisonnement étape par étape. Ne cherche pas à impressionner. Ce n\'est pas la réponse qui compte, c\'est la méthode.'}
   ],
 
   /* Réglages du test blanc : c'est la spécification produit, appuyée sur les faits « format » et « conditions ».
@@ -125,7 +143,11 @@ window.ALBERT_INFOS = {
     {id: 'questions', t: 'E-mail à admission@albertschool.com (contrat, acompte, Parcoursup)'},
     {id: 'budget',    t: 'Budget validé avec la famille (14' + M + '900 €/an + logement)'},
     {id: 'bourse',    t: 'Justificatifs prêts pour la demande de bourse (avis d\'imposition)'},
-    {id: 'materiel',  t: 'Ordinateur, webcam, micro, pièce calme testés pour le jour J'}
+    {id: 'materiel',  t: 'Ordinateur, webcam, micro, pièce calme testés pour le jour J'},
+    {id: 'cv-chiffres', t: 'CV chiffré : chaque expérience avec un résultat mesurable, LinkedIn à jour, pas de photo'},
+    {id: 'projets',   t: 'Projets personnels ajoutés au dossier (documents facultatifs) : sites, agents IA, clients accompagnés'},
+    {id: 'brainteasers', t: 'Deux ou trois brainteasers d\'estimation faits à voix haute avant l\'entretien'},
+    {id: 'actu-ia',   t: 'Deux actualités récentes de la data et de l\'IA prêtes à expliquer'}
   ]
 };
 
@@ -205,6 +227,13 @@ window.ALBERT_ENTRETIEN = {
   ],
 
   estimation: [
+    {id: 'est-00', q: 'Combien de bébés naissent en France chaque année ?', unite: 'naissances par an', ordre: [4e5, 1.2e6],
+     hypotheses: ['Environ 67 millions d\'habitants.',
+                  'Environ un quart a entre 20 et 40 ans : environ 16 millions.',
+                  'La moitié sont des femmes : environ 8 millions.',
+                  'Environ 10 % d\'entre elles ont un enfant dans l\'année.'],
+     corrige: '8 millions × 10 % = 800' + M + '000 naissances par an : le bon ordre de grandeur. Exemple travaillé présenté au webinaire de candidature.',
+     ref: 'INSEE : environ 660' + M + '000 naissances en France en 2024.'},
     {id: 'est-01', q: 'Combien de baguettes de pain sont vendues chaque jour en France ?', unite: 'baguettes par jour', ordre: [8e6, 3e7],
      hypotheses: ['Environ 68 millions d\'habitants, soit environ 30 millions de foyers.',
                   'En moyenne une demi-baguette par foyer et par jour : beaucoup en achètent une, certains deux, d\'autres aucune.',
@@ -351,6 +380,11 @@ window.ALBERT_ENTRETIEN = {
 
 /* Nouveautés de la version (Réglages, « Nouveautés ») : 3 au plus. */
 window.NOUVEAUTES = Object.assign(window.NOUVEAUTES || {}, {
+  '2.2.0': [
+    'Objectif Albert School : tout le webinaire de candidature du 28 octobre (école, programmes, CV, lettre, test, entretien), chaque point sourcé.',
+    'Le diplôme conjoint avec Mines Paris annoncé sur les cinq campus, Marseille compris (confirmation écrite demandée).',
+    'Nouvel exercice d\'estimation (les naissances en France) et quatre nouvelles cases dans la checklist du dossier.'
+  ],
   '2.1.0': [
     'Objectif Albert School : une piste de compétences, un test blanc adaptatif de 40 minutes et ton état de préparation.',
     'Un entretien blanc, avec un jury IA si tu as une clé, sinon un jury local.',
