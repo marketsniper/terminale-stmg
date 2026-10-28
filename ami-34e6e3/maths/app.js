@@ -7,7 +7,7 @@
    ------------------------------------------------------------ */
 window.ASSIST_GO = function(quoi, id){
   try { snd.click(); } catch(e){}
-  if (quoi === 'skill') nav('skill', {id});
+  if (quoi === 'skill') nav(/^alb-/.test(String(id)) ? 'albertLecon' : 'skill', {id});   // piste Albert : sa propre leçon
   else nav('techniques', {ouvrir: id});
 };
 
@@ -118,11 +118,11 @@ function _appInitEmbarque(){
     if (e.origin !== location.origin || e.source !== window.parent) return;
     const d = e.data;
     if (!d || d.source !== 'stmg') return;
-    if (d.type === 'aller' && d.go === 'ds'){
-      let onboarde = false;
-      try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
-      if (onboarde) _appAllerDS(d.skill);
-    }
+    if (d.type !== 'aller') return;
+    let onboarde = false;
+    try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
+    if (!onboarde) return;
+    if (d.go === 'ds') _appAllerDS(d.skill);
   });
 
   /* Premier écran affiché (bus « vue » du routeur) : l'app STMG est prévenue, puis la demande de l'adresse
@@ -311,7 +311,8 @@ function raccourcis(){
     if (e.key === 'Escape'){
       if (dialogueOuvert){ return; }                        // le <dialog> gère lui-même (cancel → bouton secondaire)
       if (document.body.dataset.ctx === 'parcours'){ e.preventDefault(); quitterParcours(); return; }
-      if (document.body.dataset.ctx === 'lecon'){ e.preventDefault(); nav('programme'); return; }
+      /* vers le parent déclaré par setCtx : programme pour vSkill, albert pour vAlbertLecon */
+      if (document.body.dataset.ctx === 'lecon'){ e.preventDefault(); nav((_uiCtx && _uiCtx.parent) || 'programme'); return; }
       return;
     }
     if (e.key === 'Enter' && !meta){
@@ -384,7 +385,7 @@ function palette(){
   const rendu = q => {
     const mots = norm(q).split(/\s+/).filter(Boolean);
     const gardes = items.filter(it => mots.every(m => it.idx.indexOf(m) >= 0));
-    const groupes = ['Actions', 'Compétences', 'Techniques', 'Erreurs'];
+    const groupes = ['Actions', 'Albert', 'Compétences', 'Techniques', 'Erreurs'];   // un groupe absent d'ici est filtré en silence
     items.forEach(it => { it._k = -1; });       // sinon un numéro d'un rendu précédent lançait la mauvaise action
     let h = '', k = 0;
     groupes.forEach(g => {
