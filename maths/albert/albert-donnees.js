@@ -31,6 +31,7 @@ window.ALBERT_INFOS = {
     {id: 'calpsup',    titre: 'L\'Étudiant · calendrier Parcoursup 2027', url: 'https://www.letudiant.fr/etudes/parcoursup/on-connait-le-calendrier-de-parcoursup-2027.html', vu: VU},
     {id: 'licence',    titre: 'Albert School · actualité sur le grade de licence', url: 'https://www.albertschool.com/fr/blog/bachelor-science-engineering-mines-paris-albert-school-grade-de-licence-recognition/', vu: VU},
     {id: 'flashcards', titre: 'Albert School · fiches du guide de candidature (2026)', url: 'https://www.albertschool.com/fr/guidance-kit/flashcards/', vu: VU},
+    {id: 'coaching',   titre: 'Compte rendu d\'un cabinet de coaching pour l\'entretien (avril-mai 2026) : document privé, non officiel', url: '', vu: VU2},
     {id: 'webinaire',  titre: 'Albert School · webinaire « Kit de candidature Bachelor & International BBA » (diaporama)', url: '', vu: VU2}
   ],
 
@@ -97,6 +98,25 @@ window.ALBERT_INFOS = {
      v: 'Ta cible : le programme et le campus précis, et connaître le jury. Tes estimations : t\'être entraîné à deux ou trois brainteasers à voix haute. Tes motivations : ce qui te différencie et la valeur que tu apporteras. Ta curiosité : suivre l\'actualité de la data et de l\'IA (entreprises, innovations, enjeux).'},
     {id: 'guide-test', t: 'S\'entraîner au test', src: 'webinaire',
      v: 'Entraînement et exemples de questions dans le guide en ligne de l\'école. Trois exemples présentés, sans calculatrice : la moyenne de deux nombres est 4042 et l\'un vaut 1042 (l\'autre vaut 7042) ; probabilité d\'un valet ou d\'un roi dans 52 cartes (2/13) ; trois vendredis d\'un mois tombent un jour pair, quel jour est le 21 (mercredi).'},
+    {id: 'jury', t: 'Le jury et le rythme de l\'entretien', src: 'coaching',
+     v: 'Jury généralement mixte : Albert School et Mines Paris – PSL. Trois parties : découverte du candidat, brainteaser, motivation en anglais. Le jury arbitre la durée de chaque bloc : si tu t\'attardes, il coupe. Sois réactif et concis pour passer tous tes messages. On évalue ta façon de raisonner et qui tu es, pas tes connaissances.',
+     aConfirmer: 'Retour d\'un coach, pas de l\'école.'},
+    {id: 'partenariat-mines', t: 'Le partenariat avec Mines Paris – PSL', src: 'coaching',
+     v: 'Noué fin 2023, il joue à trois niveaux : recrutement commun (jury mixte), programmes co-construits avec les enseignants-chercheurs des Mines, diplôme conjoint. Mines apporte la rigueur scientifique (maths, data, IA) ; Albert apporte la pédagogie et la culture business. C\'est l\'argument pour répondre à « pourquoi pas une école de commerce ou d\'ingénieurs classique ? ».',
+     aConfirmer: 'Retour d\'un coach : vérifie sur la page « diplômes conjoints » de Mines Paris – PSL.'},
+    {id: 'fondateurs', t: 'Fondateurs et investisseurs', src: 'coaching',
+     v: 'École cofondée en 2022 par Grégoire Genest, Mathieu Schimpl et Matthieu Heurtel. Xavier Niel est investisseur et mentor, pas fondateur ; parmi les autres investisseurs : Bernard Arnault, Rodolphe Saadé (CMA CGM, Marseille), Marc Simoncini, Jacques-Antoine Granjon.',
+     aConfirmer: 'Retour d\'un coach : vérifie sur le site et LinkedIn avant de le citer.'},
+    {id: 'bdd', t: 'Les Business Deep Dives en pratique', src: ['coaching', 'webinaire'],
+     v: '8 par an. Une entreprise partenaire pose une vraie problématique avec un vrai jeu de données ; les étudiants travaillent environ 3 semaines et restituent devant ses dirigeants.',
+     aConfirmer: 'Durée et restitution : retour d\'un coach.'},
+    {id: 'campus-bachelor', t: 'Bachelor : un campus, pas des rotations', src: ['webinaire', 'coaching'],
+     v: 'Au webinaire, le Bachelor Business, Data & AI se fait sur un campus au choix ; ce sont les étudiants de l\'International BBA qui changent de campus chaque année. Albert ne fonctionne pas avec Erasmus : ne confonds pas les deux devant le jury.',
+     aConfirmer: 'Un coach évoque un changement de campus possible en cours de Bachelor : demande-le à l\'école avant d\'en parler.'},
+    {id: 'alertes', t: 'Trois erreurs qui peuvent disqualifier', src: 'coaching',
+     v: 'Raconter un échec en mathématiques (c\'est la matière au cœur du programme). Présenter une autre école comme ton premier choix, ou dire qu\'elle t\'a refusé : Albert devient un choix de repli. Confondre Erasmus et la mécanique des campus : le jury comprend que tu n\'as pas lu le programme.'},
+    {id: 'methode-estimation', t: 'Le brainteaser : la méthode en cinq temps', src: 'coaching',
+     v: '1. Pose la population utile et segmente-la (âge, lieu, mode de vie). 2. Donne une fréquence par segment, différente selon les segments. 3. Ajoute au moins une nuance (Paris ou province, prix selon le circuit, tendance de fond). 4. Calcule à voix haute avec des chiffres ronds. 5. Teste la cohérence : « cet ordre de grandeur me paraît plausible parce que… ». Objectif : au moins quatre hypothèses avant de calculer.'},
     {id: 'brainteaser', t: 'Le brainteaser : cinq réflexes', src: 'webinaire',
      v: 'Pense à voix haute. Énonce tes hypothèses. Arrondis pour simplifier. Montre ton raisonnement étape par étape. Ne cherche pas à impressionner. Ce n\'est pas la réponse qui compte, c\'est la méthode.'}
   ],
@@ -149,6 +169,8 @@ window.ALBERT_INFOS = {
     {id: 'cv-chiffres', t: 'CV chiffré : chaque expérience avec un résultat mesurable, LinkedIn à jour, pas de photo'},
     {id: 'projets',   t: 'Projets personnels ajoutés au dossier (documents facultatifs) : sites, agents IA, clients accompagnés'},
     {id: 'brainteasers', t: 'Deux ou trois brainteasers d\'estimation faits à voix haute avant l\'entretien'},
+    {id: 'fil-conducteur', t: 'Un fil conducteur choisi : 2 ou 3 expériences-piliers, sans qualificatifs creux'},
+    {id: 'campus-arguments', t: 'Deux ou trois ancrages précis pour justifier Marseille'},
     {id: 'actu-ia',   t: 'Deux actualités récentes de la data et de l\'IA prêtes à expliquer'}
   ]
 };
@@ -175,7 +197,8 @@ window.ALBERT_ENTRETIEN = {
      attendus: ['Un fil conducteur : d\'où tu viens, ce qui t\'anime, où tu vas.',
                 'Un fait concret et vérifiable : un projet, une responsabilité, un résultat chiffré.',
                 'Le lien avec un bachelor business et data, en une phrase.'],
-     pieges: ['Réciter ton CV ligne par ligne.', 'Dépasser une minute trente.', 'Commencer par « Alors, euh… je m\'appelle ».']},
+     pieges: ['Réciter ton CV ligne par ligne.', 'Dépasser une minute trente.', 'Commencer par « Alors, euh… je m\'appelle ».',
+              'Des qualificatifs creux (« dynamique », « entreprenant ») : raconte la situation, les faits le disent à ta place.']},
     {id: 'mot-02', q: 'Pourquoi voulez-vous rejoindre cette école plutôt qu\'une école de commerce classique ?',
      attendus: ['Ce qui te plaît dans le mélange business, data et mathématiques.',
                 'Un élément précis que tu as vu toi-même : un cours du programme, un événement, un échange avec un étudiant.',
@@ -207,7 +230,8 @@ window.ALBERT_ENTRETIEN = {
      pieges: ['« Je suis trop perfectionniste. »', 'Une faiblesse rédhibitoire pour le programme, sans plan d\'action.', 'Te dévaloriser longuement.']},
     {id: 'mot-08', q: 'Parlez-moi d\'un échec ou d\'une difficulté, et de ce que vous en avez tiré.',
      attendus: ['Un échec réel, avec un enjeu.', 'Ta part de responsabilité, sans détour.', 'La leçon tirée, et la preuve que tu l\'as appliquée ensuite.'],
-     pieges: ['Rejeter la faute sur les autres.', 'Choisir un échec sans enjeu.', 'Oublier la leçon tirée.']},
+     pieges: ['Rejeter la faute sur les autres.', 'Choisir un échec sans enjeu.', 'Oublier la leçon tirée.',
+              'Un échec en mathématiques : c\'est la matière au cœur du programme.', 'Un échec trop récent pour montrer comment tu as rebondi.']},
     {id: 'mot-09', q: 'Quelle actualité économique ou technologique vous a marqué récemment ?',
      attendus: ['Un fait précis et récent, que tu peux expliquer simplement.', 'Ton analyse : causes, conséquences, chiffres clés.',
                 'Un lien avec la data ou la prise de décision.'],
@@ -225,17 +249,23 @@ window.ALBERT_ENTRETIEN = {
     {id: 'mot-13', q: 'Avez-vous des questions pour le jury ?',
      attendus: ['Une ou deux questions préparées, précises, dont la réponse n\'est pas sur le site.',
                 'Une question qui montre ton projet : stages, projets, vie associative.'],
-     pieges: ['« Non, pas de question. »', 'Une question dont la réponse est dans la FAQ.', 'Commencer par les vacances.']}
+     pieges: ['« Non, pas de question. »', 'Une question dont la réponse est dans la FAQ (frais, durée, campus).', 'Commencer par les vacances.']},
+    {id: 'mot-14', q: 'Quel campus visez-vous, et pourquoi ?',
+     attendus: ['Des ancrages économiques précis : le port, CMA CGM, la French Tech, Euroméditerranée pour Marseille.',
+                'Une entreprise partenaire de l\'école présente dans la région, citée nommément si tu en as trouvé une.',
+                'Le lien avec ton projet, pas seulement avec le cadre de vie.'],
+     pieges: ['Ne parler que du soleil ou de l\'envie de changer d\'air.', 'Promettre de changer de campus sans avoir vérifié que le Bachelor le permet.',
+              'Parler d\'Erasmus.']},
+    {id: 'mot-15', q: 'Où avez-vous candidaté par ailleurs ?',
+     attendus: ['Rester général sur les autres candidatures, sans les classer.', 'Dire clairement qu\'Albert est la candidature que tu défends, avec la raison en une phrase.'],
+     pieges: ['Présenter une autre école comme ton premier choix.', 'Dire qu\'une autre école t\'a refusé.', 'Un ton hésitant qui fait d\'Albert un choix de repli.']},
+    {id: 'mot-16', q: 'Que savez-vous du partenariat avec Mines Paris – PSL ?',
+     attendus: ['Les trois niveaux : recrutement commun, programmes co-construits, diplôme conjoint.', 'Ce qu\'apporte chaque école : rigueur scientifique d\'un côté, business et pédagogie de l\'autre.',
+                'Pourquoi cette alliance te correspond, avec un exemple tiré de ton parcours.'],
+     pieges: ['Ne rien en savoir : beaucoup de candidats l\'ignorent.', 'Confondre partenariat et simple label.', 'Réciter sans faire de lien avec toi.']}
   ],
 
   estimation: [
-    {id: 'est-00', q: 'Combien de bébés naissent en France chaque année ?', unite: 'naissances par an', ordre: [4e5, 1.2e6],
-     hypotheses: ['Environ 67 millions d\'habitants.',
-                  'Environ un quart a entre 20 et 40 ans : environ 16 millions.',
-                  'La moitié sont des femmes : environ 8 millions.',
-                  'Environ 10 % d\'entre elles ont un enfant dans l\'année.'],
-     corrige: '8 millions × 10 % = 800' + M + '000 naissances par an : le bon ordre de grandeur. Exemple travaillé présenté au webinaire de candidature.',
-     ref: 'INSEE : environ 660' + M + '000 naissances en France en 2024.'},
     {id: 'est-01', q: 'Combien de baguettes de pain sont vendues chaque jour en France ?', unite: 'baguettes par jour', ordre: [8e6, 3e7],
      hypotheses: ['Environ 68 millions d\'habitants, soit environ 30 millions de foyers.',
                   'En moyenne une demi-baguette par foyer et par jour : beaucoup en achètent une, certains deux, d\'autres aucune.',
@@ -290,6 +320,16 @@ window.ALBERT_ENTRETIEN = {
      hypotheses: ['Environ 300 clients par jour, du café du matin au déjeuner.', 'Un ticket moyen de 5 €.', 'Environ 330 jours d\'ouverture par an.'],
      corrige: '300 × 5 € × 330 ≈ 500' + M + '000 € par an.',
      ref: 'Pas de chiffre officiel : la correction porte sur la démarche. Une fourchette de 150' + M + '000 € à 1 million d\'euros est cohérente.'},
+    {id: 'est-12', q: 'Combien de clients McDonald\'s sert-il chaque jour en France ?', unite: 'clients par jour', ordre: [8e5, 5e6],
+     hypotheses: ['Environ 68 millions d\'habitants.', 'Les 15-30 ans (environ 12 millions) y vont environ une fois toutes les deux semaines.',
+                  'Les autres (environ 56 millions) y vont environ une fois tous les deux mois.', 'Nuance : plus de passages en ville et sur les grands axes.'],
+     corrige: '12 millions ÷ 14 ≈ 850' + M + '000 par jour, plus 56 millions ÷ 60 ≈ 930' + M + '000 : environ 1,8 million de clients par jour.',
+     ref: 'Exemple travaillé en coaching. Ordre de grandeur souvent cité pour McDonald\'s France : environ 1' + M + '500 restaurants et près de 2 millions de clients par jour.'},
+    {id: 'est-13', q: 'Combien d\'accordeurs de piano travaillent à Paris ?', unite: 'accordeurs', ordre: [50, 1000],
+     hypotheses: ['Environ 2 millions d\'habitants, soit environ 1 million de foyers.', 'Environ 1 foyer sur 25 a un piano, plus les écoles et conservatoires : environ 45' + M + '000 pianos.',
+                  'Un piano est accordé environ une fois par an.', 'Un accordeur fait environ 3 accords par jour, 220 jours par an : environ 650 par an.'],
+     corrige: '45' + M + '000 ÷ 650 ≈ 70 accordeurs à plein temps ; avec les temps partiels et la proche banlieue, de l\'ordre de 100 à 300.',
+     ref: 'Problème de Fermi classique : pas de statistique officielle, la correction porte sur la démarche.'},
     {id: 'est-11', q: 'Combien de smartphones sont utilisés en France ?', unite: 'smartphones', ordre: [4e7, 8e7],
      hypotheses: ['Environ 68 millions d\'habitants, dont environ 58 millions de 12 ans et plus.',
                   'Près de 9 personnes sur 10 de 12 ans et plus ont un smartphone.', 'Environ 10 % ont en plus un téléphone professionnel.'],
@@ -341,7 +381,8 @@ window.ALBERT_ENTRETIEN = {
     motivation: ['Pouvez-vous donner un exemple concret ?', 'Qu\'avez-vous appris de cette expérience ?',
                  'En quoi cela vous prépare-t-il à ce programme ?', 'Qu\'est-ce qui vous distingue des autres candidats sur ce point ?'],
     estimation: ['Quelles hypothèses posez-vous ?', 'Pouvez-vous découper le problème en étapes ?',
-                 'Quelle hypothèse est la plus fragile, et comment la vérifieriez-vous ?', 'Vérifiez l\'ordre de grandeur : votre résultat est-il plausible ?'],
+                 'Quelle hypothèse est la plus fragile, et comment la vérifieriez-vous ?', 'Vérifiez l\'ordre de grandeur : votre résultat est-il plausible ?',
+                 'Pouvez-vous segmenter la population ?', 'Quelle nuance ajouteriez-vous : Paris ou province, prix, tendance ?'],
     anglais:    ['Could you give me a concrete example?', 'Why is that important to you?', 'Can you tell me a bit more about that?'],
     cloture:    ['Avez-vous des questions pour le jury ?']
   },
@@ -382,10 +423,15 @@ window.ALBERT_ENTRETIEN = {
 
 /* Nouveautés de la version (Réglages, « Nouveautés ») : 3 au plus. */
 window.NOUVEAUTES = Object.assign(window.NOUVEAUTES || {}, {
+  '2.3.0': [
+    'Objectif Albert School : les conseils d\'un vrai coaching d\'entretien (jury, rythme, trois erreurs qui disqualifient, méthode du brainteaser en cinq temps).',
+    'Entretien blanc : trois nouvelles questions (le campus, tes autres candidatures, le partenariat avec Mines) et deux brainteasers (McDonald\'s, accordeurs de piano).',
+    'Le partenariat avec Mines, les fondateurs et les Business Deep Dives, marqués « à confirmer » tant que l\'école ne l\'a pas écrit.'
+  ],
   '2.2.0': [
     'Objectif Albert School : tout le webinaire de candidature du 28 octobre (école, programmes, CV, lettre, test, entretien), chaque point sourcé.',
     'Le diplôme conjoint avec Mines Paris annoncé sur les cinq campus, Marseille compris (confirmation écrite demandée).',
-    'Nouvel exercice d\'estimation (les naissances en France) et quatre nouvelles cases dans la checklist du dossier.'
+    'Quatre nouvelles cases dans la checklist du dossier.'
   ],
   '2.1.0': [
     'Objectif Albert School : une piste de compétences, un test blanc adaptatif de 40 minutes et ton état de préparation.',
