@@ -1,9 +1,10 @@
-const CACHE = 'stmg-a0f0288219';
+const CACHE = 'stmg-372b65c200';
 //  Plusieurs apps cohabitent sur le domaine (perso à la racine, Maths dans /maths/, version partagée dans
 //  son propre dossier). Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier.
 const PREFIX = CACHE.slice(0, CACHE.lastIndexOf('-') + 1);
 const SCOPE = new URL('./', self.location).pathname;
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
+/**/ASSETS.push('./dossier/cadre.js', './dossier/cadre.css'); // Mode Parcoursup : carte et cadre du dossier, disponibles hors ligne/**/
 //  Délai au-delà duquel on préfère la copie hors ligne à un réseau qui traîne (voir plus bas).
 const DELAI_RESEAU = 2000;
 

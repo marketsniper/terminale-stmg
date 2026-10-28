@@ -1,9 +1,10 @@
-const CACHE = 'amistmg-67e7d8aa47';
+const CACHE = 'amistmg-11a3216d8b';
 //  Plusieurs apps cohabitent sur le domaine (perso à la racine, Maths dans /maths/, version partagée dans
 //  son propre dossier). Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier.
 const PREFIX = CACHE.slice(0, CACHE.lastIndexOf('-') + 1);
 const SCOPE = new URL('./', self.location).pathname;
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
+/**/
 //  Délai au-delà duquel on préfère la copie hors ligne à un réseau qui traîne (voir plus bas).
 const DELAI_RESEAU = 2000;
 
