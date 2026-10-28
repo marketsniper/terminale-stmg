@@ -15,7 +15,7 @@
   const ORDRE_1RE = ['francais', 'droit-eco', 'management', 'sdgn', 'hg', 'maths', 'anglais', 'espagnol', 'eps', 'emc', 'engagement'];
   const MATIERES = {
     'droit-eco': { nom: 'Droit et économie', court: 'Droit-éco', couleur: '#8C3A5E', sections: ['droit', 'eco', 'droit1', 'eco1'], tle: 'droit-eco' },
-    management:  { nom: 'Management, sciences de gestion et numérique', court: 'MSDGN', couleur: '#3454D1', sections: ['management', 'mgmt1'], tle: 'management' },
+    management:  { nom: 'Management, sciences de gestion et numérique', court: 'MSDGN', nom1re: 'Management', court1re: 'Management', couleur: '#3454D1', sections: ['management', 'mgmt', 'mgmt1'], tle: 'management' },
     gf:          { nom: 'Gestion et finance', court: 'GF', couleur: '#0E8A6D', sections: ['gf', 'sdgn'], tle: 'gf' },
     sdgn:        { nom: 'Sciences de gestion et numérique', court: 'SGN', couleur: '#0E8A6D', sections: ['sdgn'], tle: 'gf' },
     philo:       { nom: 'Philosophie', court: 'Philo', couleur: '#6C4FC2', sections: ['philo'], tle: 'philo' },
@@ -28,6 +28,10 @@
     francais:    { nom: 'Français', court: 'Français', couleur: '#B23A32', sections: [], tle: null },
     engagement:  { nom: 'Engagement lycéen', court: 'Engagement', couleur: '#4A5568', sections: [], tle: 'engagement', sansCoef: true }
   };
+  /* Sur le bulletin de Terminale STMG GF, MSDGN (12) et Gestion et finance (4) sont deux sous-matières d'UNE ligne
+     « MSDGN Gestion et finance » au coefficient 16, dont la moyenne est celle des sous-matières notées (ÉcoleDirecte :
+     15,54 le 26/10/2026 avec la seule sous-matière MSDGN notée). Les coefficients effectifs reproduisent ce calcul. */
+  const GROUPES = { Tle: [{ id: 'msdgn-gf', nom: 'MSDGN Gestion et finance', membres: ['management', 'gf'] }], '1re': [] };
   const PERIODES = ['1-T1', '1-T2', '1-T3', 'T-T1', 'T-T2', 'T-T3'];
   const LIBELLES = { '1-T1': '1re T1', '1-T2': '1re T2', '1-T3': '1re T3', 'T-T1': 'Tle T1', 'T-T2': 'Tle T2', 'T-T3': 'Tle T3' };
   const TRANSMISES = ['1-T1', '1-T2', '1-T3', 'T-T1', 'T-T2'];
@@ -38,8 +42,9 @@
     return niveau(code) === '1re' ? Object.assign({}, TABLE_1RE, c.premiere || {}) : Object.assign({}, TABLE_TLE, c.tle || {});
   }
   function ordreDe(code) { return niveau(code) === '1re' ? ORDRE_1RE : ORDRE_TLE; }
-  function nomDe(id, ligne) { return (ligne && ligne.nom) || (MATIERES[id] && MATIERES[id].nom) || id; }
-  function courtDe(id, ligne) { return (ligne && ligne.court) || (ligne && ligne.nom) || (MATIERES[id] && MATIERES[id].court) || id; }
+  /* nom selon le niveau : la ligne `management` s'appelle « Management » sur le bulletin de Première */
+  function nomDe(id, ligne, code) { const m = MATIERES[id]; return (ligne && ligne.nom) || (m && code && niveau(code) === '1re' && m.nom1re) || (m && m.nom) || id; }
+  function courtDe(id, ligne, code) { const m = MATIERES[id]; return (ligne && ligne.court) || (ligne && ligne.nom) || (m && code && niveau(code) === '1re' && m.court1re) || (m && m.court) || id; }
   function couleurDe(id) { return (MATIERES[id] && MATIERES[id].couleur) || '#4A5568'; }
   function coefDe(ligne, id, table) {
     if (ligne && typeof ligne.coef === 'number' && isFinite(ligne.coef)) return Math.max(0, ligne.coef);
@@ -49,6 +54,30 @@
   }
   function note(x) { return (typeof x === 'number' && isFinite(x)) ? Math.max(0, Math.min(20, x)) : null; }
   function lignesDe(periode) { return (periode && periode.lignes && typeof periode.lignes === 'object') ? periode.lignes : {}; }
+  /* Coefficients effectifs d'une période : pour chaque ligne notée (champ `champ`, « moy » par défaut) de coefficient > 0,
+     son poids dans la moyenne pondérée. Hors groupe, c'est le coefficient. Dans un groupe (MSDGN Gestion et finance),
+     le coefficient du groupe est réparti entre les seules sous-matières notées, au prorata de leurs coefficients.
+     Une seule convention partout : moyennes, levier, priorités, chemin, simulateur, vue jury. */
+  function poids(code, lignes, coefs, champ) {
+    const table = tableDe(code, coefs), L = lignes || {}, k = champ || 'moy';
+    const nominal = {}, eff = {}; let total = 0;
+    idsOrdonnes(code, L).forEach(function (id) { const c = coefDe(L[id], id, table); nominal[id] = c; total += c; });
+    const dansGroupe = {};
+    (GROUPES[niveau(code)] || []).forEach(function (g) {
+      const membres = g.membres.filter(function (id) { return nominal[id] > 0; });
+      membres.forEach(function (id) { dansGroupe[id] = true; });
+      const notes = membres.filter(function (id) { return note(L[id] && L[id][k]) != null; });
+      if (!notes.length) return;
+      const cg = membres.reduce(function (s, id) { return s + nominal[id]; }, 0), cn = notes.reduce(function (s, id) { return s + nominal[id]; }, 0);
+      notes.forEach(function (id) { eff[id] = nominal[id] * cg / cn; });
+    });
+    Object.keys(nominal).forEach(function (id) { if (!dansGroupe[id] && nominal[id] > 0 && note(L[id] && L[id][k]) != null) eff[id] = nominal[id]; });
+    let somme = 0; Object.keys(eff).forEach(function (id) { somme += eff[id]; });
+    return { eff: eff, nominal: nominal, total: total, somme: somme };
+  }
+  function groupeDe(id, code) { return (GROUPES[niveau(code)] || []).find(function (g) { return g.membres.indexOf(id) !== -1; }) || null; }
+  /* « MSDGN Gestion et finance » lu comme une seule ligne (PDF, photo) */
+  function estLigneGroupe(libelle) { const t = sansAccent(libelle); return /(msdgn|management)/.test(t) && /gestion.*finance/.test(t); }
   function idsOrdonnes(code, lignes) {
     const base = ordreDe(code).slice();
     Object.keys(lignes || {}).forEach(function (id) { if (base.indexOf(id) === -1) base.push(id); });
@@ -69,8 +98,8 @@
     if (v === 0) return '0' + (d ? ',' + '0'.repeat(d) : '');
     return (v > 0 ? '+' : '−') + Math.abs(v).toFixed(d).replace('.', ',');
   }
-  function fmtEntier(n) { return n == null ? '-' : String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
-  function fmtPct(x) { return fmtEntier(Math.round(x * 100)) + ' %'; }
+  function fmtEntier(n) { return n == null ? '-' : String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); }
+  function fmtPct(x) { return fmtEntier(Math.round(x * 100)) + '\u00a0%'; }
   const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
   const JOURS_C = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
   const MOIS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
@@ -91,7 +120,7 @@
   function joursAvant(isoD, aujourdhui) {
     const a = dateDe(isoD), b = dateDe(aujourdhui || new Date());
     if (!a || !b) return null;
-    return Math.ceil((a - b) / 86400000);
+    return Math.round((a - b) / 86400000);   // midi à midi : 23 ou 25 h au changement d'heure, d'où l'arrondi
   }
   function semaineISO(d) {
     d = dateDe(d || new Date()); if (!d) return '';
@@ -106,21 +135,21 @@
 
   /* ---------- 3. Moyennes d'une période ---------- */
   function moyennes(periode, code, coefs) {
-    const table = tableDe(code, coefs), lignes = lignesDe(periode);
-    let sp = 0, sc = 0, spc = 0, scc = 0, ss = 0, n = 0, ssc = 0, nc = 0, total = 0;
-    const ids = idsOrdonnes(code, lignes);
-    ids.forEach(function (id) {
-      const l = lignes[id] || null, c = coefDe(l, id, table);
-      total += c;
+    const lignes = lignesDe(periode);
+    const pm = poids(code, lignes, coefs, 'moy'), pc = poids(code, lignes, coefs, 'classe');
+    let sp = 0, spc = 0, ss = 0, n = 0, ssc = 0, nc = 0;
+    const total = pm.total, sc = pm.somme, scc = pc.somme;
+    idsOrdonnes(code, lignes).forEach(function (id) {
+      const l = lignes[id] || null;
       const m = l ? note(l.moy) : null, k = l ? note(l.classe) : null;
-      if (m != null) { ss += m; n++; if (c > 0) { sp += c * m; sc += c; } }
-      if (k != null) { ssc += k; nc++; if (c > 0) { spc += c * k; scc += c; } }
+      if (m != null) { ss += m; n++; if (pm.eff[id]) sp += pm.eff[id] * m; }
+      if (k != null) { ssc += k; nc++; if (pc.eff[id]) spc += pc.eff[id] * k; }
     });
     const mp = sc ? sp / sc : null, mpc = scc ? spc / scc : null;
     return {
       mp: mp, ms: n ? ss / n : null, mpClasse: mpc, msClasse: nc ? ssc / nc : null,
       sommeCoef: sc, sommeCoefTotal: total, sommeCoefClasse: scc, nb: n, nbClasse: nc,
-      ecart: (mp != null && mpc != null) ? mp - mpc : null, complet: sc === total && total > 0
+      ecart: (mp != null && mpc != null) ? mp - mpc : null, complet: Math.abs(sc - total) < 1e-9 && total > 0, coefs: pm.eff
     };
   }
   function position(ligne) {
@@ -146,7 +175,7 @@
     const P = periodes || {}, table = tableDe('T-T1', coefs);
     const t1 = lignesDe(P['T-T1']), t2 = lignesDe(P['T-T2']);
     const proj = projection(t1, objectifT2);
-    const lignes = {}; let sp = 0, sc = 0, projete = false, nbT1 = 0, nbT2 = 0;
+    const lignes = {}; let projete = false, nbT1 = 0, nbT2 = 0;
     ORDRE_TLE.concat(Object.keys(t1), Object.keys(t2)).filter(function (id, i, a) { return a.indexOf(id) === i; }).forEach(function (id) {
       const a = note(t1[id] && t1[id].moy), b = note(t2[id] && t2[id].moy);
       const c = coefDe(t2[id] || t1[id], id, table);
@@ -168,8 +197,12 @@
       const tend = (a != null && m1 != null) ? a - m1 : null;
       lignes[id] = { t1: a, t2: b, proj: p ? proj[id] : null, moy: moy, projete: p, coef: c, m1re: m1, tendance: tend,
         fleche: tend == null ? '' : tend >= 0.3 ? '▲' : tend <= -0.3 ? '▼' : '=' };
-      if (moy != null && c > 0) { sp += c * moy; sc += c; if (p) projete = true; }
     });
+    /* moyenne de Terminale vue par les écoles : mêmes coefficients effectifs que le bulletin */
+    const pseudo = {}; Object.keys(lignes).forEach(function (id) { if (lignes[id].moy != null) pseudo[id] = { moy: lignes[id].moy, coef: (t2[id] || t1[id] || {}).coef }; });
+    const pj = poids('T-T1', pseudo, coefs, 'moy');
+    let sp = 0; Object.keys(pj.eff).forEach(function (id) { sp += pj.eff[id] * pseudo[id].moy; if (lignes[id].projete) projete = true; });
+    const sc = pj.somme;
     const dessus = Object.keys(lignes).filter(function (id) { return lignes[id].tendance != null && lignes[id].tendance > 0; }).length;
     const compares = Object.keys(lignes).filter(function (id) { return lignes[id].tendance != null; }).length;
     return { lignes: lignes, mJury: sc ? sp / sc : null, projete: projete, nbT1: nbT1, nbT2: nbT2, sommeCoef: sc, dessus: dessus, compares: compares };
@@ -185,10 +218,10 @@
     else {
       const t1 = lignesDe(P['T-T1']);
       if (Object.keys(t1).length) {
-        const proj = projection(t1, objectifT2), table = tableDe('T-T2', coefs);
-        let sp = 0, sc = 0;
-        Object.keys(proj).forEach(function (id) { const c = coefDe(t1[id], id, table); if (c > 0) { sp += c * proj[id]; sc += c; } });
-        serie.push({ code: 'T-T2', libelle: LIBELLES['T-T2'], mp: sc ? sp / sc : null, saisie: false, projete: true, partiel: false });
+        const proj = projection(t1, objectifT2), pseudo = {};
+        Object.keys(proj).forEach(function (id) { pseudo[id] = { moy: proj[id], coef: t1[id] && t1[id].coef }; });
+        const mp2 = moyennes({ lignes: pseudo }, 'T-T2', coefs).mp;
+        serie.push({ code: 'T-T2', libelle: LIBELLES['T-T2'], mp: mp2, saisie: false, projete: true, partiel: false });
       } else serie.push({ code: 'T-T2', libelle: LIBELLES['T-T2'], mp: null, saisie: false, projete: false, partiel: false });
     }
     const saisis = serie.filter(function (p) { return p.saisie; });
@@ -231,25 +264,22 @@
   function ecart(cible, m) { return (typeof cible === 'number' && m != null) ? cible - m : null; }
   function feu(E) { if (E == null) return 'gris'; return E <= 0 ? 'vert' : E <= 1.5 ? 'orange' : 'rouge'; }
   function zoneMention(mp) { if (mp == null) return ''; return mp >= 16 ? 'zone très bien' : mp >= 14 ? 'zone bien' : mp >= 12 ? 'zone assez bien' : 'sous 12'; }
+  /* Convention unique (spécification § 6.8) : +δ dans la matière i = coef_i × δ / Σcoef, avec les coefficients effectifs des
+     seules matières notées de la période (celles qui composent la moyenne affichée). */
   function levier(code, coefs, lignes) {
-    const table = tableDe(code, coefs), ids = idsOrdonnes(code, lignes || {}), out = {}; let s = 0;
-    ids.forEach(function (id) {
-      if (lignes && note(lignes[id] && lignes[id].moy) == null) return;      // seules les matières notées composent la moyenne
-      const c = coefDe(lignes && lignes[id], id, table); if (c > 0) { out[id] = c; s += c; }
-    });
-    Object.keys(out).forEach(function (id) { out[id] = out[id] / s; });
-    return { parPoint: out, sommeCoef: s };
+    const p = poids(code, lignes || {}, coefs, 'moy'), out = {};
+    Object.keys(p.eff).forEach(function (id) { out[id] = p.eff[id] / p.somme; });
+    return { parPoint: out, sommeCoef: p.somme, coefs: p.eff };
   }
 
   /* ---------- 7. Priorités, chemin le plus court, T2 requis ---------- */
   function priorites(periode, code, coefs, voeu, signaux, dsAvantCloture) {
-    const table = tableDe(code, coefs), lignes = lignesDe(periode), S = signaux || {};
+    const lignes = lignesDe(periode), S = signaux || {};
     const regardees = (voeu && voeu.matieresRegardees) || [];
     const dsPar = dsAvantCloture || {};
-    let somme = 0; const items = [];
-    idsOrdonnes(code, lignes).forEach(function (id) { const c = coefDe(lignes[id], id, table); if (c > 0) somme += c; });
+    const pw = poids(code, lignes, coefs, 'moy'), somme = pw.somme; const items = [];
     idsOrdonnes(code, lignes).forEach(function (id) {
-      const l = lignes[id], c = coefDe(l, id, table), m = note(l && l.moy);
+      const l = lignes[id], c = pw.eff[id] || 0, m = note(l && l.moy);
       if (c <= 0 || m == null) return;
       const mx = note(l && l.max);
       const marge = Math.min(3, Math.max(0, (mx != null ? mx : 17) - m));
@@ -296,12 +326,12 @@
     const lignes = pr.items.map(function (i) {
       const part = sommeP > 0 ? i.P / sommeP : 1 / pr.items.length;
       let v = i.moy + (restant * part) / i.coef;
-      v = Math.max(0, Math.min(20, Math.round(v * 2) / 2));
+      v = Math.max(i.moy, Math.max(0, Math.min(20, Math.round(v * 2) / 2)));   // jamais de baisse conseillée
       const plafond = Math.max(i.moy + 2, i.max != null ? i.max : 0);
       return { id: i.id, t1: i.moy, t2: v, realiste: v <= plafond + 1e-9, coef: i.coef };
     });
     const impossible = T2 > 20 || (lignes.length > 0 && lignes.every(function (l) { return !l.realiste; }));
-    return { t2: T2, mpT1: m.mp, lignes: lignes, impossible: impossible, pointsPonderes: Math.max(0, restant) };
+    return { t2: T2, mpT1: m.mp, lignes: lignes, impossible: impossible, atteinte: T2 <= m.mp + 1e-9, pointsPonderes: Math.max(0, restant) };
   }
 
   /* ---------- 8. Jauges de préparation d'un vœu ---------- */
@@ -361,19 +391,31 @@
   const POSITIFS = ['serieux', 'serieuse', 'regulier', 'reguliere', 'investi', 'investie', 'investissement', 'autonome', 'participe', 'participation', 'rigoureux', 'rigoureuse', 'motive', 'motivee', 'motivation', 'excellent', 'excellente', 'tres bon', 'tres bonne', 'solide', 'solides', 'progresse', 'progres', 'efforts', 'curieux', 'curieuse', 'volontaire', 'bravo', 'felicitations', 'satisfaisant', 'satisfaisante', 'implique', 'impliquee', 'pertinent', 'pertinente', 'actif', 'active'];
   const NEGATIFS = ['bavard', 'bavarde', 'insuffisant', 'insuffisante', 'insuffisants', 'passif', 'passive', 'irregulier', 'irreguliere', 'fragile', 'fragiles', 'manque', 'doit', 'doivent', 'trop', 'absences', 'absence', 'disperse', 'dispersee', 'superficiel', 'superficielle', 'attention', 'canaliser'];
   function sansAccent(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  /* Mots positifs et négatifs d'une appréciation, sans IA. Les mots sont rendus tels qu'écrits (accents compris).
+     « pas », « peu », « jamais »… dans les trois mots qui précèdent inversent le sens ; « manque de sérieux » est
+     rendu comme une seule expression négative. */
   function motsCles(app) {
-    const txt = sansAccent(app).replace(/[’']/g, ' ');
-    const mots = txt.split(/[^a-z0-9]+/).filter(Boolean);
+    const orig = String(app || '').toLowerCase().replace(/[’']/g, ' ').split(/[^a-z0-9à-ÿœæç]+/).filter(Boolean);
+    const mots = orig.map(sansAccent);
     const positifs = [], negatifs = [];
-    const negation = function (i) { for (let k = Math.max(0, i - 3); k < i; k++) if (['pas', 'peu', 'jamais', 'sans', 'ni'].indexOf(mots[k]) !== -1) return true; return false; };
-    mots.forEach(function (m, i) {
-      const deux = m + ' ' + (mots[i + 1] || '');
-      let p = POSITIFS.indexOf(deux) !== -1 ? deux : POSITIFS.indexOf(m) !== -1 ? m : null;
-      let n = NEGATIFS.indexOf(m) !== -1 ? m : null;
-      if (p && negation(i)) { n = p; p = null; } else if (n && negation(i)) { p = n; n = null; }
-      if (p && positifs.indexOf(p) === -1) positifs.push(p);
-      if (n && negatifs.indexOf(n) === -1) negatifs.push(n);
-    });
+    const estPos = function (i) { const deux = mots[i] + ' ' + (mots[i + 1] || ''); return POSITIFS.indexOf(deux) !== -1 ? 2 : POSITIFS.indexOf(mots[i]) !== -1 ? 1 : 0; };
+    const manqueDe = function (i) { return i >= 2 && /^manqu/.test(mots[i - 2]) && (mots[i - 1] === 'de' || mots[i - 1] === 'd'); };
+    const negation = function (i) { for (let k = i - 1; k >= Math.max(0, i - 3); k--) if (['pas', 'peu', 'jamais', 'sans', 'ni', 'aucun', 'aucune'].indexOf(mots[k]) !== -1) return k; return -1; };
+    const ajoute = function (liste, t) { if (liste.indexOf(t) === -1) liste.push(t); };
+    for (let i = 0; i < mots.length; i++) {
+      const lp = estPos(i);
+      if (lp) {
+        const t = orig.slice(i, i + lp).join(' ');
+        if (manqueDe(i)) ajoute(negatifs, orig.slice(i - 2, i + lp).join(' '));
+        else if (negation(i) >= 0) ajoute(negatifs, orig.slice(negation(i), i + lp).join(' '));
+        else ajoute(positifs, t);
+        i += lp - 1; continue;
+      }
+      if (NEGATIFS.indexOf(mots[i]) !== -1) {
+        if (/^manqu/.test(mots[i]) && (mots[i + 1] === 'de' || mots[i + 1] === 'd') && estPos(i + 2)) continue;   // traité avec le mot suivant
+        if (negation(i) >= 0) ajoute(positifs, orig.slice(negation(i), i + 1).join(' ')); else ajoute(negatifs, orig[i]);
+      }
+    }
     return { positifs: positifs, negatifs: negatifs };
   }
 
@@ -462,14 +504,27 @@
     const F = formations || {};
     const voeux = (D.voeux || []).filter(function (v) { const f = F[v.preset]; return !(f && f.canal === 'direct') && !(v.canal === 'direct'); });
     const avecCible = voeux.filter(function (v) { return typeof v.cible === 'number'; }).length;
+    const direct = function (v) { const f = F[v.preset]; return (f && f.canal === 'direct') || v.canal === 'direct'; };
     const lettres = (D.voeux || []).filter(function (v) { return v.lettreDemandee; });
-    const lettresOk = lettres.filter(function (v) { const t = D.textes && D.textes.lettres && D.textes.lettres[v.id]; return t && compteur(t.txt, 1500).caracteres >= 1000; }).length;
+    /* lettre Parcoursup : au moins 1 000 caractères ; lettre d'une candidature directe (Albert) : textes.albert.lm, au moins 300 mots */
+    const lettresOk = lettres.filter(function (v) {
+      if (direct(v)) { const t = D.textes && D.textes.albert && D.textes.albert.lm; return !!(t && compteur(t.txt, 1e9).mots >= 300); }
+      const t = D.textes && D.textes.lettres && D.textes.lettres[v.id]; return !!(t && compteur(t.txt, 1500).caracteres >= 1000);
+    }).length;
     const dates = ['conseilT1', 'finNotesT1', 'conseilT2', 'finNotesT2'].filter(function (k) { return D.dates && D.dates[k]; }).length;
-    const pct = (dues.length ? faites / dues.length : 0) * 40 + (rub / 4) * 20 + (voeux.length ? avecCible / voeux.length : 0) * 15 + (lettres.length ? lettresOk / lettres.length : 1) * 15 + (dates / 4) * 10;
+    const rien = !PERIODES.some(function (k) { return nbLignes(P[k]) > 0; });
+    /* dossier vide : la jauge reste à 0 (spécification § 4.1, état 1) ; les vœux préremplis et la date fournie par l'app ne comptent pas encore */
+    const pct = rien ? 0 : (dues.length ? faites / dues.length : 0) * 40 + (rub / 4) * 20 + (voeux.length ? avecCible / voeux.length : 0) * 15 + (lettres.length ? lettresOk / lettres.length : 1) * 15 + (dates / 4) * 10;
     return { pct: Math.round(pct), periodes: faites, periodesDues: dues.length, rubriques: rub, voeuxCible: avecCible, voeux: voeux.length, lettres: lettresOk, lettresDemandees: lettres.length, dates: dates };
   }
 
   /* ---------- 14. Coach hebdomadaire ---------- */
+  function articleDe(id) {
+    const m = MATIERES[id]; if (!m) return id;
+    if (id === 'maths') return 'les maths';
+    const c = /^[A-Z]{2,}$/.test(m.court) ? m.court : m.court.toLowerCase();
+    return (/^[aeiouhé]/i.test(c) ? 'l’' : 'le ') + c;
+  }
   function hashTexte(s) { let h = 2166136261; const t = String(s); for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
   function coach(ctx) {
     const D = ctx.dossier || {}, P = D.periodes || {}, auj = dateDe(ctx.aujourdhui || new Date());
@@ -486,9 +541,10 @@
     if (pr && pr.items.length) {
       const i = pr.items[0], g = gainPour(i, ctx.E, pr.sommeCoef);
       const ds = ctx.dsParMatiere && ctx.dsParMatiere[i.id];
-      let txt = 'Remonter ' + (MATIERES[i.id] ? (/^[aeiouh]/i.test(MATIERES[i.id].court) ? 'l’' + MATIERES[i.id].court.toLowerCase() : 'le ' + MATIERES[i.id].court.toLowerCase()) : i.id);
-      txt += ds ? ' : DS ' + fmtDate(ds.due, 'jm').replace(/^(\d)/, function (m) { return m; }) + '.' : '.';
-      txt += ' +1 point = ' + fmtDelta(i.coef / pr.sommeCoef, 2) + ' sur ta moyenne.';
+      /* même convention que le simulateur : coefficient effectif / somme des coefficients des matières notées */
+      const nomM = MATIERES[i.id] ? articleDe(i.id) : i.id;
+      let txt = 'Remonte ' + nomM + ' : +1 point = ' + fmtDelta(i.coef / pr.sommeCoef, 2) + ' sur ta moyenne';
+      txt += ds ? ', DS le ' + fmtDate(ds.due, 'jm') + '.' : '.';
       actions.push({ id: 'ds-' + i.id, txt: txt, lien: ctx.lienReviser ? ctx.lienReviser(i.id) : '', action: 'Réviser', matiere: i.id });
     }
     const T = D.textes || {}, act = T.activites || {};
@@ -496,17 +552,16 @@
     const cibleTexte = dates.conseilT2 || dates.conseilT1;
     const rubriques = [['pro', 'Expérience professionnelle'], ['citoyen', 'Engagement citoyen'], ['monde', 'Ouverture au monde'], ['sport', 'Sport et culture']];
     const r = rubriques.find(function (x) { return vide(x[0]); });
-    const albertVide = D.voeux && D.voeux.some(function (v) { return v.preset === 'albert'; }) && !(T.albert && T.albert.lm && T.albert.lm.txt && T.albert.lm.txt.trim());
-    const lettreVide = (D.voeux || []).find(function (v) { return v.lettreDemandee && !(T.lettres && T.lettres[v.id] && T.lettres[v.id].txt && T.lettres[v.id].txt.trim()); });
-    if (albertVide && auj && auj < dateDe('2026-12-15')) actions.push({ id: 'texte-albert', txt: 'Rédiger la lettre Albert School (300 à 400 mots) avant le 15 décembre.', lien: '#histoire/lettres', action: 'Écrire' });
-    else if (r) actions.push({ id: 'texte-' + r[0], txt: 'Rédiger la rubrique ' + r[1] + (r[0] === 'pro' ? ' (Citemoi)' : '') + (cibleTexte ? ' avant le ' + fmtDate(cibleTexte, 'jm') + '.' : '.'), lien: '#histoire/activites/' + r[0], action: 'Écrire' });
-    else if (lettreVide) actions.push({ id: 'texte-lettre-' + lettreVide.id, txt: 'Rédiger la lettre de motivation pour ' + (ctx.nomVoeu ? ctx.nomVoeu(lettreVide) : lettreVide.id) + ' avant le 1er avril.', lien: '#histoire/lettres/' + lettreVide.id, action: 'Écrire' });
+    /* lettres Parcoursup demandées ; la lettre et le CV d'Albert School sont facultatifs selon sa FAQ : jamais prioritaires */
+    const lettreVide = (D.voeux || []).find(function (v) { return v.lettreDemandee && v.preset !== 'albert' && v.canal !== 'direct' && !(T.lettres && T.lettres[v.id] && T.lettres[v.id].txt && T.lettres[v.id].txt.trim()); });
+    if (r) actions.push({ id: 'texte-' + r[0], txt: 'Rédige la rubrique ' + r[1] + (r[0] === 'pro' ? ' (Citemoi)' : '') + (cibleTexte ? ' avant le ' + fmtDate(cibleTexte, 'jm') + '.' : '.'), lien: '#histoire/activites/' + r[0], action: 'Écrire' });
+    else if (lettreVide) actions.push({ id: 'texte-lettre-' + lettreVide.id, txt: 'Rédige la lettre de motivation pour ' + (ctx.nomVoeu ? ctx.nomVoeu(lettreVide) : lettreVide.id) + ' avant le 1er avril.', lien: '#histoire/lettres/' + lettreVide.id, action: 'Écrire' });
     if (actions.length < 3 && pr && pr.items.length && ctx.fiches) {
       const i = pr.items[0], secs = (MATIERES[i.id] && MATIERES[i.id].sections) || [];
       const done = ctx.fichesDone || [];
       const cand = ctx.fiches.filter(function (f) { return secs.indexOf(f.sec) !== -1 && done.indexOf(f.id) === -1; })
         .sort(function (a, b) { return (b.faiblesse || 0) - (a.faiblesse || 0); }).slice(0, 2);
-      cand.forEach(function (f) { if (actions.length < 3) actions.push({ id: 'fiche-' + f.id, txt: 'Fiche ' + (f.num ? f.num + ' ' : '') + '« ' + f.titre + ' » pas encore maîtrisée : une séance de 20 minutes.', lien: '#' + f.id, action: 'Ouvrir', hote: true }); });
+      cand.forEach(function (f) { if (actions.length < 3) actions.push({ id: 'fiche-' + f.id, txt: 'Révise la fiche ' + (f.num ? f.num + ' ' : '') + '« ' + f.titre + ' », pas encore maîtrisée : une séance de 20 minutes.', lien: '#' + f.id, action: 'Ouvrir', hote: true }); });
     }
     if (actions.length < 3 && ctx.jalons) {
       ctx.jalons.forEach(function (j) {
@@ -514,7 +569,7 @@
         const n = joursAvant(j.date, auj);
         if (n == null || n < 0 || n > 14 || !j.taches || !j.taches.length) return;
         const reste = j.taches.filter(function (t) { return !t.fait; });
-        if (reste.length) actions.push({ id: 'jalon-' + j.id, txt: j.titre + ' dans ' + n + ' jour' + (n > 1 ? 's' : '') + ' : ' + reste.length + ' chose' + (reste.length > 1 ? 's' : '') + ' à relire.', lien: '#calendrier/' + j.id, action: 'Voir' });
+        if (reste.length) actions.push({ id: 'jalon-' + j.id, txt: 'Prépare « ' + j.titre + ' » dans ' + n + ' jour' + (n > 1 ? 's' : '') + ' : ' + reste.length + ' point' + (reste.length > 1 ? 's' : '') + ' à relire.', lien: '#calendrier/' + j.id, action: 'Voir' });
       });
     }
     return actions.slice(0, 3);
@@ -546,13 +601,16 @@
   function validerLecture(json, niv, synonymes, effectifConnu) {
     const out = { periode: null, lignes: [], erreurs: [] };
     const J = (json && typeof json === 'object') ? json : {};
-    const p = String(J.periode || '').toUpperCase().replace(/\s/g, '');
-    const mp = /T?([123])/.exec(p) || /S([12])/.exec(p);
+    /* « T1 », « 1er trimestre », « 2026-2027 T1 » : jamais le chiffre d'une année */
+    const p = String(J.periode || '').toUpperCase().replace(/\d{4}(\s*-\s*\d{4})?/g, ' ').replace(/\s/g, '');
+    const mp = /(?:^|[^0-9A-Z])T([123])(?![0-9])/.exec(' ' + p) || /(?:^|[^0-9])([123])(?:ER|E|EME|ÈME)?TRIM/.exec(p) || /TRIM\D{0,6}([123])(?![0-9])/.exec(p) || /^([123])$/.exec(p);
     if (mp) out.periode = (niv === '1re' ? '1-' : 'T-') + 'T' + mp[1];
+    /* nombre lu : virgule ou point, « /20 » toléré ; « 12,5 (?) » = chiffre douteux, gardé mais signalé */
+    const douteux = function (v) { return typeof v === 'string' && /\(\s*\?\s*\)/.test(v); };
     const num = function (v) {
       if (v == null || v === '') return null;
       if (typeof v === 'number') return isFinite(v) ? v : null;
-      const m = /^\s*(\d{1,2})(?:[,.](\d{1,2}))?\s*(?:\/\s*20)?\s*$/.exec(String(v));
+      const m = /^\s*(\d{1,2})(?:[,.](\d{1,2}))?\s*(?:\/\s*20)?\s*(?:\(\s*\?\s*\))?\s*$/.exec(String(v));
       return m ? parseFloat(m[1] + '.' + (m[2] || '0')) : NaN;
     };
     const lignes = Array.isArray(J.lignes) ? J.lignes : Array.isArray(J.matieres) ? J.matieres : [];
@@ -564,9 +622,11 @@
       const L = { libelle: String(lib), id: id, problemes: [] };
       [['moy', l.moy != null ? l.moy : l.moyenne != null ? l.moyenne : l.moyenne_eleve], ['classe', l.classe != null ? l.classe : l.moyenne_classe], ['min', l.min != null ? l.min : l.moyenne_min], ['max', l.max != null ? l.max : l.moyenne_max]].forEach(function (c) {
         const v = num(c[1]);
+        const nomC = { moy: 'moyenne', classe: 'moyenne de classe', min: 'min', max: 'max' }[c[0]];
         if (v == null) L[c[0]] = null;
-        else if (isNaN(v) || v < 0 || v > 20) { L[c[0]] = null; L.problemes.push(c[0] + ' hors de 0 à 20'); }
-        else L[c[0]] = v;
+        else if (isNaN(v)) { L[c[0]] = null; L.problemes.push(nomC + ' illisible'); }
+        else if (v < 0 || v > 20) { L[c[0]] = null; L.problemes.push(nomC + ' hors de 0 à 20'); }
+        else { L[c[0]] = v; if (douteux(c[1])) L.problemes.push(nomC + ' douteuse, à vérifier'); }
       });
       let rang = null, eff = null;
       const rs = String(l.rang != null ? l.rang : '');
@@ -579,6 +639,7 @@
       const coef = num(l.coef); L.coef = (coef != null && !isNaN(coef) && coef >= 0 && coef <= 30) ? coef : null;
       L.app = String(l.appreciation || l.app || '').trim().slice(0, 600);
       if (!id) L.problemes.push('matière non reconnue');
+      L.groupe = niv !== '1re' && estLigneGroupe(lib);
       L.ok = L.problemes.length === 0;
       out.lignes.push(L);
     });
@@ -631,7 +692,7 @@
     ecart: ecart, feu: feu, zoneMention: zoneMention, levier: levier, priorites: priorites, gainPour: gainPour, chemin: chemin, t2Requis: t2Requis, preparation: preparation,
     compteur: compteur, compteurMots: compteurMots, motsCles: motsCles, sansAccent: sansAccent, progres: progres,
     matiereDeChapitre: matiereDeChapitre, matiereDeLibelle: matiereDeLibelle, evaluationsAvant: evaluationsAvant, dsParMatiere: dsParMatiere, ficheFaible: ficheFaible, fichesParMatiere: fichesParMatiere,
-    completion: completion, coach: coach, hashTexte: hashTexte, mapperLibelle: mapperLibelle, validerLecture: validerLecture, bacAcquis: bacAcquis, sommeGrille: sommeGrille, brouillonCitemoi: brouillonCitemoi
+    completion: completion, coach: coach, poids: poids, groupeDe: groupeDe, estLigneGroupe: estLigneGroupe, GROUPES: GROUPES, articleDe: articleDe, hashTexte: hashTexte, mapperLibelle: mapperLibelle, validerLecture: validerLecture, bacAcquis: bacAcquis, sommeGrille: sommeGrille, brouillonCitemoi: brouillonCitemoi
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   racine.DOSSIER_CALC = API;

@@ -14,9 +14,21 @@ du téléphone ; rien ne part ailleurs que chez le fournisseur IA choisi par l'�
 <!-- Mode Parcoursup : fin -->
 ```
 
-`sw.js` racine : **aucune modification nécessaire**. Le service worker racine met `dossier/cadre.js` et `dossier/cadre.css`
-en cache à leur première demande (branche « le reste : cache d'abord ») ; la mini-app a son propre service worker
-(`dossier/sw.js`, préfixe de cache `dsp-`, portée `/dossier/`) qui prend la main sur l'iframe dès sa première ouverture.
+`sw.js` racine : un second bloc de trois lignes, juste après la ligne `const ASSETS = [...]`, à recopier tel quel.
+Sans lui, une mise à jour de l'app (nouveau `CACHE`) efface `dossier/cadre.js` et `dossier/cadre.css` du cache, et la
+carte disparaît au chargement hors ligne suivant.
+
+```js
+// Mode Parcoursup : début (carte et cadre du dossier, chargés par index.html : disponibles hors ligne dès l'installation)
+ASSETS.push('./dossier/cadre.js', './dossier/cadre.css');
+// Mode Parcoursup : fin
+```
+
+La mini-app a son propre service worker (`dossier/sw.js`, préfixe de cache `dsp-`, portée `/dossier/`, plus précise
+que celle du service worker racine) qui répond à l'iframe dès sa première ouverture.
+
+**À chaque livraison de `dossier/`** : changer `VERSION` dans `dossier/sw.js` et les `?v=` de `dossier/index.html`
+(même valeur). Les fichiers versionnés sont servis depuis le cache sans revalidation : jamais un mélange de deux versions.
 
 Facultatif (sauvegarde générale de l'app) : ajouter le jeton `'stmg-dossier'` à `CLES_SAUVEGARDE` dans les sources
 pour que « Sauvegarde » emporte aussi le dossier. En attendant, Réglages → « Exporter mon dossier (JSON) » le fait.
@@ -25,7 +37,8 @@ Entrée NOUVEAUTES pour `nouveautes.py` : `dossier/nouveaute.json`.
 
 ## Ce que fait `cadre.js` depuis l'app
 
-- insère la carte d'accueil `section#dossier-carte` avant `#agenda` (masquée pendant une recherche) et le bouton
+- insère la carte d'accueil `section#dossier-carte` en tête des cartes du jour, juste avant `#nouveautes` (ou avant
+  `#agenda` s'il n'y a pas de nouveautés), masquée pendant une recherche, et le bouton
   `#mode-dossier` après `#mode-maths` (visible à partir de 480 px ; sur iPhone l'entrée est la carte) ;
 - ouvre le cadre plein écran `#dossier-cadre` (iframe `./dossier/?embed=1`, z-index 92) sur `#dossier` et
   `#dossier/<écran>` ; refuse d'ouvrir si une séance, un cours ou le cadre Maths est ouvert ; pose
@@ -58,9 +71,14 @@ bulletin de Première (T3 2025-2026 : français 5, droit-éco 8, management 8, S
 espagnol 3, EPS 3, EMC 1, total 45). Un import PDF ou photo qui indique des coefficients les remplace ; chaque valeur
 reste modifiable dans Réglages.
 
+En Terminale, MSDGN (12) et Gestion et finance (4) sont deux sous-matières d'**une** ligne de bulletin « MSDGN Gestion et
+finance » au coefficient 16, dont la moyenne est celle des seules sous-matières notées. `calc.poids()` reproduit ce calcul
+(coefficients effectifs) et sert partout : moyennes, levier « +1 point = », priorités, chemin le plus court, simulateur,
+vue jury. Vérifié : 15,54 le 26/10/2026, comme ÉcoleDirecte.
+
 ## Retrait
 
-Supprimer le dossier `dossier/` et le bloc « Mode Parcoursup » de `index.html`. Les données restent dans
+Supprimer le dossier `dossier/` et les blocs « Mode Parcoursup » de `index.html` et de `sw.js`. Les données restent dans
 `localStorage['stmg-dossier']` jusqu'à « Effacer mon dossier » (ou suppression des données du site).
 
 ## Tests

@@ -14,7 +14,7 @@ window.DOSSIER_ETAT = (function () {
   function defaut() {
     return {
       version: VERSION, cree: maintenant(), maj: maintenant(),
-      profil: { prenom: '', lycee: 'Lycée Bel-Orme, Bordeaux', classe: 'Tle STMG GF', effectif: null, boursier: null },
+      profil: { prenom: '', lycee: '', classe: 'Tle STMG GF', effectif: null, boursier: null },
       coefs: { source: 'defaut', lus: '2026-10-26', tle: {}, premiere: {} },
       dates: { conseilT1: '2026-11-27', finNotesT1: null, conseilT2: null, finNotesT2: null, remonteeBulletins: null, ficheAvenir: null, rdvPP: null },
       periodes: { '1-T1': null, '1-T2': null, '1-T3': null, 'T-T1': null, 'T-T2': null, 'T-T3': null },
@@ -34,23 +34,59 @@ window.DOSSIER_ETAT = (function () {
     };
   }
   function objet(x) { return (x && typeof x === 'object' && !Array.isArray(x)) ? x : null; }
+  const INTERDITES = ['__proto__', 'constructor', 'prototype'];
   function fusion(base, src) {
     Object.keys(src || {}).forEach(function (k) {
+      if (INTERDITES.indexOf(k) !== -1) return;                       // pas de pollution de prototype par un fichier importé
       if (objet(base[k]) && objet(src[k])) fusion(base[k], src[k]);
       else if (src[k] !== undefined) base[k] = src[k];
     });
     return base;
   }
+  /* Normalisation défensive : un fichier importé ou une clé abîmée ne doit jamais casser un écran. Chaque sous-objet
+     attendu est recréé s'il manque ou n'a pas le bon type ; les entrées illisibles (vœu, ligne, texte, fait) sont écartées. */
+  function texteOk(t) { const o = objet(t) ? t : {}; return { txt: typeof o.txt === 'string' ? o.txt : '', maj: typeof o.maj === 'string' ? o.maj : null, versions: Array.isArray(o.versions) ? o.versions.filter(function (v) { return typeof v === 'string'; }).slice(-3) : [] }; }
+  function nombreOuNull(x) { return typeof x === 'number' && isFinite(x) ? x : null; }
   function normaliser(d) {
-    const s = fusion(defaut(), d);
-    if (!objet(s.periodes)) s.periodes = defaut().periodes;
-    C.PERIODES.forEach(function (k) { if (s.periodes[k] !== null && !objet(s.periodes[k])) s.periodes[k] = null; if (s.periodes[k] && !objet(s.periodes[k].lignes)) s.periodes[k].lignes = {}; });
-    if (!Array.isArray(s.voeux)) s.voeux = [];
-    if (!Array.isArray(s.textes.faits)) s.textes.faits = [];
+    const base = defaut();
+    const s = fusion(defaut(), objet(d) ? d : {});
+    ['profil', 'coefs', 'dates', 'anticipees', 'textes', 'jalons', 'ia', 'hote', 'vu', 'synonymes', 'semaines'].forEach(function (k) { if (!objet(s[k])) s[k] = base[k]; });
+    if (!objet(s.coefs.tle)) s.coefs.tle = {}; if (!objet(s.coefs.premiere)) s.coefs.premiere = {};
+    ['tle', 'premiere'].forEach(function (n) { Object.keys(s.coefs[n]).forEach(function (id) { if (typeof s.coefs[n][id] !== 'number' || !isFinite(s.coefs[n][id]) || s.coefs[n][id] < 0) delete s.coefs[n][id]; }); });
+    Object.keys(base.dates).forEach(function (k) { if (s.dates[k] != null && !/^\d{4}-\d{2}-\d{2}$/.test(String(s.dates[k]))) s.dates[k] = null; });
+    ['frEcrit', 'frOral', 'maths'].forEach(function (k) { s.anticipees[k] = nombreOuNull(s.anticipees[k]); });
+    if (!objet(s.periodes)) s.periodes = base.periodes;
+    Object.keys(s.periodes).forEach(function (k) { if (C.PERIODES.indexOf(k) === -1) delete s.periodes[k]; });
+    C.PERIODES.forEach(function (k) {
+      const p = s.periodes[k];
+      if (p == null || !objet(p)) { s.periodes[k] = null; return; }
+      if (!objet(p.lignes)) p.lignes = {};
+      Object.keys(p.lignes).forEach(function (id) { if (!objet(p.lignes[id]) || INTERDITES.indexOf(id) !== -1) delete p.lignes[id]; });
+      if (p.absences != null) { const a = objet(p.absences); p.absences = a ? { cours: nombreOuNull(a.cours), injustifiees: nombreOuNull(a.injustifiees), retards: nombreOuNull(a.retards) } : null; }
+    });
+    s.voeux = (Array.isArray(s.voeux) ? s.voeux : []).filter(function (v) { return objet(v) && typeof v.id === 'string' && v.id; });
+    s.voeux.forEach(function (v) {
+      if (v.cible != null && typeof v.cible !== 'number') v.cible = null; if (v.grille != null && !objet(v.grille)) v.grille = null;
+      if (v.preset === 'albert') v.lettreDemandee = false;   // CV et lettre facultatifs (FAQ Albert School) : la lettre reste rédigeable, sans être due
+    });
+    const T = s.textes;
+    if (!objet(T.activites)) T.activites = {};
+    ['pro', 'citoyen', 'monde', 'sport'].forEach(function (k) { T.activites[k] = texteOk(T.activites[k]); });
+    if (!objet(T.lettres)) T.lettres = {};
+    Object.keys(T.lettres).forEach(function (k) { T.lettres[k] = texteOk(T.lettres[k]); });
+    if (!objet(T.albert)) T.albert = {};
+    T.albert.lm = texteOk(T.albert.lm); T.albert.cv = texteOk(T.albert.cv);
+    if (!objet(T.citemoi)) T.citemoi = base.textes.citemoi;
+    if (!Array.isArray(T.citemoi.competences)) T.citemoi.competences = [];
+    if (!Array.isArray(T.citemoi.liens)) T.citemoi.liens = [];
+    T.faits = (Array.isArray(T.faits) ? T.faits : []).filter(function (f) { return objet(f) && typeof f.texte === 'string'; });
     if (!Array.isArray(s.jalons.perso)) s.jalons.perso = [];
+    s.jalons.perso = s.jalons.perso.filter(function (j) { return objet(j) && typeof j.id === 'string' && typeof j.titre === 'string'; });
+    if (!objet(s.jalons.etat)) s.jalons.etat = {};
+    Object.keys(s.jalons.etat).forEach(function (k) { const e = s.jalons.etat[k]; if (!objet(e)) { delete s.jalons.etat[k]; return; } if (!objet(e.taches)) e.taches = {}; });
+    Object.keys(s.semaines).forEach(function (k) { const w = s.semaines[k]; if (!objet(w) || !Array.isArray(w.actions)) { delete s.semaines[k]; return; } w.actions = w.actions.filter(objet); });
     if (!Array.isArray(s.hote.fiches)) s.hote.fiches = [];
     if (!Array.isArray(s.vu.presetsRetires)) s.vu.presetsRetires = [];
-    ['pro', 'citoyen', 'monde', 'sport'].forEach(function (k) { if (!objet(s.textes.activites[k])) s.textes.activites[k] = texteVide(); });
     s.version = VERSION;
     return s;
   }
@@ -63,26 +99,46 @@ window.DOSSIER_ETAT = (function () {
     s.voeux.sort(function (a, b) { return (a.ordre || 0) - (b.ordre || 0); }).forEach(function (v, i) { v.ordre = i + 1; });
   }
 
-  let S = null, corrompu = false;
-  function charger() {
-    const brut = LS(K);
+  let S = null, corrompu = false, dernier = null;     // dernier : la chaîne lue ou écrite en dernier par cet onglet
+  function depuis(brut) {
     let d = null;
     if (brut != null) {
       try { d = JSON.parse(brut); } catch (e) { d = null; }
       if (!objet(d)) { corrompu = true; try { if (LS(K_ABIME) == null) localStorage.setItem(K_ABIME, brut); } catch (e) { } d = null; }
     }
-    S = normaliser(d || {});
-    if (!d) semerVoeux(S); else if (!S.voeux.length && !S.vu.presetsRetires.length) semerVoeux(S);
-    return S;
+    let s;
+    try { s = normaliser(d || {}); } catch (e) { corrompu = true; try { if (brut != null && LS(K_ABIME) == null) localStorage.setItem(K_ABIME, brut); } catch (x) { } s = normaliser({}); d = null; }
+    if (!d) semerVoeux(s); else if (!s.voeux.length && !s.vu.presetsRetires.length) semerVoeux(s);
+    return s;
+  }
+  function charger() { const brut = LS(K); S = depuis(brut); dernier = brut; return S; }
+  /* Un autre onglet (la mini-app seule, la PWA installée, l'app STMG) a pu écrire la clé depuis notre dernière lecture :
+     on la relit avant de dessiner, pour ne jamais réécrire un état périmé par-dessus une saisie plus récente. */
+  function relire() {
+    const brut = LS(K);
+    if (brut === dernier || brut == null && dernier == null) return false;
+    if (brut == null) { dernier = null; return false; }      // clé effacée ailleurs : on garde l'état en mémoire, il sera réécrit
+    S = depuis(brut); dernier = brut;
+    return true;
   }
   const ecouteurs = [];
   function surChangement(fn) { ecouteurs.push(fn); }
   let plein = false;
   function sauver() {
     if (!S) return false;
+    /* écriture d'un autre onglet arrivée entre-temps (événement storage pas encore traité) : on adopte la version
+       stockée plutôt que de l'écraser, et l'écran se redessine */
+    const enPlace = LS(K);
+    if (enPlace != null && dernier != null && enPlace !== dernier) {
+      S = depuis(enPlace); dernier = enPlace;
+      ecouteurs.forEach(function (fn) { try { fn(null, 'autre-onglet'); } catch (e) { } });
+      return false;
+    }
     S.maj = maintenant();
     try {
-      localStorage.setItem(K, JSON.stringify(S));
+      const brut = JSON.stringify(S);
+      localStorage.setItem(K, brut);
+      dernier = brut;
       plein = false;
       ecouteurs.forEach(function (fn) { try { fn(); } catch (e) { } });
       return true;
@@ -94,7 +150,7 @@ window.DOSSIER_ETAT = (function () {
   }
   function effacer() {
     try { localStorage.removeItem(K); } catch (e) { }
-    S = normaliser({}); semerVoeux(S);
+    S = normaliser({}); semerVoeux(S); dernier = null;
     return sauver();
   }
   function exporter() { return { app: 'stmg-dossier', version: VERSION, exporteLe: maintenant(), donnees: JSON.parse(JSON.stringify(S)) }; }
@@ -107,7 +163,9 @@ window.DOSSIER_ETAT = (function () {
   }
   function importer(obj) {
     const err = valider(obj); if (err) return err;
-    S = normaliser(JSON.parse(JSON.stringify(obj.donnees)));
+    let s2;
+    try { s2 = normaliser(JSON.parse(JSON.stringify(obj.donnees))); } catch (e) { return 'Le contenu du fichier est illisible.'; }
+    S = s2; dernier = LS(K);
     return sauver() ? '' : 'Mémoire du téléphone pleine : exporte ton dossier puis libère de la place';
   }
 
@@ -188,10 +246,15 @@ window.DOSSIER_ETAT = (function () {
   }
   function prochainJalon(auj) { return jalons(auj).find(function (j) { return j.date && !j.fait && j.jours != null && j.jours >= 0; }) || null; }
 
-  /* ---- résumé pour la carte d'accueil de l'app STMG (lu sans charger cette app) ---- */
-  function resume(r) { S.resume = r; }
+  /* ---- résumé pour la carte d'accueil de l'app STMG (lu sans charger cette app) ----
+     renvoie vrai seulement s'il a changé (on n'écrit pas la clé à chaque affichage) */
+  function resume(r) {
+    const sans = function (x) { if (!x) return ''; const o = Object.assign({}, x); delete o.le; return JSON.stringify(o); };
+    if (sans(S.resume) === sans(r)) return false;
+    S.resume = r; return true;
+  }
 
-  return { K: K, VERSION: VERSION, charger: charger, sauver: sauver, effacer: effacer, exporter: exporter, importer: importer, valider: valider, get S() { return S; }, get corrompu() { return corrompu; }, get plein() { return plein; },
+  return { K: K, VERSION: VERSION, charger: charger, relire: relire, sauver: sauver, effacer: effacer, exporter: exporter, importer: importer, valider: valider, get S() { return S; }, get corrompu() { return corrompu; }, get plein() { return plein; },
     surChangement: surChangement, cleIA: cleIA, echeances: echeances, dsHist: dsHist, fichesDone: fichesDone, signaux: signaux, contexteHote: contexteHote,
     formationDe: formationDe, voeuxTries: voeuxTries, voeuParId: voeuParId, jalons: jalons, prochainJalon: prochainJalon, resume: resume, texteVide: texteVide, maintenant: maintenant };
 })();

@@ -9,8 +9,8 @@ window.DOSSIER_VUES.reglages = function (corps, pied) {
   /* mon lycée */
   const b1 = h('section.do-bloc');
   b1.appendChild(h('h3.do-kicker', { text: 'Mon lycée' }));
-  b1.appendChild(h('div.do-rangee', U.champTexte('Prénom', S.profil.prenom, function (v) { S.profil.prenom = v.trim(); sauver(); }, { placeholder: 'facultatif, pour l’impression' }).el, U.champTexte('Lycée', S.profil.lycee, function (v) { S.profil.lycee = v.trim(); sauver(); }).el));
-  b1.appendChild(h('div.do-rangee', U.champTexte('Classe', S.profil.classe, function (v) { S.profil.classe = v.trim(); sauver(); }).el, U.champTexte('Effectif de la classe', S.profil.effectif == null ? '' : S.profil.effectif, function (v) { const n = parseInt(v, 10); S.profil.effectif = isNaN(n) ? null : n; sauver(); }, { inputmode: 'numeric' }).el));
+  b1.appendChild(h('div.do-grille-2', U.champTexte('Prénom', S.profil.prenom, function (v) { S.profil.prenom = v.trim(); sauver(); }, { placeholder: 'facultatif' }).el, U.champTexte('Lycée', S.profil.lycee, function (v) { S.profil.lycee = v.trim(); sauver(); }, { placeholder: 'rempli par l’import du bulletin' }).el,
+    U.champTexte('Classe', S.profil.classe, function (v) { S.profil.classe = v.trim(); sauver(); }).el, U.champTexte('Effectif de la classe', S.profil.effectif == null ? '' : S.profil.effectif, function (v) { const n = parseInt(v, 10); S.profil.effectif = isNaN(n) ? null : n; sauver(); }, { inputmode: 'numeric' }).el));
   b1.appendChild(h('div.do-champ', h('span.do-champ-l', { text: 'Boursier' }), U.pilules({ label: 'Boursier', items: [{ id: 'oui', texte: 'oui' }, { id: 'non', texte: 'non' }, { id: 'nsp', texte: 'je ne sais pas' }], actif: S.profil.boursier === true ? 'oui' : S.profil.boursier === false ? 'non' : 'nsp', surChoix: function (id, btn) { S.profil.boursier = id === 'oui' ? true : id === 'non' ? false : null; E.sauver(); Array.prototype.forEach.call(btn.parentNode.children, function (x) { x.classList.toggle('do-actif', x === btn); x.setAttribute('aria-pressed', String(x === btn)); }); } })));
   b1.appendChild(h('p.do-aide', { text: 'Les boursiers bénéficient de taux minimaux fixés par les recteurs dans chaque formation (présentation Parcoursup 2026).' }));
   corps.appendChild(b1);
@@ -23,15 +23,16 @@ window.DOSSIER_VUES.reglages = function (corps, pied) {
     inp.addEventListener('change', function () { S.dates[k] = inp.value || null; E.sauver(); U.annoncer('Date enregistrée'); A.publierResume(); });
     return h('label.do-champ', h('span.do-champ-l', { text: label }), inp, aide ? h('span.do-aide', { text: aide }) : null);
   };
-  b2.appendChild(h('div.do-rangee', champDate('Conseil de classe T1', 'conseilT1', 'vendredi 27 novembre 2026 selon l’app'), champDate('Fin des notes T1', 'finNotesT1', 'sinon : conseil moins 7 jours')));
-  b2.appendChild(h('div.do-rangee', champDate('Conseil de classe T2', 'conseilT2', 'à demander au lycée (souvent mi-mars)'), champDate('Fin des notes T2', 'finNotesT2')));
-  b2.appendChild(h('div.do-rangee', champDate('Rendez-vous avec le professeur principal', 'rdvPP'), champDate('Remontée des bulletins', 'remonteeBulletins', 'sinon : 26 mars 2027, extrapolé')));
+  b2.appendChild(h('div.do-grille-2', champDate('Conseil de classe T1', 'conseilT1', 'Vendredi 27 novembre 2026 d’après l’app.'), champDate('Fin des notes T1', 'finNotesT1', 'Si tu ne la connais pas, on compte 7 jours avant le conseil.'),
+    champDate('Conseil de classe T2', 'conseilT2', 'À demander au lycée (souvent mi-mars).'), champDate('Fin des notes T2', 'finNotesT2', 'Même règle : 7 jours avant le conseil.'),
+    champDate('Rendez-vous avec ton professeur principal', 'rdvPP'), champDate('Remontée des bulletins', 'remonteeBulletins', 'Sinon le 26 mars 2027, extrapolé du calendrier 2026.')));
+  b2.appendChild(h('p.do-aide', { text: 'Format des dates : jour, mois, année.' }));
   corps.appendChild(b2);
 
   /* coefficients */
   const b3 = h('section.do-bloc');
   b3.appendChild(h('h3.do-kicker', { text: 'Coefficients du bulletin' }));
-  b3.appendChild(h('p.do-aide', { text: 'Terminale STMG GF, relevés sur ÉcoleDirecte le 26/10/2026 (total 52) ; Première, lus sur le bulletin du T3 (total 45). Un import PDF ou photo qui indique des coefficients les remplace. Chaque valeur reste modifiable.' + (S.coefs.source === 'import' ? ' Derniers coefficients lus dans un import le ' + C.fmtDate(S.coefs.lus, 'num') + '.' : '') }));
+  b3.appendChild(h('p.do-aide', { text: 'Terminale STMG GF, relevés sur ÉcoleDirecte le 26/10/2026 (total 52, dont la ligne MSDGN Gestion et finance à 16 : MSDGN 12 et GF 4) ; Première, lus sur le bulletin du T3 (total 45). Un import PDF ou photo qui indique des coefficients les remplace. Chaque valeur reste modifiable.' + (S.coefs.source === 'import' ? ' Derniers coefficients lus dans un import le ' + C.fmtDate(S.coefs.lus, 'num') + '.' : '') }));
   const grilleCoefs = function (niv) {
     const table = C.tableDe(niv === '1re' ? '1-T1' : 'T-T1', S.coefs), cible = niv === '1re' ? S.coefs.premiere : S.coefs.tle;
     const z = h('div.do-coefs');
@@ -40,9 +41,10 @@ window.DOSSIER_VUES.reglages = function (corps, pied) {
     const majTotal = function () { const t = C.tableDe(niv === '1re' ? '1-T1' : 'T-T1', S.coefs); let s = 0; Object.keys(t).forEach(function (k) { s += t[k]; }); total.textContent = 'total ' + C.fmt(s, 0); };
     const g = h('div.do-coefs-grille');
     Object.keys(table).forEach(function (id) {
-      const inp = h('input.do-note.do-note-c', { type: 'text', inputmode: 'decimal', 'aria-label': 'Coefficient ' + C.nomDe(id), value: C.fmt(table[id], 0) });
+      const inp = h('input.do-note.do-note-c', { type: 'text', inputmode: 'decimal', 'aria-label': 'Coefficient ' + C.nomDe(id, null, niv === '1re' ? '1-T1' : 'T-T1') + ' en ' + (niv === '1re' ? 'Première' : 'Terminale'), value: C.fmt(table[id], Math.round(table[id]) === table[id] ? 0 : 1) });
       inp.addEventListener('input', function () { const v = parseFloat(inp.value.replace(',', '.')); if (v >= 0 && v <= 30) { cible[id] = v; S.coefs.source = 'saisie'; sauver(); majTotal(); inp.classList.remove('do-ko'); } else inp.classList.add('do-ko'); });
-      g.appendChild(h('label.do-coef-c', { style: '--acc:' + C.couleurDe(id) }, h('span', { text: C.courtDe(id) }), inp));
+      const code = niv === '1re' ? '1-T1' : 'T-T1';
+      g.appendChild(h('label.do-coef-c', { style: '--acc:' + C.couleurDe(id), title: C.nomDe(id, null, code) }, h('span', { text: C.courtDe(id, null, code) }), inp));
     });
     z.appendChild(g); z.appendChild(total); majTotal();
     return z;
@@ -63,11 +65,12 @@ window.DOSSIER_VUES.reglages = function (corps, pied) {
     f.text().then(function (t) {
       let obj = null; try { obj = JSON.parse(t); } catch (e) { U.toast('Ce fichier n’est pas un JSON lisible.', 5000); return; }
       const err = E.valider(obj); if (err) { U.toast(err, 6000); return; }
-      U.confirmer(zImp, 'Remplacer ton dossier actuel par ce fichier ?', function () { const e2 = E.importer(obj); if (e2) U.toast(e2, 6000); else { U.toast('Dossier importé.'); A.rendre(); } }, 'Oui, remplacer', 'Annuler');
+      U.confirmer(zImp, 'Remplacer ton dossier actuel par ce fichier ?', function () { const e2 = E.importer(obj); if (e2) U.toast(e2, 6000); else { U.toast('Dossier importé.'); A.publierResume(); A.rendre(); } }, 'Oui, remplacer', 'Annuler');
     });
   });
   b4.appendChild(h('div.do-acts', U.bouton('Exporter mon dossier (JSON)', function () { U.telecharger('mon-dossier-parcoursup.json', JSON.stringify(E.exporter(), null, 1), 'application/json'); U.toast('Fichier exporté.'); }, 'do-btn-sec'), U.bouton('Importer un dossier', function () { fichier.click(); }, 'do-btn-sec'), fichier)); b4.appendChild(zImp);
   b4.appendChild(h('p.do-aide', { text: 'Le fichier contient tes notes et tes appréciations ; il n’inclut jamais ta clé IA. La sauvegarde générale de l’app STMG n’emporte pas encore ce dossier : garde ce fichier à part.' }));
+  b4.appendChild(h('p.do-aide', { text: 'Sur iPhone, Safari peut effacer les données d’un site que tu n’as pas ouvert depuis 7 jours. Ajoute l’app à l’écran d’accueil, ou exporte ton dossier après chaque bulletin.' }));
   corps.appendChild(b4);
 
   /* impression */
@@ -106,7 +109,7 @@ window.DOSSIER_IMPRESSION = (function () {
   function entete(z, titre) {
     const S = E.S;
     z.appendChild(h('h1', { text: titre }));
-    z.appendChild(h('p', { text: (S.profil.prenom ? S.profil.prenom + ' · ' : '') + (S.profil.lycee || '') + ' · ' + (S.profil.classe || 'Terminale STMG') + ' · bac 2027 · ' + C.fmtDate(M.aujourdhui(), 'num') }));
+    z.appendChild(h('p', { text: [S.profil.prenom, S.profil.lycee, S.profil.classe || 'Terminale STMG', 'bac 2027', C.fmtDate(M.aujourdhui(), 'num')].filter(Boolean).join(' · ') }));
   }
   function lancer(mode) { document.body.classList.add('do-impression', 'do-impression-' + mode); setTimeout(function () { try { window.print(); } catch (e) { } }, 80); }
   function releve() {
@@ -118,7 +121,7 @@ window.DOSSIER_IMPRESSION = (function () {
     const tb = h('tbody');
     const ids = C.ORDRE_TLE.filter(function (id) { return !C.MATIERES[id].sansCoef; }).concat(['francais', 'sdgn']);
     ids.forEach(function (id) {
-      const tr = h('tr', h('th', { text: C.nomDe(id) }));
+      const tr = h('tr', h('th', { text: id === 'management' ? 'MSDGN (Management en Première)' : C.nomDe(id) }));
       C.TRANSMISES.forEach(function (c) { const l = S.periodes[c] && S.periodes[c].lignes[id]; const mo = C.note(l && l.moy); tr.appendChild(h('td', { text: mo == null ? '' : C.fmt(mo) + (C.note(l.classe) != null ? ' / ' + C.fmt(l.classe) : '') + (l.rang ? ' (' + l.rang + (l.effectif ? '/' + l.effectif : '') + ')' : '') })); });
       tb.appendChild(tr);
     });

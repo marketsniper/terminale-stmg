@@ -16,10 +16,11 @@ function decodeWinAnsi(octets){
 
 /* Décompresse un stream zlib (FlateDecode) ; renvoie null si ce n'est pas du zlib valide. */
 async function inflate(octets){
-  /* Node (tests) : zlib synchrone ; navigateur : DecompressionStream */
+  /* Node (tests) : zlib synchrone ; navigateur : DecompressionStream (Safari 16.4 et plus) */
   if (typeof window === 'undefined' && typeof require === 'function'){
     try { return new Uint8Array(require('zlib').inflateSync(octets)); } catch(e){ return null; }
   }
+  if (typeof DecompressionStream === 'undefined') throw new Error('DECOMPRESSION');
   try {
     /* un flux zlib suivi d'octets parasites (fin de ligne avant « endstream ») fait échouer certains moteurs : on rogne */
     let fin = octets.length;
@@ -46,7 +47,8 @@ function blocs(buf){
     let d = s + 6; if (latin[d] === '\r') d++; if (latin[d] === '\n') d++;
     const e = latin.indexOf('endstream', d); if (e < 0) break;
     const dict = latin.slice(Math.max(0, latin.lastIndexOf('<<', s) - 0), s);   // approximatif mais suffisant
-    const m = /\/Length\s+(\d+)(?!\s+\d+\s+R)/.exec(dict);
+    /* longueur directe seulement : « /Length 12 0 R » (référence indirecte) ne doit pas être lu comme « 1 » */
+    const m = /\/Length\s+(\d+)(?!\d)(?!\s+\d+\s+R)/.exec(dict);
     const fin = (m && d + Number(m[1]) <= e) ? d + Number(m[1]) : e;
     res.push({dict, debut: d, fin});
     i = e + 9;
@@ -55,11 +57,13 @@ function blocs(buf){
 }
 
 /* Lexeur minimal d'un flux de contenu : renvoie opérateurs et opérandes dans l'ordre. */
+const MAX_JETONS = 2000000;   // borne par flux : un PDF inattendu ne doit jamais figer l'onglet
 function* lexer(src){
-  let i = 0; const n = src.length;
+  let i = 0; const n = src.length; let jetons = 0;
   const isWs = c => c === ' ' || c === '\n' || c === '\r' || c === '\t' || c === '\f' || c === '\0';
   const isDelim = c => '()<>[]{}/%'.indexOf(c) >= 0;
   while (i < n){
+    if (++jetons > MAX_JETONS) return;
     const c = src[i];
     if (isWs(c)){ i++; continue; }
     if (c === '%'){ while (i < n && src[i] !== '\n' && src[i] !== '\r') i++; continue; }
@@ -81,7 +85,8 @@ function* lexer(src){
       yield {t: 'str', v: out}; i = j; continue;
     }
     if (c === '<' && src[i + 1] !== '<'){                // chaîne hexadécimale
-      const e = src.indexOf('>', i); const hex = src.slice(i + 1, e).replace(/\s+/g, '');
+      const e = src.indexOf('>', i); if (e < 0) return;     // chaîne hexadécimale jamais fermée : fin du flux
+      const hex = src.slice(i + 1, e).replace(/\s+/g, '');
       const out = []; for (let k = 0; k + 1 < hex.length + 1; k += 2) out.push(parseInt((hex[k] || '0') + (hex[k + 1] || '0'), 16));
       yield {t: 'str', v: out}; i = e + 1; continue;
     }
@@ -90,6 +95,7 @@ function* lexer(src){
     if (c === '[' || c === ']' || c === '{' || c === '}'){ yield {t: 'op', v: c}; i++; continue; }
     if (c === '/'){ let j = i + 1; while (j < n && !isWs(src[j]) && !isDelim(src[j])) j++; yield {t: 'name', v: src.slice(i + 1, j)}; i = j; continue; }
     let j = i; while (j < n && !isWs(src[j]) && !isDelim(src[j])) j++;
+    if (j === i){ i++; continue; }                        // délimiteur isolé (« > », « ) », « } »…) : on l'ignore et on avance
     const tok = src.slice(i, j); i = j;
     if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(tok)) yield {t: 'num', v: parseFloat(tok)};
     else yield {t: 'op', v: tok};
@@ -141,11 +147,15 @@ async function pdfTexte(arrayBuffer){
   const buf = new Uint8Array(arrayBuffer);
   const pages = [];
   for (const b of blocs(buf)){
+    /* seuls les flux de contenu nous intéressent : pas les polices (Length1), images, objets, xref, métadonnées.
+       Le tri se fait AVANT la décompression : un scan lourd ne doit pas saturer la mémoire d'un téléphone. */
+    if (/\/Length1|\/Subtype\s*\/Image|\/Type\s*\/ObjStm|\/Type\s*\/XRef|\/Type\s*\/Metadata|\/Subtype\s*\/Form|\/Type\s*\/EmbeddedFile/.test(b.dict)) continue;
     const brut = buf.subarray(b.debut, b.fin);
     let octets = brut;
-    if (/FlateDecode/.test(b.dict)){ octets = await inflate(brut); if (!octets) continue; }
-    /* seuls les flux de contenu nous intéressent : pas les polices (Length1), images, objets, xref, métadonnées */
-    if (/\/Length1|\/Subtype\s*\/Image|\/Type\s*\/ObjStm|\/Type\s*\/XRef|\/Type\s*\/Metadata|\/Subtype\s*\/Form/.test(b.dict)) continue;
+    if (/FlateDecode/.test(b.dict)){
+      try { octets = await inflate(brut); } catch (e) { if (e && e.message === 'DECOMPRESSION') return {pages: [], erreur: 'DECOMPRESSION'}; octets = null; }
+      if (!octets) continue;
+    }
     const src = new TextDecoder('latin1').decode(octets);
     if (src.indexOf('BT') < 0 || src.indexOf('ET') < 0) continue;            // pas un flux de contenu textuel
     const frags = fragmentsDuFlux(src);

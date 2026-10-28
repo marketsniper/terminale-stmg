@@ -44,7 +44,11 @@ window.DOSSIER_MODELE = (function () {
     const vj = C.vueJury(P, coefs, S.objectifT2);
     const sig = E.signaux(auj);
     const enCours = periodeEnCours(S);
-    const codeRef = ref.code && ref.base !== 'jury' ? ref.code : (C.nbLignes(P['T-T1']) ? 'T-T1' : ref.code);
+    /* période simulée (« Ce trimestre ») : le trimestre de Terminale en cours, s'il a des notes. Jamais un trimestre figé
+       ni une période de Première (un objectif se fixe sur ce qui peut encore bouger). */
+    const codeSimul = enCours && C.nbLignes(P[enCours]) ? enCours : null;
+    /* base des priorités (coach, « remonte d'abord ») : le trimestre en cours, sinon la dernière période saisie */
+    const codeRef = codeSimul || ['T-T2', 'T-T1', '1-T3', '1-T2', '1-T1'].find(function (k) { return C.nbLignes(P[k]); }) || null;
     const periodeRef = codeRef ? P[codeRef] : null;
     const limite = enCours ? finNotes(S, enCours) : null;
     const evals = C.evaluationsAvant(sig.echeances, limite, auj);
@@ -65,14 +69,14 @@ window.DOSSIER_MODELE = (function () {
     const prochain = jalons.find(function (j) { return j.date && !j.fait && j.jours != null && j.jours >= 0; }) || null;
     const completion = C.completion(S, auj, F.parId);
     const coachS = coachSemaine(S, { prios: prios, E: premier ? premier.E : null, dsParMatiere: dsPar, sig: sig, jalons: jalons });
-    return { S: S, auj: auj, coefs: coefs, ref: ref, traj: traj, vj: vj, sig: sig, enCours: enCours, codeRef: codeRef, periodeRef: periodeRef, limite: limite, evals: evals, dsPar: dsPar,
+    return { S: S, auj: auj, coefs: coefs, ref: ref, traj: traj, vj: vj, sig: sig, enCours: enCours, codeRef: codeRef, periodeRef: periodeRef, codeSimul: codeSimul, limite: limite, evals: evals, dsPar: dsPar,
       voeux: voeux, ordreVoeux: ordreVoeux, premier: premier, prios: prios, jalons: jalons, prochain: prochain, completion: completion, coach: coachS };
   }
 
   /* coach : clé semaine ISO, régénéré le lundi ou si les entrées changent, en gardant les cases cochées */
   function hashEntrees(S, sig) {
     const parts = [];
-    C.PERIODES.forEach(function (k) { const p = S.periodes[k]; if (p) parts.push(k + ':' + Object.keys(p.lignes).map(function (id) { return id + '=' + p.lignes[id].moy; }).join(',')); });
+    C.PERIODES.forEach(function (k) { const p = S.periodes[k]; if (p) parts.push(k + ':' + Object.keys(p.lignes).filter(function (id) { return C.note(p.lignes[id] && p.lignes[id].moy) != null; }).map(function (id) { return id + '=' + p.lignes[id].moy; }).join(',')); });
     S.voeux.forEach(function (v) { parts.push(v.id + ':' + v.cible + ':' + v.lettreDemandee); });
     const T = S.textes; Object.keys(T.activites).forEach(function (k) { parts.push(k + ':' + (T.activites[k].txt || '').length); });
     Object.keys(T.lettres).forEach(function (k) { parts.push('l' + k + ':' + (T.lettres[k].txt || '').length); });
@@ -114,17 +118,22 @@ window.DOSSIER_MODELE = (function () {
     else if (t1 && t1.cloture && C.nbLignes(t1)) {
       etat = 't2';
       const m1 = C.moyennes(t1, 'T-T1', S.coefs).mp;
-      if (prem) { const r = C.t2Requis(t1, S.coefs, prem.f.cible); titre = 'T1 : ' + C.fmt(m1) + ' de moyenne pondérée. Il te faut ' + C.fmt(r ? Math.min(20, r.t2) : null) + ' au T2 pour afficher ' + C.fmt(prem.f.cible) + ' à ' + prem.f.court + '.'; }
+      if (prem) {
+        const r = C.t2Requis(t1, S.coefs, prem.f.cible);
+        if (r && r.atteinte) titre = 'T1 : ' + C.fmt(m1) + ' de moyenne pondérée. Garde ce niveau au T2 et ta moyenne de Terminale restera au-dessus de ' + C.fmt(prem.f.cible) + ' pour ' + prem.f.court + '.';
+        else if (r && r.t2 > 20) titre = 'T1 : ' + C.fmt(m1) + ' de moyenne pondérée. ' + C.fmt(prem.f.cible) + ' pour ' + prem.f.court + ' demanderait plus de 20 au T2 : vise ' + C.fmt(prem.f.cibleSecurite != null ? prem.f.cibleSecurite : prem.f.cible - 1) + ' et soigne tes textes.';
+        else titre = 'T1 : ' + C.fmt(m1) + ' de moyenne pondérée. Il te faut ' + C.fmt(r ? r.t2 : null) + ' au T2 pour afficher ' + C.fmt(prem.f.cible) + ' à ' + prem.f.court + '.';
+      }
       else titre = 'T1 : ' + C.fmt(m1) + ' de moyenne pondérée. Choisis un vœu pour connaître la cible du T2.';
     } else if (M.prochain && M.prochain.id === 'conseil-t1' || (M.enCours === 'T-T1' && S.dates.conseilT1 && C.joursAvant(S.dates.conseilT1, M.auj) >= 0)) {
       etat = 'encours';
       const j = C.joursAvant(S.dates.conseilT1, M.auj);
-      titre = 'Il te reste ' + C.pluriel(j, 'jour', 'jours') + ' et ' + C.pluriel(M.evals.length, 'évaluation', 'évaluations') + ' avant le conseil de classe du ' + C.fmtDate(S.dates.conseilT1, 'jm') + '.';
+      titre = j === 0 ? 'Le conseil de classe du T1, c’est aujourd’hui.' : 'Il te reste ' + C.pluriel(j, 'jour', 'jours') + (M.evals.length ? ' et ' + C.pluriel(M.evals.length, 'évaluation', 'évaluations') : '') + ' avant le conseil de classe du ' + C.fmtDate(S.dates.conseilT1, 'jm') + '.';
     } else { etat = 'encours'; titre = M.ref.valeur != null ? C.fmt(M.ref.valeur) + ' de moyenne pondérée ' + M.ref.libelle + '.' : 'Continue : chaque bulletin saisi précise ce que le jury lira.'; }
     const action = M.coach.actions.find(function (a) { return !a.fait; }) || M.coach.actions[0] || null;
     return { etat: etat, titre: titre, mp: M.ref.valeur, mpLibelle: M.ref.libelle, ecart: prem ? prem.E : null, ecartVoeu: prem ? prem.f.court : null, feu: prem ? prem.feu : 'gris',
       jalon: M.prochain ? { titre: M.prochain.titre, date: M.prochain.date } : null, completion: M.completion.pct, action: action ? action.txt : '', objectif: S.objectifT1 || S.objectifT2 ? true : false, coefsOk: true, le: E.maintenant() };
   }
-  C.pluriel = function (n, un, plus) { return n + ' ' + (n > 1 ? plus : un); };
+  C.pluriel = function (n, un, plus) { return n + '\u00a0' + (n > 1 ? plus : un); };
   return { get horloge() { return horloge; }, set horloge(v) { horloge = v; }, aujourdhui: aujourdhui, calculer: calculer, periodeEnCours: periodeEnCours, finNotes: finNotes, cocher: cocher, resume: resume, lienReviser: lienReviser, nomVoeu: nomVoeu };
 })();

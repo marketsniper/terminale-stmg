@@ -26,39 +26,50 @@
   function lire() { try { const s = JSON.parse(localStorage.getItem('stmg-dossier') || 'null'); return s && typeof s === 'object' && !Array.isArray(s) ? s : null; } catch (e) { return null; } }
   function fmt(n) { if (n == null || !isFinite(n)) return '-'; return Math.abs(n).toFixed(1).replace('.', ',').replace(/^/, n < 0 && Math.abs(n) >= 0.05 ? '−' : ''); }
   function fmtDelta(n) { if (n == null || !isFinite(n)) return '-'; const v = Math.round(n * 10) / 10; return (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(1).replace('.', ','); }
-  function jours(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); if (!m) return null; const a = new Date(+m[1], +m[2] - 1, +m[3], 12), b = new Date(); b.setHours(12, 0, 0, 0); return Math.ceil((a - b) / 86400000); }
-  function el(tag, cls, txt) { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = txt; return n; }
+  function jours(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); if (!m) return null; const a = new Date(+m[1], +m[2] - 1, +m[3], 12), b = new Date(); b.setHours(12, 0, 0, 0); return Math.round((a - b) / 86400000); }
+  /* typographie française (même règle que dossier/ui.js) */
+  function typo(s) { return String(s).replace(/ ([:%])/g, '\u00a0$1').replace(/ ([;!?»])/g, '\u202f$1').replace(/« /g, '«\u202f').replace(/ ([·/→]) /g, '\u00a0$1 ').replace(/(\d) (\d{3})(?!\d)/g, '$1\u202f$2'); }
+  function el(tag, cls, txt) { const n = document.createElement(tag); if (cls) n.className = cls; if (txt != null) n.textContent = typo(txt); return n; }
+  /* « Cette semaine : demande la date… » : minuscule après les deux-points, sauf nom propre ou sigle */
+  function apresDeuxPoints(t) { const m = /^(\S+)/.exec(t || ''); if (!m) return t; const w = m[1]; if (/^[A-ZÀ-Ý]{2,}/.test(w) || /^(Albert|Citemoi|Brémontier|KEDGE|ESSCA|Parcoursup|SESAME|ACCÈS|BUT)/.test(w)) return t; return t.charAt(0).toLowerCase() + t.slice(1); }
 
   /* ---- carte d'accueil ---- */
   function carte() {
     let c = $('dossier-carte');
+    /* en tête des cartes du jour : avant le journal des nouveautés (long) s'il existe, sinon avant les échéances */
+    const anc = $('nouveautes') || $('agenda'); if (!anc && !c) return;
     if (!c) {
-      const anc = $('agenda'); if (!anc) return;
       c = el('section', 'agenda dossier-carte'); c.id = 'dossier-carte'; c.setAttribute('aria-label', 'Mon dossier Parcoursup');
-      anc.parentNode.insertBefore(c, anc);
       c.addEventListener('click', function (e) { if (e.target.closest('button, a')) return; ouvrirPar(); });
     }
+    if (anc && c.nextElementSibling !== anc) anc.parentNode.insertBefore(c, anc);
     const s = lire(), r = s && s.resume;
     /* un dossier qui contient déjà des bulletins mais pas encore de résumé (fichier importé, ancienne version) : on invite à l'ouvrir */
     const aDesNotes = !!(s && s.periodes && Object.keys(s.periodes).some(function (k) { const p = s.periodes[k]; return p && p.lignes && Object.keys(p.lignes).length; }));
     c.textContent = '';
-    c.appendChild(el('p', 'dc-kicker', 'Mon dossier Parcoursup · ce que le jury lira'));
+    c.appendChild(el('p', 'dc-kicker', 'Mon dossier · ce que le jury lira'));
+    const vide = !r || r.etat === 'vide';
     const h3 = el('h3', null, r && r.titre ? r.titre : aDesNotes ? 'Ton dossier contient déjà des bulletins : ouvre-le pour voir ce que le jury lira.' : 'Ton dossier commence ici. Saisis ton dernier bulletin de Première : deux minutes, ou photographie-le.');
     c.appendChild(h3);
-    const corps = el('div', 'dc-corps');
-    const chiffres = el('div', 'dc-chiffres');
-    const chiffre = function (val, leg, cls) { const b = el('div'); const v = el('b', cls || null, val); const l = el('span', null, leg); b.appendChild(v); b.appendChild(l); chiffres.appendChild(b); };
-    chiffre(r && r.mp != null ? fmt(r.mp) : '-', 'moyenne pondérée');
-    if (r && r.ecart != null) chiffre(fmtDelta(-r.ecart), 'écart ' + (r.ecartVoeu || 'cible'), 'dc-' + (r.feu || 'gris'));
-    else chiffre('-', r ? 'choisis un vœu' : 'écart cible');
-    const n = r && r.jalon ? jours(r.jalon.date) : null;
-    chiffre(n == null ? '-' : n === 0 ? 'Aujourd’hui' : 'J−' + n, r && r.jalon ? r.jalon.titre.replace(/^Conseil de classe du /, 'conseil de classe ') : 'conseil de classe', n != null && n <= 7 ? 'dc-j7' : n != null && n <= 14 ? 'dc-j14' : null);
-    corps.appendChild(chiffres);
-    const pct = r ? Math.max(0, Math.min(100, r.completion || 0)) : 0;
-    const barre = el('div', 'dc-barre'); barre.setAttribute('role', 'img'); barre.setAttribute('aria-label', 'Dossier complété à ' + pct + ' %');
-    const rempli = el('span'); rempli.style.width = pct + '%'; barre.appendChild(rempli); corps.appendChild(barre);
-    corps.appendChild(el('p', 'dc-texte', 'Dossier complété ' + pct + ' %' + (r && r.action ? ' · Cette semaine : ' + r.action : '')));
-    c.appendChild(corps);
+    /* sans résumé (dossier importé, ancienne version) : pas de chiffres ni de jauge qui contrediraient le titre */
+    if (r || !aDesNotes) {
+      const rs = r || {};
+      const corps = el('div', 'dc-corps');
+      const chiffres = el('div', 'dc-chiffres');
+      const chiffre = function (val, leg, cls) { const b = el('div'); const v = el('b', cls || null, val); const l = el('span', null, leg); b.appendChild(v); b.appendChild(l); chiffres.appendChild(b); };
+      chiffre(!vide && rs.mp != null ? fmt(rs.mp) : '-', 'moyenne pondérée');
+      if (!vide && rs.ecart != null) chiffre(fmtDelta(-rs.ecart), 'écart ' + (rs.ecartVoeu || 'cible'), 'dc-' + (rs.feu || 'gris'));
+      else chiffre('-', vide ? 'écart à ta cible' : 'choisis un vœu');
+      const n = !vide && rs.jalon ? jours(rs.jalon.date) : null;
+      chiffre(n == null ? '-' : n === 0 ? 'Aujourd’hui' : 'J−' + n, rs.jalon ? rs.jalon.titre.replace(/^Conseil de classe du /, 'conseil de classe ') : 'conseil de classe', n != null && n <= 7 ? 'dc-j7' : n != null && n <= 14 ? 'dc-j14' : null);
+      corps.appendChild(chiffres);
+      const pct = vide ? 0 : Math.max(0, Math.min(100, rs.completion || 0));
+      const barre = el('div', 'dc-barre'); barre.setAttribute('role', 'img'); barre.setAttribute('aria-label', typo('Dossier complété à ' + pct + ' %'));
+      const rempli = el('span'); rempli.style.width = pct + '%'; barre.appendChild(rempli); corps.appendChild(barre);
+      corps.appendChild(el('p', 'dc-texte', 'Dossier complété ' + pct + ' %'));
+      if (!vide && rs.action) corps.appendChild(el('p', 'dc-texte dc-action', 'Cette semaine : ' + apresDeuxPoints(rs.action)));
+      c.appendChild(corps);
+    }
     const go = el('button', 'dc-go', (r && r.etat !== 'vide') || (!r && aDesNotes) ? 'Ouvrir mon dossier' : 'Commencer'); go.type = 'button'; go.id = 'dossier-go';
     go.addEventListener('click', ouvrirPar);
     c.appendChild(go);

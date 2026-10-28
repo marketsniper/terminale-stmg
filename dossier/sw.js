@@ -1,12 +1,16 @@
 /* Service worker de « Mon dossier » (/dossier/), copié du modèle de l'app STMG (sw.js racine).
-   Préfixe de cache propre (dsp-) : il ne nettoie que ses caches et ne sert que son dossier. Le service worker
-   racine n'intercepte pas /dossier/ (voir le crochet « Mode Parcoursup » dans sw.js racine). */
-const CACHE = 'dsp-2026-10-28a';
+   Préfixe de cache propre (dsp-) : il ne nettoie que ses caches et ne sert que son dossier (sa portée est /dossier/,
+   plus précise que celle du service worker racine : c'est lui qui répond aux pages de la mini-app).
+   Versions : index.html appelle chaque fichier avec ?v=<VERSION>. La page est servie réseau d'abord ; les fichiers
+   versionnés, cache d'abord. Une page neuve demande donc des URL neuves : jamais un mélange de deux versions.
+   À chaque livraison : changer VERSION ici ET les ?v= de index.html. */
+const VERSION = '2026-10-28e';
+const CACHE = 'dsp-' + VERSION;
 const PREFIX = CACHE.slice(0, CACHE.lastIndexOf('-') + 1);
 const SCOPE = new URL('./', self.location).pathname;
-const ASSETS = ['./', './index.html', './dossier.css', './calc.js', './formations.js', './jalons.js', './pdf-texte.js', './bulletin-parse.js', './etat.js', './ui.js', './ia.js', './modele.js',
-  './vue-tableau.js', './vue-bulletins.js', './vue-import.js', './vue-jury.js', './vue-simulateur.js', './vue-histoire.js', './vue-calendrier.js', './vue-reglages.js', './app.js',
-  './cadre.js', './cadre.css', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
+const VERSIONNES = ['./dossier.css', './calc.js', './formations.js', './jalons.js', './pdf-texte.js', './bulletin-parse.js', './etat.js', './ui.js', './ia.js', './modele.js',
+  './vue-tableau.js', './vue-bulletins.js', './vue-import.js', './vue-jury.js', './vue-simulateur.js', './vue-histoire.js', './vue-calendrier.js', './vue-reglages.js', './app.js'];
+const ASSETS = ['./', './index.html'].concat(VERSIONNES.map(u => u + '?v=' + VERSION), ['./manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png']);
 const DELAI_RESEAU = 2000;
 
 self.addEventListener('install', e => {
@@ -51,7 +55,8 @@ self.addEventListener('fetch', e => {
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const hit = await cache.match(key);
-    if (hit) { revalider(e, e.request, key, cache); return hit; }
+    /* fichier versionné : son contenu ne change jamais sous cette URL, inutile de le revalider */
+    if (hit) { if (!url.searchParams.has('v')) revalider(e, e.request, key, cache); return hit; }
     try { return await revalider(e, e.request, key, cache); } catch (_) { return Response.error(); }
   })());
 });

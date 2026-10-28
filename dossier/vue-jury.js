@@ -22,30 +22,44 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
     const b = h('section.do-bloc.do-releve', { 'aria-labelledby': 'do-rel-t' });
     b.appendChild(h('h3#do-rel-t.do-kicker', { text: 'Ton relevé tel qu’il sera transmis' }));
     b.appendChild(h('p.do-releve-id', { text: (S.profil.lycee || 'Lycée') + ' · ' + (S.profil.classe || 'Terminale STMG') + ' · bac 2027' }));
-    if (!nbPeriodes) b.appendChild(h('p.do-texte.do-ton-rouge', { text: 'Voilà ce que la commission verrait aujourd’hui : rien. Commence par tes bulletins.' }));
+    if (!nbPeriodes) b.appendChild(h('p.do-texte', { text: 'Rien n’est encore saisi dans l’app : ce relevé se remplit avec tes bulletins. Commence par ceux de Première.' }));
     const auj = m.auj;
     const due = function (code) { if (code.charAt(0) === '1') return true; const d = code === 'T-T1' ? S.dates.conseilT1 : S.dates.conseilT2; const x = C.dateDe(d); return !!(x && x <= auj); };
     const table = h('table.do-tbl.do-tbl-releve');
-    const tr0 = h('tr', h('th', { text: 'Matière' }));
-    C.TRANSMISES.forEach(function (code) { tr0.appendChild(h('th', { text: C.LIBELLES[code] })); });
+    const tr0 = h('tr', h('th', { scope: 'col', text: 'Matière' }));
+    C.TRANSMISES.forEach(function (code) {
+      const enCours = code === m.enCours && !(S.periodes[code] && S.periodes[code].cloture);
+      tr0.appendChild(h('th', { scope: 'col', class: enCours ? 'do-th-encours' : due(code) ? '' : 'do-th-futur' }, C.LIBELLES[code], enCours ? h('span.do-th-etat', { text: 'en cours' }) : !due(code) ? h('span.do-th-etat', { text: 'à venir' }) : null));
+    });
     table.appendChild(h('thead', tr0));
     const tb = h('tbody');
     const idsTle = C.ORDRE_TLE.filter(function (id) { return !C.MATIERES[id].sansCoef; });
     const ids1 = ['francais', 'sdgn'];
     idsTle.concat(ids1).forEach(function (id) {
-      const tr = h('tr', h('th', { scope: 'row', text: C.courtDe(id), title: C.nomDe(id), 'aria-label': C.nomDe(id), style: '--acc:' + C.couleurDe(id) }));
+      const nomRang = id === 'management' ? 'Management en Première, MSDGN en Terminale' : C.nomDe(id);
+      const tr = h('tr', h('th', { scope: 'row', text: id === 'management' ? 'MSDGN' : C.courtDe(id), title: nomRang, style: '--acc:' + C.couleurDe(id) }, id === 'management' ? h('span.do-sr', { text: ' (Management en Première)' }) : null));
       C.TRANSMISES.forEach(function (code) {
         const niv = C.niveau(code);
         let idP = id;
         if (niv === '1re') { if (id === 'gf') idP = null; if (id === 'philo') idP = null; } else { if (ids1.indexOf(id) !== -1) idP = null; }
-        if (!idP) { tr.appendChild(h('td.do-na', { text: '·', 'aria-label': 'sans objet' })); return; }
+        if (!idP) { tr.appendChild(h('td.do-na', { text: '-', title: 'Pas au programme ce niveau-là' }, h('span.do-sr', { text: 'sans objet' }))); return; }
         const p = S.periodes[code], l = p && p.lignes[idP];
         const moy = C.note(l && l.moy), cla = C.note(l && l.classe);
-        if (moy == null) { const vide = due(code) && !(p && p.cloture === false && code === m.enCours); tr.appendChild(h('td' + (vide ? '.do-vide' : '.do-attente'), { text: vide ? 'vide' : '…', title: vide ? 'la commission verra une case vide' : 'période à venir' })); return; }
-        const td = h('td', h('b', { text: C.fmt(moy) }), cla != null ? h('span.do-cla', { text: ' / ' + C.fmt(cla) }) : null);
+        if (moy == null) {
+          /* trois cas, jamais confondus : bulletin à venir, bulletin pas encore saisi dans l'app, matière sans note sur un bulletin saisi */
+          const saisie = p && C.nbLignes(p) > 0;
+          const enCours = code === m.enCours && !(p && p.cloture);
+          const inclus = niv === 'Tle' && id === 'gf' && saisie && C.note(p.lignes.management && p.lignes.management.moy) != null;
+          if (inclus) tr.appendChild(h('td.do-na', { text: 'inclus', title: 'Comptée dans la ligne MSDGN Gestion et finance du bulletin' }));
+          else if (!due(code) && !saisie) tr.appendChild(h('td.do-futur', { title: enCours ? 'Trimestre en cours' : 'Bulletin à venir' }, h('span.do-sr', { text: enCours ? 'en cours' : 'à venir' })));
+          else if (saisie) tr.appendChild(h('td.do-sans-note', { text: 'sans note', title: 'Pas de moyenne dans ce bulletin saisi : si c’est aussi le cas sur le bulletin du lycée, la commission verra cette case vide.' }));
+          else tr.appendChild(h('td.do-a-saisir', { text: 'à saisir', title: 'Pas encore saisi dans l’app : le lycée transmettra ce bulletin.' }));
+          return;
+        }
+        const td = h('td' + (code === m.enCours && !(p && p.cloture) ? '.do-td-encours' : ''), h('b', { text: C.fmt(moy) }), cla != null ? h('span.do-cla', { text: ' / ' + C.fmt(cla) }) : null);
         const det = [];
         if (l.min != null || l.max != null) det.push('min ' + C.fmt(l.min) + ', max ' + C.fmt(l.max));
-        if (l.rang) det.push('rang ' + l.rang + (l.effectif ? ' / ' + l.effectif : ''));
+        if (l.rang) det.push('rang ' + l.rang + (l.effectif ? ' / ' + l.effectif : ''));
         if (det.length) td.title = det.join(' · ');
         if (l.source === 'estimation') td.classList.add('do-estime');
         tr.appendChild(td);
@@ -57,13 +71,13 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
     tb.appendChild(trM);
     table.appendChild(tb);
     b.appendChild(h('div.do-tblwrap', table));
-    b.appendChild(h('p.do-aide', { text: 'Moi / classe. Les cases « vide » sont celles que la commission verrait vides aujourd’hui. Les appréciations de chaque professeur sont transmises avec le bulletin.' }));
+    b.appendChild(h('p.do-aide', { text: 'Moi / classe. « à saisir » : bulletin pas encore entré dans l’app, le lycée le transmettra quand même. « sans note » : aucune moyenne sur un bulletin saisi, la commission verrait la case vide. Les appréciations de chaque professeur sont transmises avec le bulletin.' }));
     const an = S.anticipees;
     b.appendChild(h('p.do-texte', 'Anticipées : français écrit ', h('b', { text: C.fmt(an.frEcrit) }), ' · oral ', h('b', { text: C.fmt(an.frOral) }), ' · mathématiques ', h('b', { text: C.fmt(an.maths) })));
     if (m.vj.compares) b.appendChild(h('p.do-texte', { text: 'Ta moyenne de Terminale est au-dessus de ta Première dans ' + m.vj.dessus + ' matière' + (m.vj.dessus > 1 ? 's' : '') + ' sur ' + m.vj.compares + '.' }));
     b.appendChild(h('div.do-grise', h('p', { text: 'Fiche Avenir : rédigée par tes professeurs au T2 (méthode de travail, autonomie, capacité à s’investir, engagements). Tu ne la verras qu’à partir du 1er juin 2027.' })));
     const T = S.textes, rub = ['pro', 'citoyen', 'monde', 'sport'].filter(function (k) { return T.activites[k].txt.trim(); }).length;
-    b.appendChild(h('p.do-texte', { text: 'Activités et centres d’intérêt : ' + rub + ' rubrique' + (rub > 1 ? 's' : '') + ' sur 4 rédigée' + (rub > 1 ? 's' : '') + '.' }));
+    b.appendChild(h('p.do-texte', { text: 'Activités et centres d’intérêt : ' + (rub ? rub + ' rubrique' + (rub > 1 ? 's' : '') + ' sur 4 rédigée' + (rub > 1 ? 's' : '') : 'aucune des 4 rubriques rédigée pour l’instant') + '.' }));
     if (f.canal !== 'direct') {
       const lt = f.lettreDemandee ? C.compteur((T.lettres[v.id] || {}).txt, 1500).caracteres : null;
       b.appendChild(h('p.do-texte', { text: 'Lettre de motivation : ' + (f.lettreDemandee ? 'demandée par cette formation' + (f.lettreAConfirmer ? ' (à confirmer sur la fiche 2027)' : '') + ' · ' + C.fmtEntier(lt) + ' caractère' + (lt > 1 ? 's' : '') : 'non demandée') + '.' }));
@@ -84,21 +98,24 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
     const prep = C.preparation(f, S, m.sig, courant.E);
     const d = prep.details;
     const expl = {
-      resultats: [m.ref.valeur != null ? C.fmt(m.ref.valeur) + ' pour une cible de ' + C.fmt(f.cible) : 'aucune moyenne saisie', 'Prêt = 1 moins l’écart à la cible divisé par 3 : à 3 points de la cible, 0 %.'],
-      methode: [(d.fichesTot ? C.fmtPct(d.partFiches) + ' de fiches maîtrisées' : d.fichesOk + ' fiches maîtrisées') + ', ' + d.joursSeance + ' jours avec une séance sur 14' + (d.dsMoyenne != null ? ', DS blancs à ' + C.fmt(d.dsMoyenne) : ''), 'Moitié fiches maîtrisées des matières regardées, 30 % moyenne des DS blancs, 20 % régularité des séances.'],
-      savoirEtre: [d.nbApp ? d.nbPos + ' appréciation' + (d.nbPos > 1 ? 's' : '') + ' positive' + (d.nbPos > 1 ? 's' : '') + ' sur ' + d.nbApp : 'aucune appréciation saisie (60 % par défaut)', 'Part des appréciations positives (ton avis, sinon les mots du jury).'],
-      motivation: [f.lettreDemandee ? (C.compteur((S.textes.lettres[v.id] || {}).txt, 1500).caracteres ? 'lettre en cours' : 'lettre non rédigée') : 'lettre non demandée', 'Lettre demandée : longueur sur 1 200 caractères ; sinon 100 %.'],
-      engagement: [d.rubriques + ' rubrique' + (d.rubriques > 1 ? 's' : '') + ' sur 4' + (d.citemoiOk ? ', Citemoi décrit' : '') + (d.cochees ? ', ' + d.cochees + ' actions faites' : ''), 'Moitié rubriques Activités, un quart Citemoi chiffré, un quart actions du coach sur 4 semaines.']
+      resultats: [m.ref.valeur != null ? C.fmt(m.ref.valeur) + ' pour une cible de ' + C.fmt(f.cible) : 'aucune moyenne saisie', 'Prêt = 1 moins l’écart à la cible divisé par 3 : à 3 points de la cible, 0 %.'],
+      methode: [(d.fichesTot ? C.fmtPct(d.partFiches) + ' des fiches maîtrisées' : U.pluriel(d.fichesOk, 'fiche maîtrisée', 'fiches maîtrisées')) + ', ' + U.pluriel(d.joursSeance, 'jour', 'jours') + ' avec une séance sur 14' + (d.dsMoyenne != null ? ', DS blancs à ' + C.fmt(d.dsMoyenne) : ''), 'Indicateur personnel, calculé avec ce que tu fais dans l’app : moitié fiches maîtrisées des matières regardées, 30 % moyenne des DS blancs, 20 % régularité des séances. La commission ne voit pas l’app : elle juge ta méthode par tes appréciations et la fiche Avenir.'],
+      savoirEtre: [d.nbApp ? d.nbPos + ' appréciation' + (d.nbPos > 1 ? 's' : '') + ' positive' + (d.nbPos > 1 ? 's' : '') + ' sur ' + d.nbApp : 'aucune appréciation saisie (60 % par défaut)', 'Part des appréciations positives (ton avis, sinon les mots du jury).'],
+      motivation: [f.lettreDemandee ? (C.compteur((S.textes.lettres[v.id] || {}).txt, 1500).caracteres ? 'lettre en cours' : 'lettre non rédigée') : 'lettre non demandée', 'Lettre demandée : longueur sur 1 200 caractères ; sinon 100 %.'],
+      engagement: [U.pluriel(d.rubriques, 'rubrique', 'rubriques') + ' sur 4' + (d.citemoiOk ? ', Citemoi décrit' : '') + (d.cochees ? ', ' + U.pluriel(d.cochees, 'action faite', 'actions faites') : ''), 'Moitié rubriques Activités, un quart Citemoi chiffré, un quart actions du coach sur 4 semaines.']
     };
+    /* une piste par critère : son remplissage = ta préparation ; le poids du critère dans la grille est en pilule */
     [['resultats', 'Résultats'], ['methode', 'Méthode'], ['savoirEtre', 'Savoir-être'], ['motivation', 'Motivation'], ['engagement', 'Engagement']].forEach(function (k) {
       const pct = f.grille[k[0]] || 0, pret = prep.piliers[k[0]];
-      const row = h('div.do-pilier');
-      row.appendChild(h('div.do-pilier-l', h('b', { text: k[1] }), h('span', { text: pct + ' %' }), f.importance && f.importance[k[0]] ? h('span.do-aide', { text: f.importance[k[0]] }) : null));
-      row.appendChild(h('div.do-barre.do-barre-grille', { role: 'img', 'aria-label': k[1] + ' : ' + pct + ' % de la grille' }, h('span', { style: 'width:' + pct + '%' })));
-      const btn = h('button.do-lien-btn', { type: 'button', text: 'pourquoi', 'aria-expanded': 'false' });
+      const row = h('div.do-pilier' + (pct ? '' : '.do-pilier-nul'));
+      row.appendChild(h('div.do-pilier-l', h('b', { text: k[1] }), h('span.do-poids', { text: pct + ' % du dossier' }), f.importance && f.importance[k[0]] ? h('span.do-aide', { text: f.importance[k[0]] }) : null));
+      const ton = pret >= 0.7 ? 'ok' : pret >= 0.4 ? 'moyen' : 'bas';
+      row.appendChild(h('div.do-jauge.do-jauge-' + ton, { role: 'img', 'aria-label': k[1] + ' : prêt à ' + C.fmtPct(pret) + ', ' + pct + ' % du dossier' }, h('span', { style: 'width:' + Math.round(pret * 100) + '%' })));
+      const btn = h('button.do-lien-btn', { type: 'button', text: 'pourquoi', 'aria-expanded': 'false', 'aria-label': 'Pourquoi : ' + k[1] });
       const exp = h('p.do-aide.do-pourquoi', { hidden: true, text: expl[k[0]][1] });
       btn.addEventListener('click', function () { exp.hidden = !exp.hidden; btn.setAttribute('aria-expanded', String(!exp.hidden)); });
-      row.appendChild(h('div.do-pret', h('div.do-barre.do-barre-pret', { role: 'img', 'aria-label': 'prêt à ' + C.fmtPct(pret) }, h('span', { style: 'width:' + Math.round(pret * 100) + '%' })), h('span.do-pret-t', { text: 'prêt à ' + C.fmtPct(pret) + ' : ' + expl[k[0]][0] + ' ' }), btn, exp));
+      row.appendChild(h('p.do-pret', h('span.do-pret-t', { text: (k[0] === 'methode' ? 'ta préparation dans l’app : ' : 'prêt à ') + C.fmtPct(pret) + ' · ' + expl[k[0]][0] + ' ' }), btn));
+      row.appendChild(exp);
       b.appendChild(row);
     });
     if (f.grilleNote) b.appendChild(h('p.do-aide', { text: f.grilleNote }));
@@ -110,8 +127,11 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
   (function () {
     if (!f.faits || !f.faits.length) return;
     const b = h('section.do-bloc', { 'aria-labelledby': 'do-adm-t' });
-    b.appendChild(h('h3#do-adm-t.do-kicker', { text: 'Le profil des admis' }));
-    f.faits.forEach(function (x) { b.appendChild(h('p.do-fait', x.t, ' ', x.verifie ? U.badge('vérifié le ' + C.fmtDate(x.verifie, 'num'), 'ok') : U.badge('à confirmer', 'attente'), h('span.do-source', { text: ' Source : ' + x.source }))); });
+    /* un seul badge « vérifié » dans l'en-tête quand tous les faits l'ont été le même jour ; les sources restent ligne à ligne */
+    const dates = f.faits.filter(function (x) { return x.verifie; }).map(function (x) { return x.verifie; });
+    const commune = dates.length && dates.every(function (d) { return d === dates[0]; }) ? dates[0] : null;
+    b.appendChild(h('div.do-bloc-tete', h('h3#do-adm-t.do-kicker', { text: 'Le profil des admis' }), commune ? U.badge('vérifié le ' + C.fmtDate(commune, 'num'), 'ok') : null));
+    f.faits.forEach(function (x) { b.appendChild(h('p.do-fait', x.t, ' ', x.verifie ? (commune ? null : U.badge('vérifié le ' + C.fmtDate(x.verifie, 'num'), 'ok')) : U.badge('à confirmer', 'attente'), h('span.do-source', { text: 'Source : ' + x.source }))); });
     if (f.eliminatoires && f.eliminatoires.length) b.appendChild(h('p.do-aide', { text: 'Points de vigilance cités par la formation : ' + f.eliminatoires.join(' ; ') + '.' }));
     corps.appendChild(b);
   })();
@@ -127,7 +147,7 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
     pr.items.slice(0, 3).forEach(function (it) {
       const g = C.gainPour(it, courant.E, pr.sommeCoef);
       const li = h('li', { style: '--acc:' + C.couleurDe(it.id) });
-      li.appendChild(h('span.do-prio-t', h('b', { text: C.nomDe(it.id) }), ' : ' + C.fmtDelta(g.X) + ' = ' + C.fmtDelta(g.Y, 2) + ' sur ta moyenne' + (it.ds ? ' · DS le ' + C.fmtDate(it.ds.due, 'jm') : '')));
+      li.appendChild(h('span.do-prio-t', h('b', { text: C.nomDe(it.id, null, m.codeRef) }), ' : ' + C.fmtDelta(g.X) + ' point' + (g.X > 1 ? 's' : '') + ' = ' + C.fmtDelta(g.Y, 2) + ' sur ta moyenne' + (it.ds ? ' · DS le ' + C.fmtDate(it.ds.due, 'jm') : '')));
       const acts = h('span.do-prio-a');
       acts.appendChild(h('button.do-lien-btn', { type: 'button', text: 'Réviser ›', onclick: function () { A.versHote(M.lienReviser(it.id, m.sig) || '#' + (C.MATIERES[it.id].sections[0] || 'bac')); } }));
       acts.appendChild(h('a.do-lien-btn', { href: '#simulateur', text: 'Et si ›' }));
@@ -137,7 +157,8 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
     const btn = h('button.do-lien-btn', { type: 'button', text: 'Comment c’est calculé', 'aria-expanded': 'false' });
     const exp = h('p.do-aide', { hidden: true, text: 'Priorité calculée avec le coefficient, ta marge jusqu’à la meilleure note de la classe, tes quiz et le prochain DS.' });
     btn.addEventListener('click', function () { exp.hidden = !exp.hidden; btn.setAttribute('aria-expanded', String(!exp.hidden)); });
-    b.appendChild(btn); b.appendChild(exp);
+    b.appendChild(h('p.do-aide', { text: 'Calculé sur ' + (m.codeRef === m.codeSimul ? 'ton ' + C.LIBELLES[m.codeRef] + ' en cours' : 'ton bulletin ' + C.LIBELLES[m.codeRef]) + '. ' }, btn));
+    b.appendChild(exp);
     corps.appendChild(b);
   })();
 
@@ -161,8 +182,9 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
     const ordre = h('div.do-acts');
     const idx = m.voeux.indexOf(courant);
     const bouger = function (dir) { const liste = E.voeuxTries(); const i = liste.indexOf(v), j = i + dir; if (j < 0 || j >= liste.length) return; liste.splice(i, 1); liste.splice(j, 0, v); liste.forEach(function (x, k) { x.ordre = k + 1; }); E.sauver(); A.nav('jury', v.id, '', true); };
-    ordre.appendChild(U.bouton('Monter', function () { bouger(-1); }, 'do-btn-sec' + (idx === 0 ? ' do-btn-off' : '')));
-    ordre.appendChild(U.bouton('Descendre', function () { bouger(1); }, 'do-btn-sec' + (idx === m.voeux.length - 1 ? ' do-btn-off' : '')));
+    const monter = U.bouton('Monter dans la liste', function () { bouger(-1); }, 'do-btn-sec'), descendre = U.bouton('Descendre dans la liste', function () { bouger(1); }, 'do-btn-sec');
+    if (idx === 0) monter.disabled = true; if (idx === m.voeux.length - 1) descendre.disabled = true;
+    ordre.appendChild(monter); ordre.appendChild(descendre);
     b.appendChild(ordre);
     const z = h('div.do-zone-danger');
     z.appendChild(U.bouton('Retirer ce vœu', function () { U.confirmer(z, 'Retirer ' + f.court + ' de tes vœux ? ' + (v.preset ? 'Ce gabarit ne reviendra pas tout seul.' : ''), function () { S.voeux = S.voeux.filter(function (x) { return x.id !== v.id; }); if (v.preset) S.vu.presetsRetires.push(v.preset); S.voeux.forEach(function (x, k) { x.ordre = k + 1; }); E.sauver(); A.nav('jury', '', '', true); }, 'Oui, retirer', 'Annuler'); }, 'do-btn-lien'));
@@ -197,7 +219,7 @@ window.DOSSIER_VUES.jury = function (corps, pied, param) {
       let grille = null;
       const vals = {}; let somme = 0, renseigne = false;
       Object.keys(g).forEach(function (k) { const x = parseInt(g[k].value, 10); vals[k] = isNaN(x) ? 0 : x; if (g[k].value.trim()) renseigne = true; somme += vals[k]; });
-      if (renseigne) { if (somme !== 100) { err.textContent = 'La grille doit totaliser 100 %.'; return; } grille = vals; }
+      if (renseigne) { if (somme !== 100) { err.textContent = 'La grille doit totaliser 100 %.'; return; } grille = vals; }
       const id = 'v-' + Date.now().toString(36);
       S.voeux.push({ id: id, preset: null, nom: n, court: court.input.value.trim() || n.slice(0, 18), type: type.value, canal: type.value === 'direct' ? 'direct' : 'parcoursup', concours: conc.value || null, grille: grille, ordre: S.voeux.length + 1, statut: 'envisage', cible: cible, cibleMention: null, lettreDemandee: lettre.checked, notes: '', maj: E.maintenant() });
       if (lettre.checked) S.textes.lettres[id] = E.texteVide();

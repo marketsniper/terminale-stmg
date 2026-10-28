@@ -12,29 +12,30 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Dossier">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<!-- ?v= : version des fichiers, à changer à chaque livraison avec CACHE dans sw.js (le service worker sert ces URL depuis son cache, jamais un mélange de deux versions) -->
 <script>/* Embarquée dans l'app STMG : iframe de même origine ouvert sur ./dossier/?embed=1 (cadre #dossier-cadre, voir cadre.js).
   Ouverte seule (/dossier/), rien de particulier. Le drapeau est lu par app.js. */
 try { if (new URLSearchParams(location.search).get('embed') === '1' && window.parent !== window) document.documentElement.dataset.embed = '1'; } catch (e) {}
 try { if (matchMedia('(prefers-color-scheme: dark)').matches) document.getElementById('meta-theme').content = '#12161C'; } catch (e) {}</script>
-<link rel="stylesheet" href="dossier.css">
-<script defer src="calc.js"></script>
-<script defer src="formations.js"></script>
-<script defer src="jalons.js"></script>
-<script defer src="pdf-texte.js"></script>
-<script defer src="bulletin-parse.js"></script>
-<script defer src="etat.js"></script>
-<script defer src="ui.js"></script>
-<script defer src="ia.js"></script>
-<script defer src="modele.js"></script>
-<script defer src="vue-tableau.js"></script>
-<script defer src="vue-bulletins.js"></script>
-<script defer src="vue-import.js"></script>
-<script defer src="vue-jury.js"></script>
-<script defer src="vue-simulateur.js"></script>
-<script defer src="vue-histoire.js"></script>
-<script defer src="vue-calendrier.js"></script>
-<script defer src="vue-reglages.js"></script>
-<script defer src="app.js"></script>
+<link rel="stylesheet" href="dossier.css?v=2026-10-28e">
+<script defer src="calc.js?v=2026-10-28e"></script>
+<script defer src="formations.js?v=2026-10-28e"></script>
+<script defer src="jalons.js?v=2026-10-28e"></script>
+<script defer src="pdf-texte.js?v=2026-10-28e"></script>
+<script defer src="bulletin-parse.js?v=2026-10-28e"></script>
+<script defer src="etat.js?v=2026-10-28e"></script>
+<script defer src="ui.js?v=2026-10-28e"></script>
+<script defer src="ia.js?v=2026-10-28e"></script>
+<script defer src="modele.js?v=2026-10-28e"></script>
+<script defer src="vue-tableau.js?v=2026-10-28e"></script>
+<script defer src="vue-bulletins.js?v=2026-10-28e"></script>
+<script defer src="vue-import.js?v=2026-10-28e"></script>
+<script defer src="vue-jury.js?v=2026-10-28e"></script>
+<script defer src="vue-simulateur.js?v=2026-10-28e"></script>
+<script defer src="vue-histoire.js?v=2026-10-28e"></script>
+<script defer src="vue-calendrier.js?v=2026-10-28e"></script>
+<script defer src="vue-reglages.js?v=2026-10-28e"></script>
+<script defer src="app.js?v=2026-10-28e"></script>
 </head>
 <body>
 <a class="do-saut" href="#do-corps">Aller au contenu</a>
@@ -42,11 +43,11 @@ try { if (matchMedia('(prefers-color-scheme: dark)').matches) document.getElemen
   <header class="do-tete">
     <div class="do-in">
       <div class="do-l1">
-        <p class="do-kicker">Mon dossier Parcoursup · bac 2027</p>
+        <p class="do-kicker">Mon dossier Parcoursup&nbsp;· bac 2027</p>
         <button id="do-fermer" class="do-btn-pilule" type="button" aria-label="Fermer mon dossier">Fermer</button>
       </div>
       <h1 id="do-titre" tabindex="-1">Mon dossier</h1>
-      <nav id="do-nav" class="do-nav" role="tablist" aria-label="Écrans du dossier"></nav>
+      <nav id="do-nav" class="do-nav" aria-label="Écrans du dossier"></nav>
     </div>
   </header>
   <main id="do-corps" class="do-corps" tabindex="-1"><div id="do-corps-in" class="do-corps-in"></div></main>

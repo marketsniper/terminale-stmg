@@ -96,7 +96,7 @@ window.DOSSIER_IA = (function () {
     'RÈGLE ABSOLUE : tu ne réécris JAMAIS le texte, tu ne proposes JAMAIS de phrase de remplacement, pas même un exemple de formulation. Tu donnes seulement 3 à 6 remarques courtes (une phrase chacune) : ce qui manque (fait chiffré, date, lien avec la formation), ce qui est flou, ce qui est trop long, une faute récurrente. ' +
     'Tu réponds UNIQUEMENT par un objet JSON {"remarques":["…","…"]}. Français uniquement, nombres à la française, jamais de LaTeX.';
   async function relire(texte, rubrique, contexte, signal) {
-    const user = 'RUBRIQUE : ' + rubrique + (contexte ? '\nCONTEXTE : ' + contexte : '') + '\nLIMITE : 1 500 caractères.\nTEXTE DE L’ÉLÈVE :\n' + texte;
+    const user = 'RUBRIQUE : ' + rubrique + (contexte ? '\nCONTEXTE : ' + contexte : '') + '\nLIMITE : 1 500 caractères.\nTEXTE DE L’ÉLÈVE :\n' + texte;
     const r = await appel([{ role: 'system', content: SYS_RELECTURE }, { role: 'user', content: user }], { model: MODELE_TEXTE, max_completion_tokens: 900, temperature: 0.3, reasoning_effort: 'low', response_format: { type: 'json_object' } }, signal);
     const j = jsonDe(r.texte);
     let rem = Array.isArray(j.remarques) ? j.remarques.map(function (x) { return String(x || '').trim(); }).filter(Boolean).slice(0, 6) : [];
