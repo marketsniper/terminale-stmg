@@ -2114,3 +2114,10 @@ html[data-motion="reduit"] .assist-think::after{ animation:none }
   .tbl{ overflow:visible }
   a{ color:#000; text-decoration:underline }
 }
+
+/* Espace Albert (onglet « Albert » de l'app STMG) : sans la navigation ni l'objectif du jour des maths */
+html.espace-albert #tabbar,
+html.espace-albert .topnav,
+html.espace-albert #ring-day,
+html.espace-albert #head-count{display:none !important}
+html.espace-albert #app{padding-bottom:max(24px, env(safe-area-inset-bottom, 0px))}

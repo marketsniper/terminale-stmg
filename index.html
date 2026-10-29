@@ -1060,6 +1060,9 @@ html.sommet-ouvert, html.sommet-ouvert body{overflow:hidden}
       <button id="mode-quiz" type="button" role="tab" aria-selected="false">✏️ Exercices</button>
       <button id="mode-ds" type="button" role="tab" aria-selected="false">📝 DS</button>
       <button id="mode-maths" type="button" role="tab" aria-selected="false">🏔️ Maths</button>
+      <!-- Espace Albert : début -->
+      <button id="mode-albert" type="button" role="tab" aria-selected="false">🎯 Albert</button>
+      <!-- Espace Albert : fin -->
     </div>
     <button id="snd-btn" type="button" aria-label="Activer ou couper les sons" title="Sons">🔊</button>
   </div>
@@ -9536,10 +9539,13 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-29-07abaf89","da
   }
   //  cible : '' (accueil des maths), un id de compétence (DS en vue) ou 'albert' (écran Objectif Albert School)
   function sommetAller(skill, cible){
-    if ((!skill && cible !== 'albert') || !sommet.frame) return;
-    if (!sommet.pret){ sommet.attente = cible === 'albert' ? 'albert' : skill; return; }
-    try { sommet.frame.contentWindow.postMessage(cible === 'albert' ? { source: 'stmg', type: 'aller', go: 'albert' }
-                                               : { source: 'stmg', type: 'aller', go: 'ds', skill: skill }, location.origin); } catch(e){}
+    if (!sommet.frame) return;
+    // Espace Albert : début. « #sommet » seul envoie {go:'maths'} : l'app maths quitte l'espace Albert s'il est ouvert (sinon rien ne bouge)
+    const ordre = cible === 'albert' ? { source: 'stmg', type: 'aller', go: 'albert' }
+                : skill ? { source: 'stmg', type: 'aller', go: 'ds', skill: skill } : { source: 'stmg', type: 'aller', go: 'maths' };
+    if (!sommet.pret){ sommet.attente = cible === 'albert' ? 'albert' : (skill || '#maths'); return; }
+    try { sommet.frame.contentWindow.postMessage(ordre, location.origin); } catch(e){}
+    // Espace Albert : fin
   }
   function sommetOuvrir(skill, cible){
     if (!sommet.cadre) sommetCreer();
@@ -9606,7 +9612,7 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-29-07abaf89","da
       sommet.cadre.querySelector('.sommet-lent').hidden = true;
       sommetCouleurs(d.theme, d.couleur);
       sommetMarges();
-      if (sommet.attente){ const s = sommet.attente; sommet.attente = ''; if (s === 'albert') sommetAller('', 'albert'); else sommetAller(s); }
+      if (sommet.attente){ const s = sommet.attente; sommet.attente = ''; if (s === 'albert') sommetAller('', 'albert'); else if (s === '#maths') sommetAller('', ''); else sommetAller(s); }   // Espace Albert : « #maths »
       if (sommet.ouvert){ try { sommet.frame.focus(); } catch(x){} }
     }
     else if (d.type === 'theme') sommetCouleurs(d.theme, d.couleur);
@@ -9614,6 +9620,10 @@ const NOUVEAUTES = {"edition":"perso","entrees":[{"id":"2026-10-29-07abaf89","da
   });
   window.addEventListener('resize', function(){ if (sommet.ouvert) sommetMarges(); });      // rotation de l'écran : les marges changent
   $('mode-maths').addEventListener('click', function(){ snd.click(); location.hash = '#sommet'; });
+  // Espace Albert : début. Onglet à part : ouvre l'app maths directement dans son espace Albert, sans la navigation des maths
+  $('mode-albert').addEventListener('click', function(){ snd.click(); location.hash = '#sommet/albert'; });
+  (function(){ const l = document.getElementById('albert-lien-maths'); if (l) l.remove(); })();   // plus de lien Albert dans la matière Maths
+  // Espace Albert : fin
 
   /* ----- carte d'entrée de la matière Maths : altitude, série et objectif du jour, lus dans l'état de l'app maths -----
      Même origine : l'état est dans localStorage[SOMMET_P + 'state'] (schéma : maths/core/etat.js). Lecture défensive,
