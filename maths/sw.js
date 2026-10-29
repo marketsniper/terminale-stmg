@@ -2,7 +2,7 @@
    Hors-ligne complet, mise à jour annoncée (jamais de skipWaiting silencieux). */
 'use strict';
 
-const CACHE = 'mzs-03e94aa8d4';
+const CACHE = 'mzs-14a6e614f8';
 /* Plusieurs apps vivent sur le même domaine (l'app STMG à la racine, celle-ci dans /maths/).
    Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier. */
 const PREFIXE = 'mzs-';

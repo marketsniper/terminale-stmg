@@ -21,6 +21,39 @@ window.ASSIST_GO = function(quoi, id){
    ------------------------------------------------------------ */
 const _appEmbarque = document.documentElement.dataset.embed === '1';
 
+/* ------------------------------------------------------------
+   Espace Albert : Objectif Albert School a son propre onglet dans l'app STMG.
+   Ouvert par ?go=albert ou le message {go:'albert'}, il cache la navigation des maths
+   (classe html.espace-albert) ; {go:'maths'} ou {go:'ds'} en sortent. Hors de cet espace,
+   Albert n'apparaît plus dans les maths (cartes, palette, raccourcis).
+   ------------------------------------------------------------ */
+const _APP_ALB_VUE = /^albert/;
+const _APP_ONGLETS = ['accueil', 'programme', 'erreurs', 'coach'];
+let _appAvantAlbert = 'accueil';
+window.espaceAlbert = () => document.documentElement.classList.contains('espace-albert');
+function _appEspaceAlbert(on){
+  document.documentElement.classList.toggle('espace-albert', !!on);
+  try { if (on) sessionStorage.setItem('mzsa-espace', 'albert'); else sessionStorage.removeItem('mzsa-espace'); } catch(e){}
+  const b = document.getElementById('brand');
+  if (b){ b.textContent = on ? 'Albert School' : 'De zéro au sommet'; b.dataset.v = on ? 'albert' : 'accueil'; }
+}
+function _appEntrerAlbert(){
+  if (!window.espaceAlbert()){
+    const v = window.vueCourante && window.vueCourante.v;
+    _appAvantAlbert = _APP_ONGLETS.indexOf(v) >= 0 ? v : 'accueil';
+    _appEspaceAlbert(true);
+    nav('albert');
+  } else if (!_APP_ALB_VUE.test((window.vueCourante && window.vueCourante.v) || '')) nav('albert');
+}
+function _appSortirAlbert(sansNav){
+  if (!window.espaceAlbert()) return;
+  _appEspaceAlbert(false);
+  if (sansNav) return;
+  let onboarde = false;
+  try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
+  nav(onboarde || typeof window.vOnboarding !== 'function' ? _appAvantAlbert : 'onboarding');
+}
+
 /* Un seul historique : celui de l'app STMG. Le retour du téléphone referme le mode Maths ;
    à l'intérieur, on circule avec les onglets et les boutons Retour et Quitter de l'en-tête. */
 if (_appEmbarque){
@@ -121,8 +154,9 @@ function _appInitEmbarque(){
     if (d.type !== 'aller') return;
     let onboarde = false;
     try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(x){}
+    if (d.go === 'maths'){ _appSortirAlbert(); return; }
     if (!onboarde) return;
-    if (d.go === 'ds') _appAllerDS(d.skill);
+    if (d.go === 'ds'){ _appSortirAlbert(true); _appAllerDS(d.skill); }
   });
 
   /* Premier écran affiché (bus « vue » du routeur) : l'app STMG est prévenue, puis la demande de l'adresse
@@ -338,14 +372,15 @@ function raccourcis(){
     if (_appAccord && /^Key[APCE]$/.test(e.code)){
       e.preventDefault();
       _appAccord = 0;
-      nav({A: 'accueil', P: 'programme', C: 'erreurs', E: 'coach'}[e.code.slice(3)]);
+      if (window.espaceAlbert()){ if (e.code === 'KeyB') nav('albert'); return; }     // l'espace Albert n'a pas d'onglets maths
+      if (e.code !== 'KeyB') nav({A: 'accueil', P: 'programme', C: 'erreurs', E: 'coach'}[e.code.slice(3)]);
       return;
     }
     if (e.code === 'KeyG'){ _appAccord = 1; setTimeout(() => { _appAccord = 0; }, 800); return; }
     if (e.code === 'KeyT'){ e.preventDefault(); const b = document.getElementById('btn-theme'); if (b) b.click(); return; }
     if (e.code === 'KeyS'){ e.preventDefault(); const b = document.getElementById('btn-sound'); if (b) b.click(); return; }
     if (e.key === '?'){ e.preventDefault(); _appAide(); return; }
-    if (/^Digit[1-4]$/.test(e.code)){
+    if (/^Digit[1-4]$/.test(e.code) && !window.espaceAlbert()){
       e.preventDefault();
       nav(['accueil', 'programme', 'erreurs', 'coach'][Number(e.code.slice(5)) - 1]);
     }
@@ -355,7 +390,8 @@ function raccourcis(){
 function _appAide(){
   const l = [['↵', 'Valider puis continuer'], ['1 à 4', 'Choisir une réponse'], ['Échap', 'Fermer, ou quitter le parcours'],
              ['⌘K', 'Palette de recherche'], ['⌘J', 'Le Prof'], ['⌘,', 'Réglages'],
-             ['T', 'Changer de thème'], ['S', 'Couper ou remettre les sons'], ['G puis A P C E', 'Aller à un onglet']];
+             ['T', 'Changer de thème'], ['S', 'Couper ou remettre les sons'],
+             window.espaceAlbert() ? ['G puis B', 'Revenir à Objectif Albert'] : ['G puis A P C E', 'Aller à un onglet']];
   ouvrirFeuille({
     classe: 'sheet-aide', titre: 'Raccourcis clavier',
     contenu: '<dl class="kbd-list">' + l.map(x => '<div><dt><kbd>' + x[0] + '</kbd></dt><dd>' + x[1] + '</dd></div>').join('') + '</dl>',
@@ -371,6 +407,8 @@ function palette(){
   const items = [];
   const push = (groupe, label, sous, fn) => items.push({groupe, label, sous: sous || '', fn, idx: norm(label + ' ' + (sous || ''))});
 
+  const alb = window.espaceAlbert();
+  if (!alb){
   push('Actions', 'Lancer la séance du jour', '', () => nav('seance'));
   push('Actions', '5 minutes chrono', '', () => nav('micro'));
   push('Actions', 'Calcul mental', '', () => nav('cm'));
@@ -381,6 +419,10 @@ function palette(){
   try { (window.SKILLS || []).forEach(s => push('Compétences', s.titre, 'Phase ' + s.phase, () => nav('skill', {id: s.id}))); } catch(e){}
   try { (window.CM_FAMS || []).forEach(f => push('Techniques', f.nom || f.titre || f.id, f.cat || '', () => nav('techniques', {ouvrir: f.id}))); } catch(e){}
   try { (S.erreurs || []).slice(0, 5).forEach(er => push('Erreurs', er.q.split('\n')[0].slice(0, 60), '', () => nav('erreurs'))); } catch(e){}
+  } else {
+  /* Espace Albert : seulement ses écrans */
+  push('Actions', 'Réglages', '', () => nav('reglages'));
+  }
 
   const rendu = q => {
     const mots = norm(q).split(/\s+/).filter(Boolean);
@@ -517,7 +559,10 @@ async function initApp(){
   try { onboarde = !!((S.profil && S.profil.onboard) || S.onboard); } catch(e){}
   /* Un contrôle n'attend pas : ./?go=ds ouvre « DS en vue » même avant l'accueil de bienvenue,
      qui se présentera au lancement suivant (rien n'est posé dans le profil ici). */
-  if (!onboarde && go !== 'ds' && typeof window.vOnboarding === 'function') nav('onboarding', {remplace: true});
+  /* Espace Albert : demandé par l'adresse, ou repris après un rechargement du cadre */
+  let repris = false;
+  try { repris = sessionStorage.getItem('mzsa-espace') === 'albert'; } catch(e){}
+  if (!onboarde && go !== 'ds' && !window.espaceAlbert() && typeof window.vOnboarding === 'function') nav('onboarding', {remplace: true});
   else {
     /* le raccourci est consommé : sans lui dans l'adresse, un rechargement rend l'écran courant, pas le raccourci */
     if (go){ try { history.replaceState(history.state, '', location.pathname + location.hash); } catch(e){} }
