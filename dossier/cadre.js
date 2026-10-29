@@ -257,3 +257,73 @@
   carte();
   sync(null);
 })();
+
+/* ===== Espace Albert : onglet « Albert » de l'app STMG, filet qui survit aux déploiements =====
+   index.html et maths/ sont régénérés par le script de déploiement ; dossier/ ne l'est jamais et ce fichier est
+   déjà chargé par le crochet porté dans les sources. On y garantit donc, même si les crochets « Espace Albert »
+   ont disparu de index.html ou de maths/app.js :
+     - le bouton #mode-albert (après #mode-maths), qui ouvre #sommet/albert ;
+     - le retrait du lien Albert de la matière Maths ;
+     - dans le cadre maths (même origine) : l'espace Albert (html.espace-albert, sans la navigation des maths)
+       sur #sommet/albert, sa sortie sur #sommet, et plus de carte Albert dans les écrans des maths.
+   Tout est idempotent : si maths/app.js gère déjà l'espace, les deux mécanismes posent les mêmes classes. */
+(function () {
+  'use strict';
+  const $ = function (id) { return document.getElementById(id); };
+  const ALB = /^albert/;
+
+  (function () {
+    const m = $('mode-maths'); if (!m) return;
+    if (!$('mode-albert')) {
+      const b = document.createElement('button');
+      b.id = 'mode-albert'; b.type = 'button'; b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', 'false');
+      b.textContent = '🎯 Albert';
+      b.addEventListener('click', function () { location.hash = '#sommet/albert'; });
+      m.insertAdjacentElement('afterend', b);
+    }
+    const l = $('albert-lien-maths'); if (l) l.remove();
+  })();
+
+  function cadre() {
+    const f = document.querySelector('#sommet-cadre iframe');
+    try { return f && f.contentDocument && f.contentDocument.documentElement && f.contentWindow.nav ? f : null; } catch (e) { return null; }
+  }
+  function styler(doc) {
+    if (doc.getElementById('espace-albert-filet')) return;
+    const s = doc.createElement('style'); s.id = 'espace-albert-filet';
+    s.textContent = 'html.espace-albert #tabbar,html.espace-albert .topnav,html.espace-albert #ring-day,html.espace-albert #head-count{display:none!important}' +
+      'html:not(.espace-albert) .alb-carte{display:none!important}';
+    doc.head.appendChild(s);
+  }
+  function appliquer() {
+    const f = cadre(); if (!f) return false;
+    const doc = f.contentDocument, w = f.contentWindow, racine = doc.documentElement;
+    styler(doc);
+    const veut = location.hash === '#sommet/albert';
+    if (!veut && location.hash !== '#sommet') return true;           // cadre fermé : on ne touche à rien
+    const avant = racine.classList.contains('espace-albert');
+    racine.classList.toggle('espace-albert', veut);
+    try { if (veut) w.sessionStorage.setItem('mzs-espace', 'albert'); else w.sessionStorage.removeItem('mzs-espace'); } catch (e) { }
+    const b = doc.getElementById('brand');
+    if (b) { b.textContent = veut ? 'Albert School' : 'De zéro au sommet'; b.dataset.v = veut ? 'albert' : 'accueil'; }
+    const v = (w.vueCourante && w.vueCourante.v) || '';
+    try {
+      if (veut && !ALB.test(v)) { w.nav('albert', { remplace: v === 'onboarding' }); return false; }   // revérifié au tour suivant
+      if (!veut && avant && ALB.test(v)) w.nav('accueil');
+    } catch (e) { return false; }
+    return true;
+  }
+  let essai = 0;
+  function bientot() {
+    clearTimeout(essai);
+    let n = 0;
+    (function boucle() { if (appliquer() || ++n > 40) return; essai = setTimeout(boucle, 250); })();   // jusqu'à 10 s, le temps que le cadre démarre
+  }
+  window.addEventListener('hashchange', function () { if (/^#sommet(\/albert)?$/.test(location.hash)) bientot(); });
+  /* le cadre est (re)chargé : on réapplique dès qu'il est prêt */
+  new MutationObserver(function () {
+    const f = document.querySelector('#sommet-cadre iframe');
+    if (f && !f.dataset.espaceAlbert) { f.dataset.espaceAlbert = '1'; f.addEventListener('load', bientot); }
+  }).observe(document.body, { childList: true, subtree: true });
+  if (/^#sommet(\/albert)?$/.test(location.hash)) bientot();
+})();
