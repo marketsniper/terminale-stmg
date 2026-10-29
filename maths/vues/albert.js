@@ -179,6 +179,8 @@ function _albProchaine(){
 
 /* Carte d'entrée, partagée par l'accueil et le coach. data-v="albert" : l'accueil la branche tout seul (clic [data-v]). */
 window.albertCarte = function(lieu){
+  /* Albert vit dans son propre onglet de l'app STMG : plus de carte dans les écrans des maths */
+  if (!(typeof window.espaceAlbert === 'function' && window.espaceAlbert())) return '';
   try {
     const d = _albDate(), j = d ? joursAvant(d) : null, p = _albPreparation();
     return '<section class="card alb-carte"' + (lieu === 'coach' ? ' data-bento="3"' : '') + '>' +
