@@ -54,7 +54,7 @@ const SOMMET = 4810;                            // mètres : le Mont Blanc
 
 /* Version d'application (miroir du CACHE de sw.js). Exposée sans déclaration lexicale
    pour ne jamais entrer en collision avec un autre module. */
-window.APP_VERSION = '2.3.0';
+window.APP_VERSION = '2.1.0';
 
 /* ---------- nombres au format français ----------
    Virgule décimale, espace fine insécable U+202F pour les milliers, vrai signe moins U+2212. */
