@@ -15899,6 +15899,330 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-03-dbbbe457","date
   } catch(e){ try { console.warn('séance de révision :', e); } catch(_){} } })();
 })();
 </script>
+<!-- Entraîneur de vocabulaire ETLV : début (04/11/2026, test de vocabulaire du jeudi 5/11) -->
+<style>
+.vx-lance{display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;margin:.6rem 0 1rem;padding:.8rem 1rem;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb, var(--ok) 8%, var(--card))}
+.vx-lance b{font-size:1rem}
+.vx-lance small{color:var(--muted);display:block}
+.vx-btn{font:inherit;font-weight:650;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:.55rem .9rem;cursor:pointer}
+.vx-btn.vx-p{background:var(--ok);border-color:var(--ok);color:#fff}
+.vx-btn:disabled{opacity:.5;cursor:default}
+.vx-fond{position:fixed;inset:0;z-index:9000;background:rgba(10,14,20,.55);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:16px}
+.vx-boite{width:100%;max-width:620px;margin:auto 0;background:var(--card);color:var(--ink);border-radius:16px;box-shadow:var(--shadow);padding:1.1rem 1.1rem 1.3rem}
+.vx-haut{display:flex;justify-content:space-between;align-items:center;gap:.5rem;margin-bottom:.6rem}
+.vx-haut h3{margin:0;font-size:1.05rem}
+.vx-x{font:inherit;font-size:1.4rem;line-height:1;background:none;border:0;color:var(--muted);cursor:pointer;padding:.2rem .4rem}
+.vx-barre{height:8px;border-radius:6px;background:var(--line);overflow:hidden}
+.vx-barre i{display:block;height:100%;background:var(--ok);transition:width .3s}
+.vx-info{display:flex;justify-content:space-between;color:var(--muted);font-size:.82rem;margin:.35rem 0 .9rem}
+.vx-cat{font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.vx-consigne{font-size:.85rem;color:var(--muted);margin:.2rem 0 .3rem}
+.vx-q{font-size:1.25rem;font-weight:650;margin:.1rem 0 .9rem;line-height:1.35}
+.vx-choix{display:grid;gap:.5rem}
+.vx-choix button{font:inherit;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:.65rem .8rem;cursor:pointer}
+.vx-choix button.ok{background:var(--ok-bg);border-color:var(--ok)}
+.vx-choix button.ko{background:var(--ko-bg);border-color:var(--ko)}
+.vx-saisie{display:flex;gap:.5rem;flex-wrap:wrap}
+.vx-saisie input{flex:1 1 220px;font:inherit;font-size:1.05rem;padding:.6rem .75rem;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink)}
+.vx-retour{margin-top:.9rem;padding:.7rem .85rem;border-radius:10px;font-size:.95rem}
+.vx-retour.ok{background:var(--ok-bg)}
+.vx-retour.ko{background:var(--ko-bg)}
+.vx-retour.moy{background:var(--retenir-bg)}
+.vx-bas{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.9rem}
+.vx-son{font:inherit;border:0;background:none;cursor:pointer;font-size:1.05rem;padding:0 .2rem;vertical-align:middle}
+.vx-bilan li{margin:.25rem 0}
+.vx-niv{display:inline-block;min-width:1.6rem;text-align:center;border-radius:6px;font-size:.75rem;font-weight:700;padding:.05rem .3rem;margin-right:.35rem;background:var(--line)}
+.vx-niv.n3{background:var(--ok);color:#fff}
+</style>
+<script>
+(function(){
+  'use strict';
+  /* Entraîneur de vocabulaire ETLV (liste de la prof d’ETLV, fiche anglais-4).
+     Chaque mot passe par 3 niveaux : reconnaître le français (QCM), retrouver l'anglais (QCM),
+     écrire l'anglais. Une erreur fait redescendre d'un niveau et le mot revient 3 questions plus tard.
+     La séance s'arrête quand TOUS les mots sont au niveau 3. Progrès gardé dans localStorage. */
+  try {
+  const CLE = 'stmg-vocab-etlv-v1';
+  const fiche = document.getElementById('anglais-4');
+  if (!fiche) return;
+  const h4s = Array.prototype.slice.call(fiche.querySelectorAll('h4'));
+  const hDebut = h4s.find(h => /La liste de vocabulaire/i.test(h.textContent));
+  const hFin = h4s.find(h => /Autres mots utiles/i.test(h.textContent));
+  if (!hDebut) return;
+
+  // ---- Lecture des tableaux de la fiche (la liste de la prof, dans son ordre) ----
+  const tables = Array.prototype.slice.call(fiche.querySelectorAll('table.tbl')).filter(function(t){
+    const apres = hDebut.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING;
+    const avant = !hFin || (t.compareDocumentPosition(hFin) & Node.DOCUMENT_POSITION_FOLLOWING);
+    return apres && avant;
+  });
+  const propre = s => (s || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  const MOTS = [];
+  tables.forEach(function(t){
+    const entetes = Array.prototype.map.call(t.querySelectorAll('thead th'), th => propre(th.textContent));
+    const iEn = entetes.indexOf('English'), iFr = entetes.indexOf('Français'), iNb = entetes.indexOf('Number');
+    let cat = iNb >= 0 ? 'Numbers — Les nombres' : '';
+    t.querySelectorAll('tbody tr').forEach(function(tr){
+      const th = tr.querySelector('th[colspan]');
+      if (th){ cat = propre(th.textContent); return; }
+      const td = tr.querySelectorAll('td');
+      if (td.length <= Math.max(iEn, iFr)) return;
+      const en = propre(td[iEn].textContent), fr0 = propre(td[iFr].textContent);
+      if (!en || !fr0) return;
+      const fr = iNb >= 0 ? propre(td[iNb].textContent) + ' (' + fr0 + ')' : fr0;
+      MOTS.push({ id: MOTS.length + ':' + en.slice(0, 40), en: en, fr: fr, cat: cat });
+    });
+  });
+  if (MOTS.length < 10) return;
+
+  // ---- Comparaison souple des réponses écrites ----
+  function norm(s){
+    return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[’‘`]/g, "'").replace(/\((uk|usa|us)\)/g, ' ')
+      .replace(/[^a-z0-9'£€$%\- ]+/g, ' ').replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+      .replace(/^(to|a|an|the) /, '').trim();
+  }
+  function variantes(en){
+    const sansPar = en.replace(/\([^)]*\)/g, ' ');
+    const ens = new Set();
+    [en, sansPar].forEach(function(x){
+      ens.add(norm(x));
+      x.split(/\s*(?:\/|·|,|;|≠|=| or )\s*/).forEach(p => { const n = norm(p); if (n.length > 1) ens.add(n); });
+    });
+    // sigle et forme longue (CSR / Corporate Social Responsibility, NGO…)
+    const par = en.match(/\(([^)]+)\)/g) || [];
+    par.forEach(p => { const n = norm(p.slice(1, -1)); if (n.length > 1 && !/^(e g|uk|usa|invariable)/.test(n)) ens.add(n); });
+    return Array.from(ens).filter(Boolean);
+  }
+  function lev(a, b){
+    if (a === b) return 0;
+    const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+    let prev = Array.from({length: n + 1}, (_, j) => j);
+    for (let i = 1; i <= m; i++){
+      const cur = [i];
+      for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = cur;
+    }
+    return prev[n];
+  }
+  // 'ok' | 'presque' (faute de frappe) | 'ko'
+  function juger(rep, mot){
+    const r = norm(rep); if (!r) return 'ko';
+    const vs = variantes(mot.en);
+    if (vs.indexOf(r) >= 0) return 'ok';
+    // plusieurs morceaux tapés : chacun doit exister dans la liste
+    const morceaux = rep.split(/\s*(?:\/|·|,|;|≠|=| or )\s*/).map(norm).filter(Boolean);
+    if (morceaux.length > 1 && morceaux.every(p => vs.indexOf(p) >= 0)) return 'ok';
+    let best = 99, lgr = 1;
+    vs.forEach(v => { const d = lev(r, v); if (d < best){ best = d; lgr = v.length; } });
+    const tol = lgr <= 4 ? 0 : (lgr <= 9 ? 1 : 2);
+    return best <= tol ? 'presque' : 'ko';
+  }
+
+  // ---- Progrès ----
+  function lire(){ try { const x = JSON.parse(localStorage.getItem(CLE) || 'null'); return x && x.m ? x : { m: {} }; } catch(e){ return { m: {} }; } }
+  function ecrire(){ try { localStorage.setItem(CLE, JSON.stringify(etat)); } catch(e){} }
+  let etat = lire();
+  const st = mot => etat.m[mot.id] || (etat.m[mot.id] = { n: 0, err: 0, vu: 0 });
+  const nbAcquis = () => MOTS.filter(m => (etat.m[m.id] || {}).n >= 3).length;
+  const longue = mot => mot.en.split(' ').length > 7;   // phrases longues : pas de saisie, une 3e question à choix
+
+  // ---- Bouton dans la fiche ----
+  const lance = document.createElement('div');
+  lance.className = 'vx-lance';
+  lance.innerHTML = '<div style="flex:1 1 240px"><b>🎯 S’entraîner sur tous les mots</b><small class="vx-resume"></small></div>' +
+    '<button type="button" class="vx-btn vx-p" data-vx="go">Commencer</button>' +
+    '<button type="button" class="vx-btn" data-vx="erreurs">Mes mots ratés</button>';
+  hDebut.insertAdjacentElement('afterend', lance);
+  function majResume(){
+    const a = nbAcquis(), ratés = MOTS.filter(m => (etat.m[m.id] || {}).err > 0).length;
+    lance.querySelector('.vx-resume').textContent = a + ' / ' + MOTS.length + ' mots acquis · ' +
+      'chaque mot : le reconnaître, le retrouver, puis l’écrire en anglais. Une erreur et il revient.';
+    lance.querySelector('[data-vx="erreurs"]').disabled = !ratés;
+  }
+  majResume();
+
+  // ---- Séance ----
+  let fond = null, file = [], courant = null, repondu = false, serie = 0, total = 0, justes = 0, pool = [];
+  const ACTIFS = 7;   // nombre de mots travaillés en même temps
+
+  function melange(a){ for (let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  function demarrer(seulementErreurs){
+    if (seulementErreurs){
+      MOTS.forEach(m => { const s = st(m); if (s.err > 0) s.n = Math.min(s.n, 1); });
+      pool = MOTS.filter(m => st(m).err > 0);
+    } else {
+      if (nbAcquis() === MOTS.length) MOTS.forEach(m => { st(m).n = 0; });   // tout acquis : on repart pour un tour complet
+      pool = MOTS.slice();
+    }
+    ecrire();
+    file = [];
+    total = 0; justes = 0; serie = 0;
+    ouvrir();
+    suivant();
+  }
+  function restants(){ return pool.filter(m => st(m).n < 3); }
+  function remplirFile(){
+    const enCours = file.map(f => f.id);
+    const r = restants();
+    // mots déjà commencés d'abord, puis nouveaux mots dans l'ordre de la liste
+    const commences = r.filter(m => st(m).vu > 0 && enCours.indexOf(m.id) < 0);
+    const nouveaux = r.filter(m => !st(m).vu && enCours.indexOf(m.id) < 0);
+    const cand = commences.concat(nouveaux);
+    while (file.length < ACTIFS && cand.length) file.push(cand.shift());
+  }
+  function suivant(){
+    remplirFile();
+    if (!file.length) return bilan();
+    // éviter de reposer le même mot deux fois de suite
+    let i = 0;
+    if (file.length > 1 && courant && file[0].id === courant.id) i = 1;
+    courant = file.splice(i, 1)[0];
+    repondu = false;
+    poser(courant);
+  }
+  function remettre(mot, dans){ file.splice(Math.min(dans, file.length), 0, mot); }
+
+  function ouvrir(){
+    if (fond) fond.remove();
+    fond = document.createElement('div');
+    fond.className = 'vx-fond';
+    fond.innerHTML = '<div class="vx-boite" role="dialog" aria-modal="true" aria-label="Entraînement vocabulaire ETLV">' +
+      '<div class="vx-haut"><h3>Vocabulaire ETLV</h3><button type="button" class="vx-x" aria-label="Fermer">×</button></div>' +
+      '<div class="vx-barre"><i></i></div><div class="vx-info"><span class="vx-compte"></span><span class="vx-serie"></span></div>' +
+      '<div class="vx-zone"></div></div>';
+    document.body.appendChild(fond);
+    fond.querySelector('.vx-x').onclick = fermer;
+    fond.addEventListener('click', e => { if (e.target === fond) fermer(); });
+    document.addEventListener('keydown', clavier);
+  }
+  function fermer(){
+    if (fond){ fond.remove(); fond = null; }
+    document.removeEventListener('keydown', clavier);
+    majResume();
+  }
+  function clavier(e){
+    if (!fond) return;
+    if (e.key === 'Escape') return fermer();
+    if (repondu && e.key === 'Enter'){ e.preventDefault(); suivant(); return; }
+    if (!repondu && /^[1-4]$/.test(e.key) && document.activeElement.tagName !== 'INPUT'){
+      const b = fond.querySelectorAll('.vx-choix button')[+e.key - 1]; if (b) b.click();
+    }
+  }
+  function majHaut(){
+    const a = pool.filter(m => st(m).n >= 3).length;
+    fond.querySelector('.vx-barre i').style.width = (100 * a / pool.length) + '%';
+    fond.querySelector('.vx-compte').textContent = a + ' / ' + pool.length + ' acquis';
+    fond.querySelector('.vx-serie').textContent = serie >= 3 ? '🔥 ' + serie + ' d’affilée' : (total ? justes + ' / ' + total + ' justes' : '');
+  }
+  function parler(txt){
+    try {
+      const u = new SpeechSynthesisUtterance(txt.replace(/\([^)]*\)/g, '').replace(/[\/·]/g, ', '));
+      u.lang = 'en-GB'; u.rate = .9; speechSynthesis.cancel(); speechSynthesis.speak(u);
+    } catch(e){}
+  }
+  const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const sonBtn = en => ('speechSynthesis' in window) ? ' <button type="button" class="vx-son" data-dit="' + esc(en) + '" aria-label="Écouter la prononciation">🔊</button>' : '';
+
+  function distracteurs(mot, champ){
+    const memeCat = MOTS.filter(m => m !== mot && m.cat === mot.cat && m[champ] !== mot[champ]);
+    const autres = MOTS.filter(m => m !== mot && m.cat !== mot.cat && m[champ] !== mot[champ]);
+    return melange(memeCat).slice(0, 2).concat(melange(autres)).slice(0, 3);
+  }
+
+  function poser(mot){
+    majHaut();
+    const s = st(mot), z = fond.querySelector('.vx-zone');
+    const niv = s.n;   // 0 : EN→FR choix · 1 : FR→EN choix · 2 : écrire l'anglais
+    let html = '<div class="vx-cat">' + esc(mot.cat) + ' · niveau ' + (niv + 1) + '/3</div>';
+    if (niv === 0 || niv === 1 || (niv === 2 && longue(mot))){
+      const versFr = niv === 0;
+      const champ = versFr ? 'fr' : 'en';
+      html += '<div class="vx-consigne">' + (versFr ? 'Que veut dire :' : 'Comment dit-on en anglais :') + '</div>' +
+        '<div class="vx-q">' + esc(versFr ? mot.en : mot.fr) + (versFr ? sonBtn(mot.en) : '') + '</div><div class="vx-choix">';
+      const choix = melange([mot].concat(distracteurs(mot, champ)));
+      choix.forEach((c, k) => { html += '<button type="button" data-ok="' + (c === mot ? 1 : 0) + '"><b>' + (k + 1) + '.</b> ' + esc(c[champ]) + '</button>'; });
+      html += '</div>';
+      z.innerHTML = html;
+      z.querySelectorAll('.vx-choix button').forEach(b => b.onclick = function(){
+        if (repondu) return;
+        const bon = b.dataset.ok === '1';
+        z.querySelectorAll('.vx-choix button').forEach(x => { x.disabled = true; if (x.dataset.ok === '1') x.classList.add('ok'); });
+        if (!bon) b.classList.add('ko');
+        resultat(mot, bon ? 'ok' : 'ko');
+      });
+    } else {
+      html += '<div class="vx-consigne">Écris en anglais (une des formes suffit) :</div>' +
+        '<div class="vx-q">' + esc(mot.fr) + '</div>' +
+        '<form class="vx-saisie" autocomplete="off"><input type="text" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="en anglais…" aria-label="Ta réponse en anglais">' +
+        '<button type="submit" class="vx-btn vx-p">Valider</button><button type="button" class="vx-btn" data-vx="sais-pas">Je ne sais pas</button></form>';
+      z.innerHTML = html;
+      const f = z.querySelector('form'), inp = f.querySelector('input');
+      setTimeout(() => inp.focus(), 30);
+      f.onsubmit = function(e){ e.preventDefault(); if (repondu || !inp.value.trim()) return; inp.disabled = true; resultat(mot, juger(inp.value, mot), inp.value); };
+      f.querySelector('[data-vx="sais-pas"]').onclick = function(){ if (repondu) return; inp.disabled = true; resultat(mot, 'ko', ''); };
+    }
+    z.querySelectorAll('.vx-son').forEach(b => b.onclick = () => parler(b.dataset.dit));
+  }
+
+  function resultat(mot, verdict, tape){
+    repondu = true;
+    const s = st(mot); s.vu++; total++;
+    const z = fond.querySelector('.vx-zone');
+    let msg, cls;
+    if (verdict === 'ok' || verdict === 'presque'){
+      justes++; serie++;
+      s.n = Math.min(3, s.n + 1);
+      cls = verdict === 'ok' ? 'ok' : 'moy';
+      msg = (verdict === 'ok' ? '✅ Juste.' : '🟡 Accepté, mais attention à l’orthographe.') +
+        (s.n >= 3 ? ' Mot acquis !' : ' Il reviendra au niveau ' + (s.n + 1) + '.');
+      if (s.n < 3) remettre(mot, 3 + Math.floor(Math.random() * 3));
+    } else {
+      serie = 0; s.err++;
+      s.n = Math.max(0, s.n - 1);
+      cls = 'ko';
+      msg = '❌ ' + (tape ? 'Pas tout à fait.' : 'Pas grave, retiens-le.') + ' Il revient dans 3 questions.';
+      remettre(mot, 2);
+    }
+    ecrire();
+    z.insertAdjacentHTML('beforeend',
+      '<div class="vx-retour ' + cls + '">' + msg + '<br><b>' + esc(mot.en) + '</b>' + sonBtn(mot.en) + ' = ' + esc(mot.fr) + '</div>' +
+      '<div class="vx-bas"><button type="button" class="vx-btn vx-p" data-vx="suite">Suivant ↵</button></div>');
+    z.querySelectorAll('.vx-retour .vx-son').forEach(b => b.onclick = () => parler(b.dataset.dit));
+    const suite = z.querySelector('[data-vx="suite"]');
+    suite.onclick = suivant;
+    setTimeout(() => suite.focus(), 30);
+    if (verdict !== 'ko' && cls === 'ok' && (s.n === 1 || s.n === 2)) {}   // pas d'auto-avance : il lit la réponse complète
+    majHaut();
+  }
+
+  function bilan(){
+    majHaut();
+    const pires = pool.slice().sort((a, b) => st(b).err - st(a).err).filter(m => st(m).err > 0).slice(0, 12);
+    let html = '<div class="vx-q">🎉 Tous les mots sont acquis (' + pool.length + ').</div>' +
+      '<p>' + justes + ' bonnes réponses sur ' + total + ' questions.</p>';
+    if (pires.length){
+      html += '<p><b>Les mots qui t’ont le plus résisté</b> (relis-les juste avant le test) :</p><ul class="vx-bilan">' +
+        pires.map(m => '<li><span class="vx-niv">' + st(m).err + '×</span><b>' + esc(m.en) + '</b> = ' + esc(m.fr) + '</li>').join('') + '</ul>';
+    }
+    html += '<div class="vx-bas"><button type="button" class="vx-btn vx-p" data-vx="refaire">Refaire un tour complet</button>' +
+      (pires.length ? '<button type="button" class="vx-btn" data-vx="erreurs2">Refaire mes mots ratés</button>' : '') +
+      '<button type="button" class="vx-btn" data-vx="fin">Fermer</button></div>';
+    const z = fond.querySelector('.vx-zone');
+    z.innerHTML = html;
+    z.querySelector('[data-vx="refaire"]').onclick = function(){ MOTS.forEach(m => { st(m).n = 0; st(m).vu = 0; }); demarrer(false); };
+    const e2 = z.querySelector('[data-vx="erreurs2"]'); if (e2) e2.onclick = () => demarrer(true);
+    z.querySelector('[data-vx="fin"]').onclick = fermer;
+  }
+
+  lance.querySelector('[data-vx="go"]').onclick = () => demarrer(false);
+  lance.querySelector('[data-vx="erreurs"]').onclick = () => demarrer(true);
+  window.__vocabEtlv = { MOTS: MOTS, juger: juger };   // pour les tests
+  } catch(e){ try { console.warn('vocabulaire ETLV :', e); } catch(_){} }
+})();
+</script>
+<!-- Entraîneur de vocabulaire ETLV : fin -->
 
 
 <script>
