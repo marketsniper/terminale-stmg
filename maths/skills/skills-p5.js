@@ -326,6 +326,267 @@ SKILLS.push({
 });
 
 // ------------------------------------------------------------
+// p5-02b — Fonctions exponentielles (x ↦ qˣ)
+// ------------------------------------------------------------
+function expS(n){ var m = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'}; return String(n).split('').map(function(c){ return m[c] || c; }).join(''); }
+function r4(x){ return Math.round(x*10000)/10000; }
+// Montant avec espace des milliers (2 000), virgule décimale.
+function mil(n){ var p = fr(n).split(','); p[0] = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f'); return p.join(','); }
+// Réponse arrondie : on tolère le voisin d'un centième (arrondi fait sur une valeur déjà arrondie).
+function voisins(v, pas){ return [fr(r2(v - pas)), fr(r2(v + pas))]; }
+SKILLS.push({
+  id: 'p5-02b-exponentielles',
+  phase: 5,
+  ordre: 2.1,
+  titre: 'Les fonctions exponentielles',
+  objectif: "Calculer avec qˣ, donner le sens de variation de x ↦ qˣ et l'utiliser pour un placement ou une dépréciation.",
+  lecon: `<p class="lede">Une suite géométrique u(n) = u(0) × qⁿ ne donne des valeurs que pour n entier (1 an, 2 ans…). La <mark>fonction exponentielle de base q</mark>, f(x) = qˣ (avec q &gt; 0), prolonge cette suite à tous les réels : elle donne aussi la valeur au bout de 2,5 ans.</p>
+<div class="formule"><p>q⁰ = 1 &nbsp;·&nbsp; qˣ × qʸ = qˣ⁺ʸ &nbsp;·&nbsp; qˣ ÷ qʸ = qˣ⁻ʸ &nbsp;·&nbsp; q⁻ˣ = 1 ÷ qˣ &nbsp;·&nbsp; (qˣ)ⁿ = qⁿˣ</p></div>
+<p>Ce sont les mêmes règles que pour les puissances entières : on ajoute les exposants quand on multiplie, on les soustrait quand on divise.</p>
+<div class="etapes">
+<p><strong>Sens de variation :</strong> si q &gt; 1, x ↦ qˣ est croissante ; si 0 &lt; q &lt; 1, elle est décroissante ; si q = 1, elle est constante (et toujours strictement positive).</p>
+<p><strong>En contexte :</strong> une valeur qui évolue de t % par an vaut V(x) = V₀ × (1 + t)ˣ au bout de x années. Ex. : 1 000 € placés à 3 % par an valent 1 000 × 1,03²˒⁵ ≈ 1 076,70 € au bout de 2,5 ans.</p>
+<p><strong>Lire le taux :</strong> V(x) = 5 000 × 0,92ˣ, c'est une baisse de 8 % par an (0,92 = 1 − 0,08).</p>
+</div>
+<div class="box retenir"><p class="box-t">À retenir</p><p>qˣ prolonge qⁿ à tous les réels. q &gt; 1 : croissante ; 0 &lt; q &lt; 1 : décroissante. Les exposants s'ajoutent dans un produit et se soustraient dans un quotient.</p></div>
+<div class="box astuce"><p class="box-t">Astuce calculatrice</p><p>Pour 1,03²˒⁵, tape 1.03 ^ 2.5 (touche « ^ » ou « xʸ »).</p></div>`,
+  gen(level, R){
+    if (level === 1){
+      var t = R.pick(['sens', 'produit', 'zero']);
+      if (t === 'sens'){
+        var q = R.pick(['1,5', '2', '1,04', '0,8', '0,5', '0,97', '3', '0,25']);
+        var qv = parseFloat(q.replace(',', '.'));
+        var bon = qv > 1 ? 'Croissante' : 'Décroissante';
+        return {
+          q: "Quel est le sens de variation de la fonction f(x) = " + q + "ˣ sur ℝ ?",
+          a: bon, accept: null,
+          choix: ['Croissante', 'Décroissante', 'Constante', 'Croissante puis décroissante'],
+          expl: "La base vaut " + q + (qv > 1 ? ", qui est plus grande que 1 : la fonction est croissante." : ", qui est entre 0 et 1 : la fonction est décroissante.")
+        };
+      }
+      if (t === 'produit'){
+        var b = R.pick([2, 3, 5, 1.5]), x = R.int(2, 7), y = R.int(2, 6);
+        return {
+          q: fr(b) + expS(x) + " × " + fr(b) + expS(y) + " = " + fr(b) + "ⁿ. Que vaut n ?",
+          a: String(x + y), accept: null, choix: null,
+          expl: "Dans un produit de puissances de même base, on ajoute les exposants : " + x + " + " + y + " = " + (x + y) + "."
+        };
+      }
+      var q0 = R.pick(['1,07', '0,9', '5', '0,6']);
+      return {
+        q: "Que vaut " + q0 + "⁰ ?",
+        a: '1', accept: null, choix: null,
+        expl: "Pour tout q > 0, q⁰ = 1 : la courbe de x ↦ qˣ passe toujours par le point (0 ; 1)."
+      };
+    }
+    if (level === 2){
+      var t2 = R.pick(['quotient', 'negatif', 'valeur', 'taux']);
+      if (t2 === 'quotient'){
+        var b2 = R.pick([2, 3, 1.2]), x2 = R.int(6, 12), y2 = R.int(2, 5);
+        return {
+          q: fr(b2) + expS(x2) + " ÷ " + fr(b2) + expS(y2) + " = " + fr(b2) + "ⁿ. Que vaut n ?",
+          a: String(x2 - y2), accept: null, choix: null,
+          expl: "Dans un quotient de puissances de même base, on soustrait les exposants : " + x2 + " − " + y2 + " = " + (x2 - y2) + "."
+        };
+      }
+      if (t2 === 'negatif'){
+        var b3 = R.pick([2, 4, 5, 10]), n3 = R.int(1, 3);
+        var bon3 = "1 ÷ " + b3 + expS(n3);
+        return {
+          q: "À quoi est égal " + b3 + expS(-n3) + " ?",
+          a: bon3, accept: null,
+          choix: [bon3, "−" + b3 + expS(n3), "−" + (b3 * n3), b3 + " ÷ " + n3],
+          expl: "Un exposant négatif donne l'inverse : q⁻ⁿ = 1 ÷ qⁿ, donc " + b3 + expS(-n3) + " = 1 ÷ " + b3 + expS(n3) + " = 1 ÷ " + Math.pow(b3, n3) + "."
+        };
+      }
+      if (t2 === 'valeur'){
+        var k = R.pick([100, 200, 400, 1000]), b4 = R.pick([1.5, 2, 0.5, 1.1]), n4 = R.int(2, 3);
+        var v4 = r2(k * Math.pow(b4, n4));
+        return {
+          q: "f(x) = " + k + " × " + fr(b4) + "ˣ. Calcule f(" + n4 + ").",
+          a: fr(v4), accept: null, choix: null,
+          expl: "f(" + n4 + ") = " + k + " × " + fr(b4) + expS(n4) + " = " + k + " × " + fr(r4(Math.pow(b4, n4))) + " = " + fr(v4) + "."
+        };
+      }
+      var p = R.pick([3, 5, 8, 12, 15, 20]), hausse = R.pick([true, false]);
+      var coef = fr(r2(hausse ? 1 + p / 100 : 1 - p / 100));
+      var bon5 = (hausse ? "Hausse de " : "Baisse de ") + p + " % par an";
+      return {
+        q: "La valeur d'un bien est modélisée par V(x) = 2 000 × " + coef + "ˣ, où x est en années.\nComment évolue-t-elle ?",
+        a: bon5, accept: null,
+        choix: [bon5, (hausse ? "Baisse de " : "Hausse de ") + p + " % par an", (hausse ? "Hausse de " : "Baisse de ") + coef + " % par an", "Hausse de " + (hausse ? 100 + p : 100 - p) + " % par an"],
+        expl: "Le coefficient multiplicateur est " + coef + " = 1 " + (hausse ? "+ " : "− ") + fr(p / 100) + " : " + (hausse ? "hausse" : "baisse") + " de " + p + " % par an."
+      };
+    }
+    // level 3 : valeur à un instant non entier (calculatrice)
+    var V0 = R.pick([1000, 1500, 2000, 5000]), tt = R.pick([2, 3, 4, 5, 6]), sens = R.pick([1, 1, -1]);
+    var mois = R.pick([18, 30, 42, 6]);
+    var xx = mois / 12, base = 1 + sens * tt / 100;
+    var val = r2(V0 * Math.pow(base, xx));
+    var quoi = sens > 0 ? "placés à " + tt + " % par an (intérêts composés)" : "investis dans une machine qui perd " + tt + " % de sa valeur par an";
+    return {
+      q: mil(V0) + " € sont " + quoi + ".\nQuelle est la valeur au bout de " + mois + " mois ? (arrondi au centime)",
+      a: fr(val), accept: voisins(val, 0.01), choix: null,
+      expl: mois + " mois = " + fr(xx) + (xx < 2 ? " an" : " ans") + ". V = " + mil(V0) + " × " + fr(base) + "^" + fr(xx) + " ≈ " + mil(val) + " €. Piège : utiliser " + mois + " comme exposant (des mois au lieu d'années)."
+    };
+  }
+});
+
+// ------------------------------------------------------------
+// p5-02c — Racine n-ième et taux d'évolution moyen
+// ------------------------------------------------------------
+SKILLS.push({
+  id: 'p5-02c-taux-moyen',
+  phase: 5,
+  ordre: 2.2,
+  titre: "Racine n-ième et taux moyen",
+  objectif: "Calculer a^(1/n) et le taux d'évolution moyen sur n périodes, sans diviser le taux global par n.",
+  lecon: `<p class="lede">Un prix augmente de 21 % en 2 ans. A-t-il augmenté de 10,5 % par an ? <mark>Non</mark> : les pourcentages ne s'additionnent pas, ils se multiplient. Le bon outil est la racine n-ième.</p>
+<div class="formule"><p>Pour a &gt; 0, a^(1/n) est le nombre positif dont la puissance n vaut a. Ex. : 8^(1/3) = 2 car 2³ = 8.</p></div>
+<div class="formule"><p>Taux moyen sur n périodes : t<sub>m</sub> = CM^(1/n) − 1, où CM = 1 + T est le coefficient multiplicateur global.</p></div>
+<div class="etapes">
+<p><strong>1. Coefficient global :</strong> +21 % donne CM = 1,21.</p>
+<p><strong>2. Coefficient moyen :</strong> 1,21^(1/2) = 1,1.</p>
+<p><strong>3. Taux moyen :</strong> 1,1 − 1 = 0,1, soit <mark>+10 % par an</mark>. Vérification : 1,1 × 1,1 = 1,21.</p>
+</div>
+<div class="box retenir"><p class="box-t">À retenir</p><p>Taux global T sur n périodes → taux moyen t<sub>m</sub> = (1 + T)^(1/n) − 1. Pour une baisse, CM est plus petit que 1 (−19 % donne 0,81).</p></div>
+<div class="box astuce"><p class="box-t">Astuce calculatrice</p><p>Pour 1,21^(1/2), tape 1.21 ^ (1 ÷ 2) : les parenthèses autour de 1 ÷ 2 sont obligatoires.</p></div>`,
+  gen(level, R){
+    if (level === 1){
+      var t = R.pick(['racine', 'racine', 'cm']);
+      if (t === 'racine'){
+        var c = R.pick([[8,3,2],[27,3,3],[125,3,5],[16,4,2],[81,4,3],[32,5,2],[1000,3,10],[64,6,2]]);
+        return {
+          q: "Calcule " + c[0] + "^(1/" + c[1] + ").",
+          a: String(c[2]), accept: null, choix: null,
+          expl: c[0] + "^(1/" + c[1] + ") est le nombre positif dont la puissance " + c[1] + " vaut " + c[0] + " : " + c[2] + expS(c[1]) + " = " + c[0] + "."
+        };
+      }
+      var p = R.int(5, 40), h = R.pick([true, false]);
+      var cm = fr(r2(h ? 1 + p / 100 : 1 - p / 100));
+      return {
+        q: "Un chiffre d'affaires " + (h ? "augmente" : "baisse") + " de " + p + " % en 3 ans.\nQuel est le coefficient multiplicateur global ?",
+        a: cm, accept: null, choix: null,
+        expl: (h ? "Hausse" : "Baisse") + " de " + p + " % : CM = 1 " + (h ? "+ " : "− ") + fr(p / 100) + " = " + cm + "."
+      };
+    }
+    if (level === 2){
+      var c2 = R.pick([[1.1,2],[1.2,2],[1.1,3],[0.9,2],[0.8,2],[1.05,2],[1.5,2]]);
+      var g = Math.pow(c2[0], c2[1]), T = r2((g - 1) * 100), tm = r2((c2[0] - 1) * 100);
+      var hausse = T > 0;
+      var bon = fr(Math.abs(tm));
+      return {
+        q: "Un prix " + (hausse ? "augmente" : "baisse") + " de " + fr(Math.abs(T)) + " % en " + c2[1] + " ans.\nDe combien de % " + (hausse ? "augmente" : "baisse") + "-t-il en moyenne par an ?",
+        a: bon, accept: null, choix: null,
+        expl: "CM global = " + fr(r4(g)) + " ; CM moyen = " + fr(r4(g)) + "^(1/" + c2[1] + ") = " + fr(c2[0]) + " ; taux moyen = " + fr(c2[0]) + " − 1 = " + (hausse ? "+" : "−") + bon + " %. Piège : " + fr(Math.abs(T)) + " ÷ " + c2[1] + " = " + fr(r2(Math.abs(T) / c2[1])) + " % est faux."
+      };
+    }
+    var Tg = R.int(8, 60), n = R.pick([2, 3, 4, 5]), h3 = R.pick([true, true, false]);
+    if (!h3) Tg = R.int(8, 35);
+    var CM = h3 ? 1 + Tg / 100 : 1 - Tg / 100;
+    var tm3 = r2((Math.pow(CM, 1 / n) - 1) * 100);
+    return {
+      q: "Le nombre de clients d'une entreprise " + (h3 ? "a augmenté" : "a baissé") + " de " + Tg + " % en " + n + " ans.\nQuel est le taux d'évolution annuel moyen, en % ? (arrondi à 0,01 % ; signe − pour une baisse)",
+      a: fr(tm3), accept: voisins(tm3, 0.01), choix: null,
+      expl: "CM = " + fr(r2(CM)) + " ; " + fr(r2(CM)) + "^(1/" + n + ") ≈ " + fr(r4(Math.pow(CM, 1 / n))) + " ; taux moyen ≈ " + fr(tm3) + " %. Piège : " + Tg + " ÷ " + n + " = " + fr(r2(Tg / n)) + " % n'est pas le taux moyen."
+    };
+  }
+});
+
+// ------------------------------------------------------------
+// p5-02d — Le logarithme décimal
+// ------------------------------------------------------------
+SKILLS.push({
+  id: 'p5-02d-logarithme',
+  phase: 5,
+  ordre: 2.3,
+  titre: 'Le logarithme décimal',
+  objectif: "Utiliser log pour retrouver un exposant : règles de calcul, résolution de qˣ = b et recherche d'un seuil.",
+  lecon: `<p class="lede">La fonction exponentielle répond à « combien vaut 10ˣ ? ». Le <mark>logarithme décimal</mark> répond à la question inverse : « à quelle puissance faut-il élever 10 pour obtenir b ? ». Il sert à retrouver un exposant, donc une durée.</p>
+<div class="formule"><p>Pour b &gt; 0 : log(b) est le nombre tel que 10^log(b) = b. Ex. : log(1 000) = 3, log(1) = 0, log(0,01) = −2.</p></div>
+<div class="formule"><p>log(a × b) = log a + log b &nbsp;·&nbsp; log(a ÷ b) = log a − log b &nbsp;·&nbsp; log(aⁿ) = n × log a</p></div>
+<div class="etapes">
+<p><strong>Résoudre qˣ = b :</strong> on prend le log des deux côtés : x × log q = log b, donc <mark>x = log b ÷ log q</mark>.</p>
+<p><strong>Un seuil :</strong> 1 000 € placés à 3 % par an. Quand le capital doublera-t-il ? 1,03ⁿ ≥ 2 donne n ≥ log 2 ÷ log 1,03 ≈ 23,45 : au bout de <mark>24 ans</mark>.</p>
+<p><strong>Attention :</strong> si 0 &lt; q &lt; 1, log q est négatif ; en divisant par lui, l'inégalité change de sens.</p>
+</div>
+<div class="box retenir"><p class="box-t">À retenir</p><p>log est défini pour b &gt; 0 et croissant. log(10ⁿ) = n. Il transforme les produits en sommes et fait « descendre » l'exposant : log(aⁿ) = n log a.</p></div>
+<div class="box astuce"><p class="box-t">Astuce</p><p>Pour un seuil en années entières, on arrondit toujours à l'entier supérieur : 23,45 ans ne suffisent pas, il faut 24 ans.</p></div>`,
+  gen(level, R){
+    if (level === 1){
+      var t = R.pick(['puiss10', 'puiss10', 'reciproque']);
+      if (t === 'puiss10'){
+        var n = R.pick([0, 1, 2, 3, 4, 6, -1, -2, -3]);
+        var b = n >= 0 ? (n === 0 ? '1' : '1' + '0'.repeat(n)) : '0,' + '0'.repeat(-n - 1) + '1';
+        return {
+          q: "Que vaut log(" + b.replace(/(\d)(?=(\d{3})+$)/g, '$1 ') + ") ?",
+          a: String(n), accept: null, choix: null,
+          expl: b + " = 10" + expS(n) + ", donc log(" + b + ") = " + sg(n) + "."
+        };
+      }
+      var k = R.pick([3, 7, 12, 25, 0.5]);
+      return {
+        q: "Que vaut 10^log(" + fr(k) + ") ?",
+        a: fr(k), accept: null, choix: null,
+        expl: "Par définition, log(" + fr(k) + ") est l'exposant qui donne " + fr(k) + " : 10^log(" + fr(k) + ") = " + fr(k) + "."
+      };
+    }
+    if (level === 2){
+      var t2 = R.pick(['somme', 'diff', 'puiss']);
+      if (t2 === 'somme'){
+        var c = R.pick([[2,50,2],[4,25,2],[20,5,2],[8,125,3],[25,40,3],[2,5,1]]);
+        return {
+          q: "Calcule log(" + c[0] + ") + log(" + c[1] + ") sans calculatrice.",
+          a: String(c[2]), accept: null, choix: null,
+          expl: "log a + log b = log(a × b) = log(" + (c[0] * c[1]) + ") = " + c[2] + "."
+        };
+      }
+      if (t2 === 'diff'){
+        var d = R.pick([[500,5,2],[300,3,2],[70,7,1],[4000,4,3],[2,200,-2]]);
+        return {
+          q: "Calcule log(" + d[0] + ") − log(" + d[1] + ") sans calculatrice.",
+          a: String(d[2]), accept: null, choix: null,
+          expl: "log a − log b = log(a ÷ b) = log(" + fr(d[0] / d[1]) + ") = " + sg(d[2]) + "."
+        };
+      }
+      var a = R.pick([2, 3, 5, '1,04']), n2 = R.int(3, 12);
+      var bon = n2 + " × log(" + a + ")";
+      return {
+        q: "À quoi est égal log(" + a + expS(n2) + ") ?",
+        a: bon, accept: null,
+        choix: [bon, "log(" + a + ") + " + n2, "log(" + n2 + " × " + a + ")", "(log " + a + ")" + expS(n2)],
+        expl: "log(aⁿ) = n × log a : l'exposant « descend » devant le log."
+      };
+    }
+    var t3 = R.pick(['equation', 'seuil', 'seuil']);
+    if (t3 === 'equation'){
+      var q = R.pick([1.05, 1.2, 2, 1.5, 0.8]), bb = R.pick([3, 5, 10, 1.5]);
+      if (q < 1) bb = R.pick([0.5, 0.2, 0.1]);
+      var x = r2(Math.log10(bb) / Math.log10(q));
+      return {
+        q: "Résous " + fr(q) + "ˣ = " + fr(bb) + ". (arrondi à 0,01)",
+        a: fr(x), accept: voisins(x, 0.01), choix: null,
+        expl: "x × log " + fr(q) + " = log " + fr(bb) + ", donc x = log " + fr(bb) + " ÷ log " + fr(q) + " ≈ " + fr(x) + "."
+      };
+    }
+    var hausse = R.pick([true, false]);
+    var tx = hausse ? R.pick([2, 3, 4, 5, 6]) : R.pick([10, 15, 20, 25]);
+    var qq = hausse ? 1 + tx / 100 : 1 - tx / 100;
+    var V0 = hausse ? R.pick([1000, 2000, 5000]) : R.pick([20000, 30000]);
+    var cible = hausse ? V0 * R.pick([1.5, 2, 3]) : V0 * R.pick([0.5, 0.25]);
+    var nn = 0, v = V0;
+    while (hausse ? v < cible - 1e-9 : v > cible + 1e-9){ v *= qq; nn++; }
+    var lim = Math.log10(cible / V0) / Math.log10(qq);
+    return {
+      q: (hausse ? mil(V0) + " € sont placés à " + tx + " % par an." : "Une voiture de " + mil(V0) + " € perd " + tx + " % de sa valeur par an.") +
+         "\nAu bout de combien d'années entières sa valeur " + (hausse ? "atteindra-t-elle au moins " : "sera-t-elle au plus de ") + mil(cible) + " € ?",
+      a: String(nn), accept: null, choix: null,
+      expl: mil(V0) + " × " + fr(qq) + "ⁿ " + (hausse ? "≥ " : "≤ ") + mil(cible) + " ⇔ " + fr(qq) + "ⁿ " + (hausse ? "≥ " : "≤ ") + fr(r4(cible / V0)) + " ⇔ n " + "≥" + " log " + fr(r4(cible / V0)) + " ÷ log " + fr(qq) + " ≈ " + fr(r2(lim)) + (hausse ? "" : " (log " + fr(qq) + " < 0 : l'inégalité change de sens)") + ". Il faut donc " + nn + " ans."
+    };
+  }
+});
+
+// ------------------------------------------------------------
 // p5-03 — Probabilités totales
 // ------------------------------------------------------------
 SKILLS.push({
