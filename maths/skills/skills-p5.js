@@ -326,7 +326,7 @@ SKILLS.push({
 });
 
 // ------------------------------------------------------------
-// p5-02b — Fonctions exponentielles (x ↦ qˣ)
+// p5-02b — Fonctions exponentielles (x ↦ k × aˣ, a > 0)
 // ------------------------------------------------------------
 function expS(n){ var m = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻'}; return String(n).split('').map(function(c){ return m[c] || c; }).join(''); }
 function r4(x){ return Math.round(x*10000)/10000; }
@@ -338,21 +338,49 @@ SKILLS.push({
   id: 'p5-02b-exponentielles',
   phase: 5,
   ordre: 2.1,
-  titre: 'Les fonctions exponentielles',
-  objectif: "Calculer avec qˣ, donner le sens de variation de x ↦ qˣ et l'utiliser pour un placement ou une dépréciation.",
-  lecon: `<p class="lede">Une suite géométrique u(n) = u(0) × qⁿ ne donne des valeurs que pour n entier (1 an, 2 ans…). La <mark>fonction exponentielle de base q</mark>, f(x) = qˣ (avec q &gt; 0), prolonge cette suite à tous les réels : elle donne aussi la valeur au bout de 2,5 ans.</p>
-<div class="formule"><p>q⁰ = 1 &nbsp;·&nbsp; qˣ × qʸ = qˣ⁺ʸ &nbsp;·&nbsp; qˣ ÷ qʸ = qˣ⁻ʸ &nbsp;·&nbsp; q⁻ˣ = 1 ÷ qˣ &nbsp;·&nbsp; (qˣ)ⁿ = qⁿˣ</p></div>
-<p>Ce sont les mêmes règles que pour les puissances entières : on ajoute les exposants quand on multiplie, on les soustrait quand on divise.</p>
+  titre: 'Les fonctions exponentielles k × aˣ',
+  objectif: "Connaître f(x) = k × aˣ avec a > 0, calculer avec les exposants, donner le sens de variation selon k et a, et l'utiliser pour un placement ou une dépréciation.",
+  lecon: `<p class="lede">Une suite géométrique u(n) = u(0) × qⁿ ne donne des valeurs que pour n entier (1 an, 2 ans…). La <mark>fonction exponentielle de base a</mark>, f(x) = aˣ, prolonge cette suite à tous les réels : elle donne aussi la valeur au bout de 2,5 ans.</p>
+<div class="formule"><p><strong>f(x) = k × aˣ</strong>, avec k un nombre réel et <strong>a strictement positif (a &gt; 0)</strong>.</p></div>
 <div class="etapes">
-<p><strong>Sens de variation :</strong> si q &gt; 1, x ↦ qˣ est croissante ; si 0 &lt; q &lt; 1, elle est décroissante ; si q = 1, elle est constante (et toujours strictement positive).</p>
-<p><strong>En contexte :</strong> une valeur qui évolue de t % par an vaut V(x) = V₀ × (1 + t)ˣ au bout de x années. Ex. : 1 000 € placés à 3 % par an valent 1 000 × 1,03²˒⁵ ≈ 1 076,70 € au bout de 2,5 ans.</p>
+<p><strong>Pourquoi a &gt; 0 ?</strong> Avec une base négative, aˣ n'a pas de sens pour tous les x : (−4)⁰˒⁵ serait la racine carrée de −4, qui n'existe pas. Avec a &gt; 0, aˣ existe pour tout x et est <strong>toujours strictement positif</strong>.</p>
+<p><strong>Ce que valent k et a :</strong> f(0) = k × a⁰ = k × 1 = k, donc k est la valeur de départ ; a est le coefficient multiplicateur à chaque fois que x augmente de 1.</p>
+</div>
+<p><strong>Règles de calcul</strong> (les mêmes que pour les puissances entières) :</p>
+<div class="formule"><p>a⁰ = 1 &nbsp;·&nbsp; aˣ × aʸ = aˣ⁺ʸ &nbsp;·&nbsp; aˣ ÷ aʸ = aˣ⁻ʸ &nbsp;·&nbsp; a⁻ˣ = 1 ÷ aˣ &nbsp;·&nbsp; (aˣ)ⁿ = aⁿˣ</p></div>
+<p><strong>Sens de variation de f(x) = k × aˣ :</strong></p>
+<table class="tbl"><thead><tr><th></th><th>a &gt; 1</th><th>0 &lt; a &lt; 1</th></tr></thead><tbody>
+<tr><th>k &gt; 0</th><td>croissante</td><td>décroissante</td></tr>
+<tr><th>k &lt; 0</th><td>décroissante</td><td>croissante</td></tr>
+</tbody></table>
+<p>Si a = 1, f est constante (f(x) = k). Un k négatif « retourne » le sens de variation de aˣ.</p>
+<div class="etapes">
+<p><strong>En contexte :</strong> une valeur qui évolue de t % par an vaut V(x) = V₀ × (1 + t)ˣ au bout de x années : k = V₀ et a = 1 + t. Ex. : 1 000 € placés à 3 % par an valent 1 000 × 1,03²˒⁵ ≈ 1 076,70 € au bout de 2,5 ans.</p>
 <p><strong>Lire le taux :</strong> V(x) = 5 000 × 0,92ˣ, c'est une baisse de 8 % par an (0,92 = 1 − 0,08).</p>
 </div>
-<div class="box retenir"><p class="box-t">À retenir</p><p>qˣ prolonge qⁿ à tous les réels. q &gt; 1 : croissante ; 0 &lt; q &lt; 1 : décroissante. Les exposants s'ajoutent dans un produit et se soustraient dans un quotient.</p></div>
+<div class="box retenir"><p class="box-t">À retenir</p><p>f(x) = k × aˣ avec a &gt; 0 ; aˣ est toujours strictement positif ; f(0) = k. Si k &gt; 0 : a &gt; 1 donne une fonction croissante, 0 &lt; a &lt; 1 une fonction décroissante ; si k &lt; 0, c'est l'inverse. Les exposants s'ajoutent dans un produit et se soustraient dans un quotient.</p></div>
 <div class="box astuce"><p class="box-t">Astuce calculatrice</p><p>Pour 1,03²˒⁵, tape 1.03 ^ 2.5 (touche « ^ » ou « xʸ »).</p></div>`,
   gen(level, R){
     if (level === 1){
-      var t = R.pick(['sens', 'produit', 'zero']);
+      var t = R.pick(['sens', 'produit', 'zero', 'base', 'positif']);
+      if (t === 'base'){
+        var bonb = 'a > 0';
+        return {
+          q: "Dans f(x) = k × aˣ, quelle condition doit vérifier la base a ?",
+          a: bonb, accept: null,
+          choix: [bonb, 'a < 0', 'a > 1', 'a ≠ 0'],
+          expl: "La base a doit être strictement positive : avec a < 0, aˣ n'existe pas pour tous les x (par exemple (−4)⁰˒⁵ = √(−4) n'existe pas)."
+        };
+      }
+      if (t === 'positif'){
+        var bp = R.pick(['2', '0,5', '1,3', '0,9']), xp = R.pick(['−3', '−1,5', '4', '0,5']);
+        return {
+          q: "Quel est le signe de " + bp + "^(" + xp + ") ?",
+          a: 'Strictement positif', accept: null,
+          choix: ['Strictement positif', 'Négatif', 'Nul', 'Ça dépend de x'],
+          expl: "Avec une base a > 0, aˣ est toujours strictement positif, même quand l'exposant est négatif (un exposant négatif donne un inverse, pas un nombre négatif)."
+        };
+      }
       if (t === 'sens'){
         var q = R.pick(['1,5', '2', '1,04', '0,8', '0,5', '0,97', '3', '0,25']);
         var qv = parseFloat(q.replace(',', '.'));
@@ -376,11 +404,32 @@ SKILLS.push({
       return {
         q: "Que vaut " + q0 + "⁰ ?",
         a: '1', accept: null, choix: null,
-        expl: "Pour tout q > 0, q⁰ = 1 : la courbe de x ↦ qˣ passe toujours par le point (0 ; 1)."
+        expl: "Pour tout a > 0, a⁰ = 1 : la courbe de x ↦ aˣ passe toujours par le point (0 ; 1)."
       };
     }
     if (level === 2){
-      var t2 = R.pick(['quotient', 'negatif', 'valeur', 'taux']);
+      var t2 = R.pick(['quotient', 'negatif', 'valeur', 'taux', 'ksens', 'ksens', 'kzero']);
+      if (t2 === 'ksens'){
+        var kk = R.pick([3, 5, 200, -2, -4, -100]), aa = R.pick(['1,5', '2', '1,08', '0,8', '0,5', '0,95']);
+        var av = parseFloat(aa.replace(',', '.'));
+        var crois = (kk > 0) === (av > 1);
+        var bonk = crois ? 'Croissante' : 'Décroissante';
+        return {
+          q: "Quel est le sens de variation de f(x) = " + (kk < 0 ? "−" + (-kk) : kk) + " × " + aa + "ˣ sur ℝ ?",
+          a: bonk, accept: null,
+          choix: ['Croissante', 'Décroissante', 'Constante', 'Croissante puis décroissante'],
+          expl: "k = " + (kk < 0 ? "−" + (-kk) : kk) + (kk > 0 ? " > 0" : " < 0") + " et a = " + aa + (av > 1 ? " > 1" : " est entre 0 et 1") + ". " + (kk > 0 ? "Avec k > 0, f a le même sens que aˣ" : "Avec k < 0, f a le sens inverse de aˣ") + " : elle est " + bonk.toLowerCase() + "."
+        };
+      }
+      if (t2 === 'kzero'){
+        var k0 = R.pick([150, 800, 2500, -6, 40]), a0 = R.pick(['1,2', '0,7', '3', '0,96']);
+        var ks = k0 < 0 ? "−" + (-k0) : mil(k0);
+        return {
+          q: "f(x) = " + ks + " × " + a0 + "ˣ. Que vaut f(0) ?",
+          a: (k0 < 0 ? "-" + (-k0) : String(k0)), accept: (k0 < 0 ? ["−" + (-k0)] : [mil(k0)]), choix: null,
+          expl: "f(0) = " + ks + " × " + a0 + "⁰ = " + ks + " × 1 = " + ks + " : f(0) est toujours égal à k, la valeur de départ."
+        };
+      }
       if (t2 === 'quotient'){
         var b2 = R.pick([2, 3, 1.2]), x2 = R.int(6, 12), y2 = R.int(2, 5);
         return {
@@ -396,7 +445,7 @@ SKILLS.push({
           q: "À quoi est égal " + b3 + expS(-n3) + " ?",
           a: bon3, accept: null,
           choix: [bon3, "−" + b3 + expS(n3), "−" + (b3 * n3), b3 + " ÷ " + n3],
-          expl: "Un exposant négatif donne l'inverse : q⁻ⁿ = 1 ÷ qⁿ, donc " + b3 + expS(-n3) + " = 1 ÷ " + b3 + expS(n3) + " = 1 ÷ " + Math.pow(b3, n3) + "."
+          expl: "Un exposant négatif donne l'inverse : a⁻ⁿ = 1 ÷ aⁿ, donc " + b3 + expS(-n3) + " = 1 ÷ " + b3 + expS(n3) + " = 1 ÷ " + Math.pow(b3, n3) + "."
         };
       }
       if (t2 === 'valeur'){
