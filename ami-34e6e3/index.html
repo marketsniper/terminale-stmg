@@ -920,6 +920,7 @@ ul.cj-paquet{list-style:none; margin:.4rem 0; padding:0; font-family:ui-monospac
 .ds-fmt span{font-size:.75rem;color:var(--muted)}
 .ds-fmt.active{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
 @media (max-width:520px){.ds-formats{grid-template-columns:1fr}}
+.ds-niv-conseil{font-size:.8rem;color:var(--muted);margin:.35rem 0 .2rem}
 .ds-go{margin-top:1rem;width:100%}
 .ds-msg{font-size:.85rem;color:var(--muted);min-height:1.2em;margin:.5rem 0 0}
 .ds-wait{text-align:center;padding:2rem 1rem}
@@ -12034,12 +12035,37 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
       ds:    { nom: 'DS', duree: 60, total: 20, appels: 2, desc: '1 h · /20 · notions + étude de cas' },
       blanc: { nom: 'DS blanc', duree: 120, total: 20, appels: 2, desc: '2 h · /20 · conditions réelles' }
     };
+    // Niveau de difficulté : l'élève choisit, l'app conseille d'après ses derniers DS de la matière.
+    const NIVEAUX = {
+      base:   { nom: 'Pour démarrer', desc: 'questions de cours directes, guidées',
+        consigne: 'NIVEAU « POUR DÉMARRER » (élève qui reprend les bases) : questions DIRECTES et courtes, une seule difficulté par question, vocabulaire simple, aucune question piège ni à tiroirs. Chaque énoncé dit exactement ce qu’il faut faire (« Définissez… », « Citez… », « Calculez … avec la formule du cours »). Les cas sont courts (6 à 10 lignes) et chaque question nomme la notion du cours à utiliser. Les calculs se font en une ou deux étapes avec des nombres ronds. On n’interroge que l’ESSENTIEL : ce qui figure dans « À retenir » et dans les définitions.' },
+      classe: { nom: 'Comme en classe', desc: 'le niveau d’un DS ordinaire',
+        consigne: 'NIVEAU « COMME EN CLASSE » : le niveau d’un DS ordinaire de terminale STMG, sur l’essentiel du cours, sans détail secondaire. Questions claires et progressives, de la plus facile à la plus difficile ; chaque question ne demande qu’une chose à la fois.' },
+      bac:    { nom: 'Niveau bac', desc: 'exigeant, conditions d’examen',
+        consigne: 'NIVEAU « BAC » : niveau de l’épreuve du bac STMG ; des questions qui demandent de relier plusieurs notions et de justifier, toujours sur des points expliqués dans le cours.' }
+    };
+    const ORDRE_NIV = ['base', 'classe', 'bac'];
+    // Conseil : premier DS de la matière → « Pour démarrer » ; ensuite on monte d'un cran à 14/20 et plus, on redescend sous 8/20.
+    function niveauConseille(sec){
+      const h = load(K_HIST, []).filter(function(x){ return x.sec === sec && typeof x.note20 === 'number'; });
+      if (!h.length) return 'base';
+      const dernier = h[0], i = Math.max(0, ORDRE_NIV.indexOf(dernier.niveau || 'classe'));
+      if (dernier.note20 >= 14) return ORDRE_NIV[Math.min(2, i + 1)];
+      if (dernier.note20 < 8) return ORDRE_NIV[Math.max(0, i - 1)];
+      return ORDRE_NIV[i];
+    }
     const CONTEXTES = ['une boulangerie artisanale', 'un club de football amateur', 'une start-up d’applications mobiles', 'un magasin de vélos', 'une association étudiante', 'un salon de coiffure', 'un restaurant familial', 'une boutique en ligne de vêtements', 'une auto-école', 'un festival de musique', 'une salle de sport', 'une entreprise de livraison à vélo', 'un garage automobile', 'une librairie indépendante', 'une colocation entre étudiants', 'un camping en bord de mer', 'une ferme en vente directe', 'un studio de jeux vidéo'];
     const PRENOMS = ['Inès', 'Malo', 'Sacha', 'Lila', 'Noé', 'Maya', 'Enzo', 'Jade', 'Tom', 'Zoé', 'Rayan', 'Clara', 'Hugo', 'Nina', 'Adam', 'Léna', 'Théo', 'Sofia'];
 
     // Profil d'épreuve par matière : ce que le prof attend vraiment.
-    function profil(sec){
-      const N = 'PARTIE NOTIONS : pour chaque notion imposée, l’élève doit donner la définition précise, un exemple, puis la distinction avec la notion voisine. Barème par notion : « Définition précise » 0,5 · « Exemple » 0,5 · « Distinction avec la notion voisine » 0,5.';
+    function profil(sec, niv){
+      // Droit et économie : la prof note toujours définition + exemple + distinction ; l'énoncé NOMME la notion voisine pour que l'élève n'ait pas à la deviner.
+      const troisTemps = /^(droit|eco)/.test(sec);
+      const N = niv === 'base'
+        ? (troisTemps
+          ? 'PARTIE NOTIONS : pour chaque notion imposée, l’énoncé demande « Définissez … et donnez un exemple. Ne la confondez pas avec … » en NOMMANT la notion voisine. Barème par notion : « Définition avec les mots-clés du cours » 0,75 · « Exemple » 0,5 · « Distinction avec la notion voisine nommée » 0,25.'
+          : 'PARTIE NOTIONS : pour chaque notion imposée, l’énoncé demande « Définissez … et donnez un exemple ». Barème par notion : « Définition avec les mots-clés du cours » 1 · « Exemple » 0,5.')
+        : 'PARTIE NOTIONS : pour chaque notion imposée, l’élève donne la définition précise, un exemple, puis la distinction avec la notion voisine, que l’énoncé NOMME (« Ne la confondez pas avec … »). Barème par notion : « Définition précise » 0,5 · « Exemple » 0,5 · « Distinction avec la notion voisine » 0,5.';
       if (/^droit/.test(sec)) return { nom: 'droit', p1: N,
         p2: 'PARTIE CAS : cas pratiques à résoudre en SYLLOGISME. Chaque énoncé raconte une situation concrète (prénoms, montants, dates) qui déclenche UNE règle du cours, avec toutes les informations nécessaires pour vérifier ses conditions. Barème de chaque question : « Majeure : la règle de droit, en général » · « Mineure : qualification des faits, condition par condition » · « Conclusion ». Le corrigé est rédigé « En droit… Or, en l’espèce… Donc… ». N’invente JAMAIS un numéro d’article : ne cite que ceux du cours.',
         p3: 'ANALYSE D’ARRÊT : rédige un arrêt FICTIF de la Cour de cassation de 6 à 9 lignes, dans le style réel (« Attendu, selon l’arrêt attaqué… », « fait grief à l’arrêt… alors que… », puis « Mais attendu que… rejette » OU « Vu l’article… casse et annule… renvoie »), sur une règle du cours ; place-le dans "documents" avec le titre « Arrêt fictif d’entraînement ». Questions : rejet ou cassation et indices · demandeur au pourvoi · procédure (confirmatif/infirmatif) · problème de droit · solution et motifs.' };
@@ -12071,13 +12097,27 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
       if (out.length < 4) f.querySelectorAll('dl.defs dt').forEach(function(dt){ const v = dt.textContent.trim(); if (v && out.indexOf(v) === -1) out.push(v); });
       return out.filter(function(v){ return v.length > 2 && v.length < 70; });
     }
-    function condense(f, max){
-      const blocs = [];
-      f.querySelectorAll('table').forEach(function(t){ const th = t.querySelector('th'); if (th && /^notion/i.test(th.textContent.trim())) t.querySelectorAll('tbody tr').forEach(function(tr){ blocs.push(Array.prototype.map.call(tr.children, function(c){ return c.textContent.trim(); }).join(' | ')); }); });
-      f.querySelectorAll('.box.retenir p:not(.box-t)').forEach(function(p){ blocs.push('À RETENIR : ' + p.textContent.trim()); });
-      let txt = blocs.join('\n');
-      //  sans le bloc « Tes cours en classe » posé par le module cours du jour : le sujet ne vient que de la fiche
-      if (txt.length < max){ const corps = f.querySelector('.f-body') || f, cj = corps.querySelector('.cj-fiche'); let tout = corps.textContent; if (cj) tout = tout.replace(cj.textContent, ' '); tout = tout.replace(/\s+/g, ' '); txt = (txt + '\nCOURS : ' + tout).slice(0, max); }
+    const plat = function(t){ return String(t || '').replace(/\s+/g, ' ').trim(); };
+    function aRetenir(f){ return Array.prototype.map.call(f.querySelectorAll('.box.retenir li, .box.retenir p:not(.box-t)'), function(x){ return plat(x.textContent); }).filter(Boolean); }
+    function definitions(f){
+      const out = {};
+      f.querySelectorAll('dl.defs dt').forEach(function(dt){ const dd = dt.nextElementSibling; if (dd && dd.tagName === 'DD') out[plat(dt.textContent)] = plat(dd.textContent); });
+      f.querySelectorAll('table').forEach(function(t){ const th = t.querySelector('th'); if (th && /^notion/i.test(th.textContent.trim())) t.querySelectorAll('tbody tr').forEach(function(tr){ const c = tr.children; if (c.length > 1 && !out[plat(c[0].textContent)]) out[plat(c[0].textContent)] = Array.prototype.slice.call(c, 1).map(function(x){ return plat(x.textContent); }).join(' | '); }); });
+      return out;
+    }
+    // Ce que l'IA reçoit d'une fiche, dans l'ordre d'importance : À retenir, définitions de la prof, puis le cours lui-même
+    // (sans les encadrés vidéo / provenance / pièges ni le bloc « Tes cours en classe »).
+    function condense(f, max, complet){
+      const r = aRetenir(f);
+      let txt = r.length ? 'À RETENIR :\n' + r.join('\n') : '';
+      if (complet){
+        const d = definitions(f), cles = Object.keys(d);
+        if (cles.length) txt += '\nDÉFINITIONS DU COURS :\n' + cles.map(function(k){ return k + ' : ' + d[k]; }).join('\n');
+        const corps = (f.querySelector('.f-body') || f).cloneNode(true);
+        corps.querySelectorAll('dl.defs, .box, .cj-fiche, .f-lede').forEach(function(x){ x.remove(); });
+        corps.querySelectorAll('h4').forEach(function(h){ h.textContent = '\n## ' + h.textContent + '\n'; });
+        if (txt.length < max) txt += '\nCOURS :\n' + corps.textContent.replace(/[ \t\r]+/g, ' ').replace(/\n\s*\n+/g, '\n');
+      }
       return txt.slice(0, max);
     }
     // taux d'échec par fiche d'après les exercices déjà faits (0 = rien vu → neutre 0,5)
@@ -12161,24 +12201,34 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
     }
 
     async function generer(cfg, etat, jeton){
-      const F = FORMATS[cfg.format], pr = profil(cfg.sec), fs = cfg.fiches.map(function(id){ return document.getElementById(id); }).filter(Boolean);
+      const niv = NIVEAUX[cfg.niveau] ? cfg.niveau : 'classe', NV = NIVEAUX[niv];
+      const F = FORMATS[cfg.format], pr = profil(cfg.sec, niv), fs = cfg.fiches.map(function(id){ return document.getElementById(id); }).filter(Boolean);
       if (!fs.length) throw new Error('AUCUNE_FICHE');
       const tagsVus = (load(K_TAGS, {})[cfg.sec] || []).map(function(t){ return t.toLowerCase(); });
       // 1) l'app choisit les notions : jamais celles des derniers DS tant qu'il en reste, chapitres faibles plus probables
-      const toutes = []; fs.forEach(function(f){ notionsDe(f).forEach(function(n){ toutes.push({ n: n, f: f.id }); }); });
+      const toutes = []; fs.forEach(function(f){ const ret = aRetenir(f).join(' ').toLowerCase(); notionsDe(f).forEach(function(n){ toutes.push({ n: n, f: f.id, essentiel: ret.indexOf(n.toLowerCase()) !== -1 }); }); });
       const neuves = toutes.filter(function(x){ return tagsVus.indexOf(x.n.toLowerCase()) === -1; });
-      const nbNotions = cfg.format === 'court' ? 3 : 6;
+      const nbNotions = cfg.format === 'court' ? 3 : niv === 'base' ? 4 : niv === 'classe' ? 5 : 6;
       const base = neuves.length >= nbNotions ? neuves : toutes;
-      const imposees = tirer(base, nbNotions, function(x){ return cfg.faibles ? 0.4 + faiblesse(x.f) : 1; }).map(function(x){ return x.n; });
-      const parFiche = Math.max(700, Math.floor(6000 / fs.length));   // ≈ 1 800 jetons de cours : l'appel entier tient sous la limite gratuite
-      const cours = fs.map(function(f){ const m = FICHE_META[f.id] || {}; return '### ' + (m.num || '') + ' ' + (m.title || f.id) + '\n' + condense(f, parFiche); }).join('\n\n');
+      // les notions de « À retenir » d'abord (3 fois plus probables, 6 fois au niveau « Pour démarrer »), puis les chapitres faibles
+      const tirees = tirer(base, nbNotions, function(x){ return (cfg.faibles ? 0.4 + faiblesse(x.f) : 1) * (x.essentiel ? (niv === 'base' ? 6 : 3) : 1); });
+      const imposees = tirees.map(function(x){ return x.n; });
+      // Cours envoyé : À retenir de chaque chapitre coché + le cours complet (définitions, parties) de 1 ou 2 chapitres
+      // seulement, ceux des notions tirées : le sujet colle au cours au lieu de survoler 10 fiches en 600 caractères chacune.
+      const cibles = []; tirees.forEach(function(x){ if (cibles.indexOf(x.f) === -1) cibles.push(x.f); });
+      const detail = (cibles.length ? cibles : fs.map(function(f){ return f.id; })).slice(0, cfg.format === 'court' ? 1 : 2);
+      const BUDGET = 6000, resume = 450;   // ≈ 1 800 jetons de cours : chaque passe reste sous la limite gratuite par minute
+      const parDetail = Math.max(1800, Math.floor((BUDGET - resume * (fs.length - detail.length)) / detail.length));
+      const cours = fs.map(function(f){ const m = FICHE_META[f.id] || {}, plein = detail.indexOf(f.id) !== -1; return '### ' + (m.num || '') + ' ' + (m.title || f.id) + '\n' + condense(f, plein ? parDetail : resume, plein); }).join('\n\n');
+      const defsImp = tirees.map(function(x){ const d = definitions(document.getElementById(x.f)); return d[x.n] ? x.n + ' : ' + d[x.n] : ''; }).filter(Boolean);
       const decor = tirer(CONTEXTES, 2).join(' ; ') + ' — prénoms à utiliser : ' + tirer(PRENOMS, 4).join(', ');
       const sys = 'Tu es professeur de ' + pr.nom + ' en lycée (série STMG, France) et tu rédiges un devoir surveillé. Tu réponds UNIQUEMENT par un objet JSON valide, sans texte autour ni balise de code. ' +
-        'RÈGLES : le COURS fourni est ta SEULE source — aucune notion, date, chiffre, article de loi ou jurisprudence qui n’y figure pas. Niveau et formulations d’un vrai DS de lycée. Français, nombres à la française, jamais de LaTeX. ' +
+        'RÈGLES : le COURS fourni est ta SEULE source — aucune notion, date, chiffre, article de loi ou jurisprudence qui n’y figure pas, et AUCUNE question sur un point que le cours n’explique pas. C’est la prof de l’élève qui a écrit ces définitions : le corrigé les reprend MOT POUR MOT et emploie le vocabulaire du cours. ' + NV.consigne + ' Français, nombres à la française, jamais de LaTeX. ' +
         'Chaque question a un "tag" (2 à 5 mots : la notion ou la situation évaluée), des "points", un "bareme" (liste de critères dont la somme = points) et un "corrige" complet, rédigé comme la copie attendue.';
       const forme = 'Format STRICT : {"titre":"…","parties":[{"titre":"…","duree_min":30,"consigne":"…","documents":[{"titre":"…","texte":"…"}],"questions":[{"tag":"…","enonce":"…","points":1.5,"bareme":[{"critere":"…","points":0.5}],"corrige":"…"}]}]}';
-      const eviter = tagsVus.length ? '\nDÉJÀ TOMBÉ dans ses DS précédents (interdit de reprendre ces notions ou ces situations, change d’angle) : ' + tagsVus.slice(-30).join(' · ') : '';
-      const commun = 'Matière : ' + secTitre(cfg.sec) + '. Chapitres : ' + fs.map(function(f){ return (FICHE_META[f.id] || {}).num || f.id; }).join(', ') + '.\nDécor imposé pour varier les sujets : ' + decor + '.' + eviter + '\n\nCOURS :\n' + cours + '\n\n' + forme;
+      const eviter = tagsVus.length ? '\nDÉJÀ TOMBÉ dans ses DS précédents (' + (niv === 'base' ? 'évite de reposer exactement les mêmes situations' : 'interdit de reprendre ces notions ou ces situations, change d’angle') + ') : ' + tagsVus.slice(-30).join(' · ') : '';
+      const commun = 'Matière : ' + secTitre(cfg.sec) + '. Chapitres : ' + fs.map(function(f){ return (FICHE_META[f.id] || {}).num || f.id; }).join(', ') + '. Niveau : ' + NV.nom + '.\nDécor imposé pour varier les sujets : ' + decor + '.' + eviter +
+        (defsImp.length ? '\n\nDÉFINITIONS DE LA PROF POUR LES NOTIONS IMPOSÉES (à recopier telles quelles dans le corrigé) :\n' + defsImp.join('\n') : '') + '\n\nCOURS :\n' + cours + '\n\n' + forme;
       const parties = []; let titre = '';
       const attente = function(sec){ etat('Quota gratuit de l’IA atteint : je reprends dans ' + sec + ' s…'); };
       if (cfg.format === 'court'){
@@ -12207,9 +12257,15 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
         }
       }
       if (!parties.length || parties.reduce(function(a, p){ return a + p.questions.length; }, 0) < 2) throw new Error('SUJET_VIDE');
+      // Garde-fou : pour chaque notion imposée, le corrigé commence par la définition exacte de la fiche si l'IA l'a reformulée.
+      tirees.forEach(function(x){
+        const d = definitions(document.getElementById(x.f))[x.n]; if (!d) return;
+        const cle = x.n.toLowerCase(), q = parties[0].questions.filter(function(q){ return (q.tag + ' ' + q.enonce).toLowerCase().indexOf(cle) !== -1; })[0];
+        if (q && q.corrige.toLowerCase().indexOf(d.slice(0, 40).toLowerCase()) === -1) q.corrige = 'Définition du cours : ' + d + '\n' + q.corrige;
+      });
       let n = 0; parties.forEach(function(p){ p.questions.forEach(function(q){ n++; q.id = 'q' + n; }); });
       const total = parties.reduce(function(a, p){ return a + p.questions.reduce(function(x, q){ return x + q.points; }, 0); }, 0);
-      return { id: 'ds' + Date.now(), date: new Date().toISOString(), sec: cfg.sec, fiches: cfg.fiches, format: cfg.format, duree: F.duree,
+      return { id: 'ds' + Date.now(), date: new Date().toISOString(), sec: cfg.sec, fiches: cfg.fiches, format: cfg.format, niveau: niv, duree: F.duree,
         titre: String(titre || (F.nom + ' — ' + secTitre(cfg.sec))).slice(0, 140), total: Math.round(total * 4) / 4, parties: parties };
     }
 
@@ -12227,7 +12283,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
     function accueil(){
       clearInterval(tick); root.textContent = '';
       const head = el('div', 'ds-head'); head.appendChild(el('h2', null, '📝 DS et DS blancs'));
-      head.appendChild(el('p', 'ds-lede', 'Un sujet différent à chaque fois, écrit à partir de TES fiches, au format de l’épreuve, avec le barème et le corrigé. L’app choisit les notions (jamais celles de tes derniers DS, et plus souvent tes chapitres faibles) ; l’IA rédige.'));
+      head.appendChild(el('p', 'ds-lede', 'Un sujet différent à chaque fois, écrit à partir de TES fiches, au format de l’épreuve, avec le barème et le corrigé. L’app choisit les notions (d’abord l’essentiel de « À retenir », plus souvent tes chapitres faibles) et donne à l’IA le cours complet des chapitres interrogés ; le corrigé reprend les définitions de ta prof. Commence « Pour démarrer » : le niveau monte avec tes notes.'));
       // Article 50 du règlement européen sur l'IA + précaution de fond : une note générée est un entraînement,
       // jamais une évaluation. C'est aussi ce qu'exigent les conditions d'usage des fournisseurs d'IA.
       head.appendChild(el('p', 'ds-ia', '🤖 Les sujets et les corrigés sont produits par une intelligence artificielle. C’est un entraînement : la note t’indique où tu en es, elle ne vaut pas une correction de professeur, et l’IA peut se tromper.'));
@@ -12273,12 +12329,23 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
       Object.keys(FORMATS).forEach(function(k){ const b = btn('', 'ds-fmt' + (k === fmt ? ' active' : ''), function(){ fmt = k; boxFmt.querySelectorAll('.ds-fmt').forEach(function(x){ x.classList.toggle('active', x === b); }); });
         b.appendChild(el('strong', null, FORMATS[k].nom)); b.appendChild(el('span', null, FORMATS[k].desc)); boxFmt.appendChild(b); });
       form.appendChild(boxFmt);
+      form.appendChild(el('label', 'ds-lab', 'Niveau'));
+      const boxNiv = el('div', 'ds-formats ds-niveaux'), conseil = el('p', 'ds-niv-conseil');
+      let niv = 'base';
+      function majNiv(){ niv = niveauConseille(selSec.value);
+        boxNiv.querySelectorAll('.ds-fmt').forEach(function(x){ x.classList.toggle('active', x.dataset.niv === niv); });
+        const h = load(K_HIST, []).filter(function(x){ return x.sec === selSec.value && typeof x.note20 === 'number'; });
+        conseil.textContent = 'Conseillé : « ' + NIVEAUX[niv].nom + ' » ' + (h.length ? '(ton dernier DS dans cette matière : ' + fmtPts(h[0].note20) + '/20).' : '(premier DS dans cette matière : on commence par l’essentiel).') + ' Tu montes d’un cran à 14/20.'; }
+      Object.keys(NIVEAUX).forEach(function(k){ const b = btn('', 'ds-fmt', function(){ niv = k; boxNiv.querySelectorAll('.ds-fmt').forEach(function(x){ x.classList.toggle('active', x === b); }); });
+        b.dataset.niv = k; b.appendChild(el('strong', null, NIVEAUX[k].nom)); b.appendChild(el('span', null, NIVEAUX[k].desc)); boxNiv.appendChild(b); });
+      form.appendChild(boxNiv); form.appendChild(conseil);
+      selSec.addEventListener('change', majNiv); majNiv();
       const lw = el('label', 'ds-chk'), cw = el('input'); cw.type = 'checkbox'; cw.checked = true; lw.appendChild(cw); lw.appendChild(el('span', null, 'Insister sur mes points faibles (d’après mes exercices)')); form.appendChild(lw);
       const go = btn('Générer mon DS', 'ok ds-go', function(){
         const ids = Array.prototype.map.call(boxF.querySelectorAll('input:checked'), function(c){ return c.value; });
         if (!ids.length){ msg.textContent = 'Coche au moins un chapitre.'; return; }
         if (!iaDisponible()){ msg.textContent = 'Configure d’abord la clé IA (bouton ci-dessus).'; return; }
-        lancer({ sec: selSec.value, fiches: ids, format: fmt, faibles: cw.checked });
+        lancer({ sec: selSec.value, fiches: ids, format: fmt, niveau: niv, faibles: cw.checked });
       });
       const msg = el('p', 'ds-msg'); form.appendChild(go); form.appendChild(msg); root.appendChild(form);
 
@@ -12288,9 +12355,9 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
         const moy = hist.filter(function(x){ return typeof x.note20 === 'number'; }); if (moy.length) h.appendChild(el('p', 'ds-lede', moy.length + ' DS notés · moyenne ' + fmtPts(moy.reduce(function(a, x){ return a + x.note20; }, 0) / moy.length) + '/20'));
         const ul = el('ul', 'ds-hist'); hist.slice(0, 12).forEach(function(x){ const li = el('li');
           const d = new Date(x.date); li.appendChild(el('span', 'ds-h-note', typeof x.note20 === 'number' ? fmtPts(x.note20) + '/20' : '—'));
-          const m = el('div', 'ds-h-main'); m.appendChild(el('strong', null, x.titre)); m.appendChild(el('span', null, secTitre(x.sec) + ' · ' + FORMATS[x.format].nom + ' · ' + d.getDate() + '/' + (d.getMonth() + 1) + (x.faible ? ' · à retravailler : ' + x.faible : ''))); li.appendChild(m);
+          const m = el('div', 'ds-h-main'); m.appendChild(el('strong', null, x.titre)); m.appendChild(el('span', null, secTitre(x.sec) + ' · ' + FORMATS[x.format].nom + (x.niveau && NIVEAUX[x.niveau] ? ' · ' + NIVEAUX[x.niveau].nom : '') + ' · ' + d.getDate() + '/' + (d.getMonth() + 1) + (x.faible ? ' · à retravailler : ' + x.faible : ''))); li.appendChild(m);
           li.appendChild(btn('Revoir', 'ds-mini', function(){ cur = { ds: x.ds, phase: 'corrige', checks: x.checks || {}, answers: {}, elapsed: x.temps || 0, runningSince: null, archive: true }; correction(); }));
-          li.appendChild(btn('Un autre', 'ds-mini', function(){ lancer({ sec: x.sec, fiches: x.fiches, format: x.format, faibles: true }); }));
+          li.appendChild(btn('Un autre', 'ds-mini', function(){ lancer({ sec: x.sec, fiches: x.fiches, format: x.format, niveau: niveauConseille(x.sec), faibles: true }); }));
           const sup = btn('✕', 'ds-sup', function(){
             const quand = d.getDate() + '/' + (d.getMonth() + 1);
             if (!confirm('Supprimer « ' + x.titre + ' » du ' + quand + ' ?\n\nLe sujet, ta copie et la note disparaissent. Ta moyenne est recalculée. C’est définitif.')) return;
@@ -12312,6 +12379,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
 
     async function lancer(cfg){
       if (!iaDisponible()){ accueil(); return; }
+      if (!NIVEAUX[cfg.niveau]) cfg.niveau = niveauConseille(cfg.sec);
       save('stmg-ds-last', { sec: cfg.sec, format: cfg.format });
       clearInterval(tick); root.textContent = '';
       if (enVol) enVol.demandee = true;              // un lancement encore en vol est abandonné
@@ -12469,7 +12537,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
             qd.appendChild(bar);
             if (cur.answers[q.id] && !cur.archive){ const out = el('p', 'ds-ia-out'); const bIa = btn('🤖 Faire corriger ma réponse par l’IA', 'ds-mini', async function(){
                 bIa.disabled = true; out.textContent = 'Correction en cours…';
-                try { const r = await iaJson('Tu corriges la copie d’un lycéen de STMG avec bienveillance et exigence. Tu réponds UNIQUEMENT en JSON : {"criteres":[true,false,…],"commentaire":"2 à 4 phrases : ce qui est acquis, ce qui manque, comment le dire"} — un booléen par critère du barème, dans l’ordre, true seulement si le critère est réellement satisfait.',
+                try { const r = await iaJson('Tu corriges la copie d’un lycéen de STMG comme un professeur juste et bienveillant. Un critère est satisfait (true) si l’idée attendue est présente et juste, même dite avec d’autres mots ou avec des fautes d’orthographe ; il ne l’est pas (false) si l’idée manque ou est fausse. N’exige jamais plus que le corrigé de référence. Tu réponds UNIQUEMENT en JSON : {"criteres":[true,false,…],"commentaire":"2 à 4 phrases simples, en tutoyant : ce qui est acquis, ce qui manque, la phrase exacte à écrire la prochaine fois"} — un booléen par critère du barème, dans l’ordre.',
                     'QUESTION : ' + q.enonce + '\nBARÈME : ' + q.bareme.map(function(b, i){ return (i + 1) + ') ' + b.critere + ' (' + b.points + ')'; }).join(' ; ') + '\nCORRIGÉ DE RÉFÉRENCE : ' + q.corrige + '\nRÉPONSE DE L’ÉLÈVE : ' + cur.answers[q.id], 900);
                   (Array.isArray(r.criteres) ? r.criteres : []).slice(0, q.bareme.length).forEach(function(v, bi){ cur.checks[q.id + '/' + bi] = v === true; });
                   saveCur(); bar.querySelectorAll('input').forEach(function(cb, bi){ cb.checked = !!cur.checks[q.id + '/' + bi]; }); majNote();
@@ -12538,7 +12606,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-10-ececac87","date
       if (cur.archive) a.appendChild(btn('Retour', 'ok', function(){ cur = load(K_CUR, null); accueil(); }));
       else {
         a.appendChild(btn('Enregistrer ma note', 'ok', function(){ const r = majNote(); const hist = load(K_HIST, []);
-          hist.unshift({ id: ds.id, date: ds.date, titre: ds.titre, sec: ds.sec, fiches: ds.fiches, format: ds.format, note20: r.n20, faible: r.pire, temps: Math.round(cur.elapsed), checks: cur.checks, ds: ds });
+          hist.unshift({ id: ds.id, date: ds.date, titre: ds.titre, sec: ds.sec, fiches: ds.fiches, format: ds.format, niveau: ds.niveau, note20: r.n20, faible: r.pire, temps: Math.round(cur.elapsed), checks: cur.checks, ds: ds });
           let h = hist.slice(0, 25); try { localStorage.setItem(K_HIST, JSON.stringify(h)); } catch(e){ h = h.slice(0, 8); save(K_HIST, h); }
           cur = null; saveCur(); snd.good(); accueil(); window.scrollTo(0, 0); }));
         a.appendChild(btn('Revoir le sujet', null, function(){ if (confirm('Revenir au sujet ? (le chrono reste arrêté)')) epreuve(); }));
