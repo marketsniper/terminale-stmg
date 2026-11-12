@@ -491,7 +491,7 @@ button:active{transform:translateY(1px) scale(.985)}
    Le bouton de la fiche reste visible en mode « Plan d'abord » (règle déclarée après celle qui masque le corps).
    Couleurs : jetons du thème ; boutons pleins = couleur de la matière assombrie (texte blanc ≥ 4,5:1 pour toutes les
    matières) ; l'orange « à moitié / temps écoulé » a sa variante sombre, comme le chrono des DS. Cibles ≥ 44 px. */
-.seance-fiche [hidden], .seance-panneau [hidden], .seance-panneau[hidden], .seance-pastille[hidden], #seance-jour[hidden], #seance-jour [hidden], #rappel-edt[hidden]{display:none !important}
+.seance-fiche [hidden], .seance-panneau [hidden], .seance-panneau[hidden], .seance-pastille[hidden], #seance-jour[hidden], #seance-jour [hidden]{display:none !important}
 .seance-fiche{display:flex; flex-wrap:wrap; align-items:center; gap:.5rem .7rem; margin:.9rem 0 0}
 .fiche.plan-first .f-body > .seance-fiche{display:flex}
 .seance-btn, .seance-ret{min-height:44px; padding:.5rem 1rem; font-size:.9rem; font-weight:650; border-radius:8px; text-align:left}
@@ -527,22 +527,22 @@ button:active{transform:translateY(1px) scale(.985)}
 /* ===== la carte « Rappel actif du jour » : plan piloté par les échéances (12/11/2026) =====
    --ra : l'indigo de la carte, toujours mêlé à l'encre (lisible en clair comme en sombre). Les tuiles prennent la
    couleur de leur matière (--acc) ; le bouton plein reprend la règle de .seance-btn (blanc sur matière assombrie). */
-#rappel-edt.ra{--ra:color-mix(in srgb, #5B4BD6 62%, var(--ink)); border-top:0; border-radius:14px}
-#rappel-edt .ra-tete{display:flex; align-items:center; gap:.9rem; padding:1rem 1rem .9rem;
+#seance-jour.ra{--ra:color-mix(in srgb, #5B4BD6 62%, var(--ink)); border-top:0; border-radius:14px}
+#seance-jour .ra-tete{display:flex; align-items:center; gap:.9rem; padding:1rem 1rem .9rem;
   background:linear-gradient(135deg, color-mix(in srgb, #5B4BD6 15%, var(--card)), color-mix(in srgb, #2C7FA8 9%, var(--card)) 70%, var(--card)); border-bottom:1px solid var(--line)}
-#rappel-edt .ra-tx{flex:1 1 auto; min-width:0}
-#rappel-edt h2{font-size:1.1rem; letter-spacing:-.01em}
-#rappel-edt .ra-sous{margin:.2rem 0 0; font-size:.8rem; line-height:1.35; color:var(--muted)}
-#rappel-edt .ra-sous::first-letter{text-transform:uppercase}
+#seance-jour .ra-tx{flex:1 1 auto; min-width:0}
+#seance-jour .ra-tete h2{font-size:1.1rem; letter-spacing:-.01em}
+#seance-jour .ra-sous{margin:.2rem 0 0; font-size:.8rem; line-height:1.35; color:var(--muted)}
+#seance-jour .ra-sous::first-letter{text-transform:uppercase}
 .ra-anneau{flex:none; width:64px; height:64px; border-radius:50%; display:grid; place-items:center;
   background:conic-gradient(var(--ra) calc(var(--p) * 1%), color-mix(in srgb, var(--ink) 13%, transparent) 0)}
 .ra-anneau.fini{background:color-mix(in srgb, var(--ok) 80%, var(--ink))}
 .ra-anneau > span{width:50px; height:50px; border-radius:50%; background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05}
 .ra-anneau b{font-size:.98rem; font-weight:750; font-variant-numeric:tabular-nums}
 .ra-anneau small{font-size:.62rem; font-weight:600; color:var(--muted)}
-#rappel-edt p.ra-h{margin:0; padding:.85rem 1rem .45rem; font-size:.7rem; font-weight:750; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
-.ra-evals{display:flex; gap:.55rem; overflow-x:auto; padding:0 1rem .35rem; scroll-padding:0 1rem; scroll-snap-type:x proximity; scrollbar-width:thin; -webkit-overflow-scrolling:touch}
-.ra-ev{flex:0 0 auto; width:11.2rem; scroll-snap-align:start; border:1px solid var(--line); border-radius:12px; padding:.6rem .7rem .65rem; background:var(--bg)}
+#seance-jour p.ra-h{margin:0; padding:.85rem 1rem .45rem; font-size:.7rem; font-weight:750; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
+.ra-evals{display:grid; grid-template-columns:repeat(auto-fill, minmax(8.6rem, 1fr)); gap:.5rem; padding:0 .8rem .35rem}
+.ra-ev{min-width:0; border:1px solid var(--line); border-radius:12px; padding:.6rem .7rem .65rem; background:var(--bg)}
 .ra-ev.attente{border-style:dashed; background:transparent}
 .ra-ev-l1{display:flex; align-items:center; justify-content:space-between; gap:.45rem}
 .ra-j{padding:.1rem .5rem; border-radius:99px; font-size:.72rem; font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap}
@@ -551,7 +551,7 @@ button:active{transform:translateY(1px) scale(.985)}
 .ra-j.loin, .ra-why.loin{color:var(--ra); background:color-mix(in srgb, #5B4BD6 11%, var(--card))}
 .ra-why.cours{color:color-mix(in srgb, #2C7FA8 55%, var(--ink)); background:color-mix(in srgb, #2C7FA8 12%, var(--card))}
 .ra-ev-d{font-size:.72rem; color:var(--muted); white-space:nowrap}
-.ra-ev-k{margin:.1rem 0 .5rem; font-size:.72rem; color:var(--muted)}
+.ra-ev-k{margin:.1rem 0 .5rem; font-size:.72rem; line-height:1.35; color:var(--muted); overflow-wrap:anywhere; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; line-clamp:2; overflow:hidden; min-height:2.7em}
 .ra-ev-n{margin:.45rem 0 0; font-size:.9rem; font-weight:700; line-height:1.25; overflow-wrap:anywhere}
 .ra-barre{height:6px; border-radius:99px; background:color-mix(in srgb, var(--ink) 11%, transparent); overflow:hidden}
 .ra-barre i{display:block; height:100%; width:calc(var(--p) * 1%); min-width:0; border-radius:99px; background:color-mix(in srgb, var(--ok) 80%, var(--ink))}
@@ -564,21 +564,29 @@ button:active{transform:translateY(1px) scale(.985)}
 .ra-tit{margin-top:.2rem; font-size:.98rem; font-weight:650; line-height:1.3; overflow-wrap:anywhere}
 .ra-meta{margin-top:.2rem; font-size:.76rem; line-height:1.4; color:var(--muted)}
 .ra-ch{display:block; margin-top:.4rem; font-size:.74rem; color:var(--muted)}
-.ra-ch select{max-width:100%; min-height:36px; margin-top:.15rem; padding:.15rem .4rem; font:inherit; font-size:.8rem; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px}
+.ra-ch select{max-width:100%; min-height:44px; margin-top:.15rem; padding:.15rem .4rem; font:inherit; font-size:.8rem; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px}
 .ra-go{min-height:44px; padding:.45rem 1.1rem; border:0; border-radius:99px; font-family:inherit; font-size:.86rem; font-weight:700; white-space:nowrap; cursor:pointer;
   color:#fff; background:color-mix(in srgb, var(--acc) 72%, #000)}
 .ra-go:hover{background:color-mix(in srgb, var(--acc) 62%, #000)}
 .ra-l.ra-fait{padding-top:.5rem; padding-bottom:.5rem; background:transparent; border-left-color:color-mix(in srgb, var(--ok) 80%, var(--ink))}
 .ra-l.ra-fait .ra-tit{font-size:.88rem; font-weight:500; color:var(--muted); text-decoration:line-through}
 .ra-ok{font-size:.8rem; font-weight:700; color:color-mix(in srgb, var(--ok) 70%, var(--ink)); white-space:nowrap}
-#rappel-edt p.ra-note{margin:0; padding:.1rem 1rem .7rem; font-size:.84rem; line-height:1.45; color:var(--muted)}
+#seance-jour p.ra-note{margin:0; padding:.1rem 1rem .7rem; font-size:.84rem; line-height:1.45; color:var(--muted)}
 .ra-plus{display:block; min-height:44px; margin:.1rem auto .5rem; padding:.3rem 1rem; border:0; background:transparent; font-family:inherit; font-size:.82rem; font-weight:650; color:var(--ink);
   text-decoration:underline; text-underline-offset:.18em; text-decoration-color:color-mix(in srgb, currentColor 45%, transparent); cursor:pointer}
-#rappel-edt .ra-corps{padding-bottom:.35rem}
-#rappel-edt :focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+#seance-jour .ra-corps{padding-bottom:.35rem}
+#seance-jour .ra-ret{border-top:1px solid var(--line)}
+#seance-jour .ra-corps[hidden] + .ra-ret, #seance-jour .ra-tete + .ra-ret{border-top:0}
+.ra-btns{display:flex; flex-direction:column; align-items:stretch; gap:.4rem}
+#seance-jour .ra-btns .sj-chap{font-family:inherit; text-align:center; cursor:pointer; color:var(--ink); border:1px solid color-mix(in srgb, var(--ink) 30%, var(--line))}
+#seance-jour .ra-corps :focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 @media (max-width:520px){
   .ra-l{grid-template-columns:minmax(0,1fr)}
-  .ra-go{width:100%; text-align:center}
+  .ra-btns{flex-direction:row}
+  .ra-ev{padding:.5rem .55rem .55rem} .ra-ev-n{font-size:.84rem} .ra-ev-d{font-size:.68rem}
+  .ra-ev-k{-webkit-line-clamp:1; line-clamp:1; min-height:0; margin-bottom:.4rem}
+  .ra-btns > *{flex:1 1 0; min-width:0; text-align:center; padding-left:.5rem; padding-right:.5rem}
+  .ra-l.ra-fait .ra-btns{display:none}
   .ra-l.ra-fait{grid-template-columns:minmax(0,1fr) auto}
   .ra-anneau{width:58px; height:58px} .ra-anneau > span{width:45px; height:45px}
 }
@@ -717,7 +725,7 @@ html.seance-reduite body:has(#dsp-retour){padding-bottom:9.5rem}
    du pied du panneau et de la pastille, qu'il recouvrait */
 html.seance-ouverte #maj-dispo{bottom:calc(env(safe-area-inset-bottom,0px) + 84px) !important}
 html.seance-reduite #maj-dispo{bottom:calc(env(safe-area-inset-bottom,0px) + 76px) !important}
-@media print{ .seance-fiche, #seance-jour, #rappel-edt, .seance-panneau, .seance-pastille{display:none !important} .f-body dl dt.seance-revoir::after{content:none} }
+@media print{ .seance-fiche, #seance-jour, .seance-panneau, .seance-pastille{display:none !important} .f-body dl dt.seance-revoir::after{content:none} }
 
 /* ===== Cours du jour : photos et fichiers du cours, lecture, questions, séance (module « cours du jour ») =====
    Même famille que la séance : jetons du thème, boutons pleins = couleur de la matière assombrie, cibles ≥ 44 px.
@@ -13745,7 +13753,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
     let carte = null, carteListe = null, carteErr = '', sigCarte = '';
     function placerCarte(){
       if (!carte) return;
-      const sj = $('rappel-edt') || $('seance-jour');       // sous « Rappel actif du jour » quand il existe
+      const sj = $('seance-jour');
       if (sj && sj.nextSibling !== carte && sj.parentNode) sj.parentNode.insertBefore(carte, sj.nextSibling);
     }
     function creerCarte(){
@@ -15736,7 +15744,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
     }
 
     /* ================= à l'accueil : « Révisions du jour » (avant les nouveautés et les échéances) ================= */
-    let carte = null, liste = null, sigCarte = '', toutRet = false, carteEdt = null, listeEdt = null;
+    let carte = null, liste = null, sigCarte = '', toutRet = false, listeEdt = null, tete = null, sousT = null, blocRet = null, anneau = null;
     const MAX_RET = 4;        // retours dus affichés d'emblée (un par chapitre), puis « Voir les N autres »
     function methode(){
       const d = el('div', 'sj-methode');
@@ -15778,11 +15786,12 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
     function chapEnCours(sec, ids){
       const ch = load(K_EDT, null), v = objet(ch) && typeof ch[sec] === 'string' ? ch[sec] : '';
       if (v && ids.indexOf(v) !== -1) return v;
-      const evs = evaluations();
-      for (let i = 0; i < evs.length; i++){ const x = evs[i].fiches.filter(function(id){ return ids.indexOf(id) !== -1; })[0]; if (x) return x; }
+      if (own(EDT_DEF, sec) && ids.indexOf(EDT_DEF[sec]) !== -1) return EDT_DEF[sec];
       const der = hist.filter(function(h){ return ids.indexOf(h.fiche) !== -1; }).sort(function(a, b){ return b.fin - a.fin; })[0];
       if (der) return der.fiche;
-      return own(EDT_DEF, sec) && ids.indexOf(EDT_DEF[sec]) !== -1 ? EDT_DEF[sec] : ids[0];
+      const evs = evaluations();
+      for (let i = 0; i < evs.length; i++){ const x = evs[i].fiches.filter(function(id){ return ids.indexOf(id) !== -1; })[0]; if (x) return x; }
+      return ids[0];
     }
     /* ---- le plan du jour, piloté par les échéances (demande du 12/11/2026 : « en fonction de mes échéances, de mon
        relevé École Directe ; un DS dans quelques semaines → tu commences le rappel actif sur cette matière ») ----
@@ -15794,7 +15803,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
        3. L'ordre : l'évaluation qui a le moins de marge d'abord (jours restants ÷ chapitres encore à rappeler).
        4. Les matières du jour (emploi du temps) complètent, sur le chapitre en cours, s'il n'a pas été revu depuis 2 jours.
        5. Objectif : RA_JOUR rappels par jour (1 h) ; la veille d'une évaluation, tous ses chapitres sont affichés. */
-    const RA_MIN = 21, RA_MAX = 42, RA_JOUR = 4, RA_PLAFOND = 6;
+    const RA_MIN = 21, RA_MAX = 42, RA_JOUR = 4, RA_PLAFOND = 8;
     let toutRa = false;
     function raPas(j){ return j <= 3 ? 1 : j <= 7 ? 2 : j <= 14 ? 4 : 7; }
     function ficheVue(id){ let th = ''; try { th = (FICHE_META[id] || {}).theme || ''; } catch(e){} return !/Pas encore vu/i.test(th); }
@@ -15815,12 +15824,14 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
       /* 1 et 2 : les évaluations et leurs chapitres à rappeler */
       const pris = carte0(), actifs = [];
       evaluations().forEach(function(e, k){
-        const j = ecartJours(e.it.due), fs = e.fiches.filter(function(id){ return !pris[id] && ficheVue(id) && visibleSrc(id); });
+        const j = ecartJours(e.it.due), nomme = Array.isArray(e.it.chapitre) ? e.it.chapitre : [],
+          //  « Pas encore vu » n'écarte un chapitre que si l'évaluation vise toute la matière : un chapitre nommé est au programme
+          fs = e.fiches.filter(function(id){ return !pris[id] && (ficheVue(id) || nomme.indexOf(id) !== -1) && visibleSrc(id); });
         if (!fs.length || j < 0) return;
         const hz = Math.min(RA_MAX, Math.max(RA_MIN, fs.length * 3)), actif = j <= hz, mats = [];
         fs.forEach(function(id){ const I = info(id); if (I && mats.indexOf(I.mat) === -1) mats.push(I.mat); });
         const deb = dateDe(e.it.due); deb.setDate(deb.getDate() - hz);
-        const E = { k: k + ':' + String(e.it.id || ''), nom: mats.slice(0, 3).join(' · ') + (mats.length > 3 ? ' …' : ''), kind: KINDS[e.it.kind], due: e.it.due, j: j,
+        const E = { k: k + ':' + String(e.it.id || ''), titre: propre(e.it.title).slice(0, 160), nom: mats.slice(0, 3).join(' · ') + (mats.length > 3 ? ' …' : ''), kind: KINDS[e.it.kind], due: e.it.due, j: j,
           actif: actif, debut: jjmm(deb), total: fs.length, vus: 0, reste: 0 };
         if (actif){
           const du = [];
@@ -15842,13 +15853,13 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
       const file = actifs.map(function(a){ return { E: a.E, du: a.du.slice() }; });
       while (file.some(function(a){ return a.du.length; })){
         let m = null;
-        //  d'abord la tranche d'urgence (≤ 3 j, ≤ 7 j, ≤ 14 j, au-delà) : une évaluation lointaine, même chargée, ne passe
+        //  d'abord la tranche d'urgence (aujourd'hui ou demain, ≤ 3 j, ≤ 7 j, ≤ 14 j, au-delà) : une évaluation lointaine, même chargée, ne passe
         //  jamais devant une proche ; dans la tranche, la moins de marge
-        const rang = function(a){ return (a.E.j <= 3 ? 0 : a.E.j <= 7 ? 1 : a.E.j <= 14 ? 2 : 3) * 1000 + (a.E.j + .5) / a.du.length; };
+        const rang = function(a){ return (a.E.j <= 1 ? 0 : a.E.j <= 3 ? 1 : a.E.j <= 7 ? 2 : a.E.j <= 14 ? 3 : 4) * 1000 + (a.E.j + .5) / a.du.length; };
         file.forEach(function(a){ if (a.du.length && (!m || rang(a) < rang(m))) m = a; });
         const id = m.du.shift(), I = info(id); if (!I) continue;
         out.lignes.push({ k: 'ra:' + id, id: id, sec: I.sec, mat: I.mat, titre: I.titre, num: I.num, acc: I.acc, j: m.E.j,
-          why: m.E.kind + ' ' + relTxt(m.E.j), urg: m.E.j <= 3 ? 'soon' : m.E.j <= 7 ? 'near' : 'loin',
+          why: m.E.kind + ' ' + relTxt(m.E.j), urg: m.E.j <= 3 ? 'soon' : m.E.j <= 7 ? 'near' : 'loin', ev: 1, court: I.court,
           nb: nbH[id] || 0, der: der[id] ? depuis(der[id]) : null, encours: enCours(id), opts: null });
       }
       /* 4 : les cours du jour (ou du prochain jour de cours, le week-end) */
@@ -15860,18 +15871,30 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
           if (!matVisible(sec)) return;
           const ids = fichesVues(sec); if (!ids.length) return;
           const id = chapEnCours(sec, ids), I = info(id); if (!I) return;
-          if (out.lignes.some(function(L){ return L.id === id; }) || faitAuj[id]) return;
+          if (faitAuj[id]) return;
+          //  le chapitre du jour est aussi celui d'une évaluation : sa tuile est montrée d'office, avec les deux motifs
+          const deja = out.lignes.filter(function(L){ return L.id === id; })[0];
+          if (deja){ if (out.auj){ deja.aussi = 1; deja.why += ' · cours d’aujourd’hui'; } return; }
           if (cur && cur.fiche === id && !enCours(id)) return;
-          if (!enCours(id) && ((der[id] && depuis(der[id]) < 2) || couvert(id, 2))) return;
+          if (!enCours(id) && couvert(id, 1)) return;                          // son retour est dû aujourd'hui : il est déjà dans la carte
           out.lignes.push({ k: 'ra:' + id, id: id, sec: sec, mat: I.mat, titre: I.titre, num: I.num, acc: I.acc, j: 99,
-            why: out.auj ? 'Cours du jour' : 'Cours de ' + out.jour, urg: 'cours', nb: nbH[id] || 0, der: der[id] ? depuis(der[id]) : null, encours: enCours(id),
+            why: out.auj ? 'Cours d’aujourd’hui' : 'Cours de ' + out.jour, urg: 'cours', ev: 0, court: I.court, nb: nbH[id] || 0, der: der[id] ? depuis(der[id]) : null, encours: enCours(id),
             opts: ids.length > 1 ? ids.map(function(x){ const J = info(x); return [x, J ? (J.num ? J.num + ' · ' : '') + raccourci(J.titre, 44) : x]; }) : null });
         });
       }
       Object.keys(faitAuj).sort(function(x, y){ return faitAuj[x] - faitAuj[y]; }).forEach(function(id){ const I = info(id); if (I) out.faits.push({ mat: I.mat, titre: I.titre, acc: I.acc }); });
-      /* 5 : l'objectif du jour */
-      const urgent = out.lignes.filter(function(L){ return L.j <= 1 || L.encours; }).length;
-      out.montre = Math.min(out.lignes.length, Math.min(RA_PLAFOND, Math.max(RA_JOUR - out.faits.length, urgent)));
+      /* 5 : ce qu'on montre d'emblée. Les évaluations d'abord (3 chapitres, ou tous ceux d'une évaluation qui tombe demain),
+         puis les cours d'aujourd'hui dont la matière n'est pas déjà dans ces rappels ; RA_PLAFOND en tout, rappels faits compris */
+      const nE = out.lignes.filter(function(L){ return L.ev; }).length, urgent = out.lignes.filter(function(L){ return L.ev && (L.j <= 1 || L.encours); }).length;
+      const faitsE = Object.keys(faitAuj).filter(function(id){ return pris[id]; }).length;
+      const plafond = Math.max(urgent, RA_PLAFOND - out.faits.length);
+      let qE = Math.min(nE, plafond, Math.max(urgent, (out.auj && Object.keys(EDT).length ? 3 : RA_JOUR) - faitsE)), reste = plafond - qE;
+      const secs = carte0();
+      out.lignes.forEach(function(L){
+        if (L.ev){ L.vis = qE > 0 || (!!L.aussi && reste > 0); if (L.vis){ if (qE > 0) qE--; else reste--; secs[L.sec] = 1; } }
+        else { L.vis = (L.encours || (reste > 0 && !secs[L.sec] && (out.auj || out.faits.length + out.lignes.filter(function(x){ return x.vis; }).length < RA_JOUR))); if (L.vis) reste--; }
+      });
+      out.montre = out.lignes.filter(function(L){ return L.vis; }).length;
       return out;
     }
     function creerCarte(){
@@ -15879,7 +15902,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
       if (!anc) return false;
       carte = el('section', 'agenda seance-carte'); carte.id = 'seance-jour';
       carte.setAttribute('aria-labelledby', 'seance-jour-t');
-      const head = el('div', 'ag-head'), h = el('h2', null, '🎯 Révisions du jour'); h.id = 'seance-jour-t';
+      const head = el('div', 'ra-tete'), tx = el('div', 'ra-tx'), h = el('h2', null, '🎯 Révisions du jour'); h.id = 'seance-jour-t';
       h.tabIndex = -1;                        // reçoit le focus en fin de séance quand le bouton qui l'a lancée a disparu
       const meth = methode(); meth.id = 'seance-methode'; meth.hidden = true;
       //  un lien discret en bas de la carte : la méthode se déplie juste en dessous, là où l'élève vient de toucher
@@ -15888,8 +15911,12 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
         if (!meth.hidden) try { meth.scrollIntoView({ block: 'nearest', behavior: 'instant' }); } catch(e){}
       });
       aide.setAttribute('aria-expanded', 'false'); aide.setAttribute('aria-controls', 'seance-methode');
-      head.appendChild(h); carte.appendChild(head);
-      liste = el('div', 'sj-liste'); carte.appendChild(liste);
+      sousT = el('p', 'ra-sous'); tx.appendChild(h); tx.appendChild(sousT); head.appendChild(tx); carte.appendChild(head); tete = head;
+      carte.classList.add('ra');
+      //  le plan du jour (évaluations, cours d'aujourd'hui), puis les retours programmés des séances déjà faites
+      listeEdt = el('div', 'ra-corps'); listeEdt.id = 'rappel-edt'; carte.appendChild(listeEdt);
+      blocRet = el('div', 'ra-ret'); blocRet.appendChild(el('p', 'ra-h', 'Retours programmés (J+1, J+3, J+7)'));
+      liste = el('div', 'sj-liste'); blocRet.appendChild(liste); carte.appendChild(blocRet);
       const pied = el('div', 'sj-pied'); pied.appendChild(aide); carte.appendChild(pied); carte.appendChild(meth);
       //  juste après l'avis de profil : les nouveautés se posent toujours juste avant #agenda, l'ordre tient
       if (avis) avis.parentNode.insertBefore(carte, avis.nextSibling); else anc.parentNode.insertBefore(carte, anc);
@@ -15973,50 +16000,25 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
         const x = ligne(['✓', 'fait'], 'encours', r.court + ' — ' + RETOURS[r.type].nom + (r.j != null ? ' ' + jLabel(r.j) : ''), null);
         x.li.classList.add('sj-fait');
       });
-      m.evals.forEach(function(e){
-        const n = ecartJours(e.due);
-        //  la date est déjà dans la colonne de gauche : le sous-titre ne donne que l'heure
-        const x = ligne([relTxt(n), jourCourt(e.due)], n <= 3 ? 'soon' : 'near', e.titre,
-          KINDS[e.kind] + (e.time ? ' à ' + e.time : '') + ' → séance complète conseillée :');
-        const ch = el('div', 'sj-chaps');
-        e.fiches.forEach(function(f){
-          const b = go(f.lab, 'e:' + e.k + ':' + f.id, 'Lancer une séance : ' + f.court, function(btn){ demarrer(f.id, 'complete', null, btn); });
-          b.className = 'sj-chap';
-          ch.appendChild(b);
-        });
-        if (e.reste) ch.appendChild(el('span', 'sj-plus', '… et ' + pluriel(e.reste, 'autre')));
-        x.main.appendChild(ch);
-      });
       const R = m.ra;
+      const kE = ae && listeEdt.contains(ae) && ae.dataset ? ae.dataset.k : '';
+      listeEdt.textContent = '';
+      const vis = R ? (R.tout ? R.lignes : R.lignes.filter(function(L){ return L.vis; })) : [];
+      /* l'en-tête : d'où vient le plan, et l'anneau d'avancement du jour (rappels + retours) */
+      const nF = (R ? R.faits.length : 0) + m.faits.length, nT = nF + vis.length + m.dus.length, pct = nT ? Math.round(nF / nT * 100) : 0;
+      let minutes = vis.length * 15; m.dus.forEach(function(r){ minutes += RETOURS[r.type].min; });
+      const dj = new Date();
+      texte(sousT, JOURS_LONGS[dj.getDay()] + ' ' + jjmm(dj) + ' · ' + (R && R.evals.length
+        ? (CFG.echeances ? 'calculé sur ton relevé École Directe' + (R.maj ? ' du ' + R.maj : '') : 'calculé sur tes échéances')
+        : R && R.lignes.length ? 'selon ton emploi du temps' : 'tes révisions'));
+      if (anneau){ anneau.remove(); anneau = null; }
+      if (nT){
+        anneau = el('div', 'ra-anneau' + (nF >= nT ? ' fini' : '')); anneau.style.setProperty('--p', String(pct));
+        anneau.setAttribute('role', 'img'); anneau.setAttribute('aria-label', nF + ' sur ' + nT + ' fait' + (nF > 1 ? 's' : '') + ' aujourd’hui');
+        const c = el('span'); c.appendChild(el('b', null, nF + '/' + nT)); c.appendChild(el('small', null, nF >= nT ? 'bravo' : minutes >= 60 ? Math.floor(minutes / 60) + ' h ' + String(minutes % 60).padStart(2, '0') : minutes + ' min')); anneau.appendChild(c);
+        tete.appendChild(anneau);
+      }
       if (R && (R.lignes.length || R.faits.length || R.evals.length)){
-        if (!carteEdt){
-          carteEdt = el('section', 'agenda seance-carte ra'); carteEdt.id = 'rappel-edt'; carteEdt.setAttribute('aria-labelledby', 'rappel-edt-t');
-          listeEdt = el('div', 'ra-corps'); carteEdt.appendChild(listeEdt);
-          carte.parentNode.insertBefore(carteEdt, carte.nextSibling);
-          carteEdt.hidden = !!search.value.trim();
-          search.addEventListener('input', function(){ if (carteEdt) carteEdt.hidden = !!search.value.trim(); });
-        }
-        //  toujours juste sous « Révisions du jour » (la carte « Cours du jour » s'intercale après coup)
-        if (carte.nextElementSibling !== carteEdt) carte.parentNode.insertBefore(carteEdt, carte.nextSibling);
-        const kE = ae && listeEdt.contains(ae) && ae.dataset ? ae.dataset.k : '';
-        listeEdt.textContent = '';
-        const vis = R.tout ? R.lignes : R.lignes.slice(0, R.montre), cache = R.lignes.length - vis.length;
-        const nF = R.faits.length, nT = nF + (R.tout ? R.lignes.length : R.montre), pct = nT ? Math.round(nF / nT * 100) : 0;
-        /* l'en-tête : le titre, d'où vient le plan, et l'anneau d'avancement du jour */
-        const tete = el('div', 'ra-tete'), tx = el('div', 'ra-tx'), h2 = el('h2', null, '🧠 Rappel actif du jour'); h2.id = 'rappel-edt-t';
-        tx.appendChild(h2);
-        const dj = new Date();
-        tx.appendChild(el('p', 'ra-sous', JOURS_LONGS[dj.getDay()] + ' ' + jjmm(dj) + ' · ' + (R.evals.length
-          ? (CFG.echeances ? 'calculé sur ton relevé École Directe' + (R.maj ? ' du ' + R.maj : '') : 'calculé sur tes échéances')
-          : 'selon ton emploi du temps')));
-        tete.appendChild(tx);
-        if (nT){
-          const an = el('div', 'ra-anneau' + (nF && nF >= nT ? ' fini' : '')); an.style.setProperty('--p', String(pct));
-          an.setAttribute('role', 'img'); an.setAttribute('aria-label', nF + ' rappel' + (nF > 1 ? 's' : '') + ' fait' + (nF > 1 ? 's' : '') + ' sur ' + nT + ' aujourd’hui');
-          const c = el('span'); c.appendChild(el('b', null, nF + '/' + nT)); c.appendChild(el('small', null, nF >= nT ? 'bravo' : (nT - nF) * 15 + ' min')); an.appendChild(c);
-          tete.appendChild(an);
-        }
-        listeEdt.appendChild(tete);
         /* les évaluations qui pilotent le plan */
         if (R.evals.length){
           listeEdt.appendChild(el('p', 'ra-h', 'Tes évaluations'));
@@ -16026,10 +16028,10 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
             const l1 = el('div', 'ra-ev-l1');
             l1.appendChild(el('span', 'ra-j ' + (E.j <= 3 ? 'soon' : E.j <= 7 ? 'near' : 'loin'), E.j <= 0 ? 'aujourd’hui' : E.j === 1 ? 'demain' : 'J-' + E.j));
             l1.appendChild(el('span', 'ra-ev-d', jourCourt(E.due)));
-            c.appendChild(l1); c.appendChild(el('div', 'ra-ev-n', E.nom)); c.appendChild(el('div', 'ra-ev-k', E.kind));
+            c.appendChild(l1); c.appendChild(el('div', 'ra-ev-n', E.nom)); c.appendChild(el('div', 'ra-ev-k', E.kind + ' · ' + E.titre));
             if (E.actif){
               const br = el('div', 'ra-barre'), i = el('i'); i.style.setProperty('--p', String(Math.round(E.vus / E.total * 100))); br.appendChild(i);
-              br.setAttribute('role', 'img'); br.setAttribute('aria-label', E.vus + ' chapitre' + (E.vus > 1 ? 's' : '') + ' sur ' + E.total + ' déjà rappelé' + (E.vus > 1 ? 's' : ''));
+              br.setAttribute('role', 'img'); br.setAttribute('aria-label', E.vus + ' chapitre' + (E.vus > 1 ? 's' : '') + ' sur ' + E.total + ' déjà revu' + (E.vus > 1 ? 's' : ''));
               c.appendChild(br);
               c.appendChild(el('div', 'ra-ev-p', E.vus + '/' + E.total + (E.total > 1 ? ' chapitres revus' : ' chapitre revu')));
             } else c.appendChild(el('div', 'ra-ev-p', 'Rappel à partir du ' + E.debut));
@@ -16037,13 +16039,11 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
           });
           listeEdt.appendChild(bande);
         }
-        /* à faire aujourd'hui */
-        if (vis.length || nF) listeEdt.appendChild(el('p', 'ra-h', 'À faire aujourd’hui'));
         const tuile = function(L){
           const t = el('div', 'ra-l'), g = el('div', 'ra-g'); if (L.acc) t.style.setProperty('--acc', L.acc);
           const l1 = el('div', 'ra-l1'); l1.appendChild(el('span', 'ra-mat', L.mat)); l1.appendChild(el('span', 'ra-why ' + L.urg, L.why));
           g.appendChild(l1); g.appendChild(el('div', 'ra-tit', (L.num ? L.num + ' · ' : '') + L.titre));
-          g.appendChild(el('div', 'ra-meta', (L.nb ? 'Déjà travaillé ' + L.nb + ' fois · dernier passage ' + (L.der === 0 ? 'aujourd’hui' : L.der === 1 ? 'hier' : 'il y a ' + L.der + ' j') : 'Premier rappel') + ' · page blanche + correction'));
+          g.appendChild(el('div', 'ra-meta', (L.nb ? 'Déjà travaillé ' + L.nb + ' fois · dernier passage ' + (L.der === 0 ? 'aujourd’hui' : L.der === 1 ? 'hier' : 'il y a ' + L.der + ' j') : 'Jamais travaillé') + ' · rappel : page blanche + correction'));
           if (L.opts){
             const lab = el('label', 'ra-ch', 'Chapitre en cours '), sel = el('select');
             sel.dataset.k = 'edt-s:' + L.sec; sel.setAttribute('aria-label', 'Chapitre en cours en ' + L.mat);
@@ -16052,30 +16052,48 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
             lab.appendChild(sel); g.appendChild(lab);
           }
           t.appendChild(g);
-          const b = go(L.encours ? 'Reprendre' : 'Commencer · 15 min', L.k, (L.encours ? 'Reprendre' : 'Commencer') + ' le rappel actif : ' + L.mat + ', ' + L.titre + ' (' + L.why + ')',
+          const bs = el('div', 'ra-btns');
+          const b = go(L.encours ? 'Reprendre' : 'Rappel · 15 min', L.k, (L.encours ? 'Reprendre' : 'Commencer') + ' le rappel actif : ' + L.mat + ', ' + L.titre + ' (' + L.why + ')',
             function(btn){ demarrer(L.id, 'rappel', null, btn); });
-          b.className = 'ra-go'; t.appendChild(b);
+          b.className = 'ra-go'; bs.appendChild(b);
+          //  évaluation dans la semaine et chapitre jamais travaillé : la séance complète d'une heure est conseillée
+          if (L.ev && L.j <= 7 && !L.nb && !L.encours){
+            const b2 = go('Séance · 1 h', 'e:' + L.id, 'Lancer une séance : ' + L.court, function(btn){ demarrer(L.id, 'complete', null, btn); });
+            b2.className = 'sj-chap'; bs.appendChild(b2);
+          }
+          t.appendChild(bs);
           return t;
         };
-        vis.forEach(function(L){ listeEdt.appendChild(tuile(L)); });
-        R.faits.forEach(function(F){
-          const t = el('div', 'ra-l ra-fait'); if (F.acc) t.style.setProperty('--acc', F.acc);
-          const g = el('div', 'ra-g'); g.appendChild(el('span', 'ra-mat', F.mat)); g.appendChild(el('div', 'ra-tit', F.titre));
-          t.appendChild(g); t.appendChild(el('span', 'ra-ok', '✓ fait')); listeEdt.appendChild(t);
-        });
-        if (!vis.length && nF) listeEdt.appendChild(el('p', 'ra-note', 'Objectif du jour atteint. Le reste peut attendre demain.'));
-        if (!vis.length && !nF && !R.lignes.length) listeEdt.appendChild(el('p', 'ra-note', 'Rien à rappeler aujourd’hui : tes chapitres sont à jour. Le plan reprend dès qu’une évaluation approche.'));
-        if (cache > 0 || (R.tout && R.lignes.length > R.montre)){
+        const vE = vis.filter(function(L){ return L.ev; }), vC = vis.filter(function(L){ return !L.ev; });
+        if (vE.length){ listeEdt.appendChild(el('p', 'ra-h', 'Priorité : tes évaluations')); vE.forEach(function(L){ listeEdt.appendChild(tuile(L)); }); }
+        if (vC.length){ listeEdt.appendChild(el('p', 'ra-h', R.auj ? 'Tes cours d’aujourd’hui' : 'Tes cours de ' + R.jour)); vC.forEach(function(L){ listeEdt.appendChild(tuile(L)); }); }
+        if (R.faits.length){
+          listeEdt.appendChild(el('p', 'ra-h', 'Fait aujourd’hui'));
+          R.faits.forEach(function(F){
+            const t = el('div', 'ra-l ra-fait'); if (F.acc) t.style.setProperty('--acc', F.acc);
+            const g = el('div', 'ra-g'); g.appendChild(el('span', 'ra-mat', F.mat)); g.appendChild(el('div', 'ra-tit', F.titre));
+            t.appendChild(g); t.appendChild(el('span', 'ra-ok', '✓ fait')); listeEdt.appendChild(t);
+          });
+        }
+        if (!vis.length && R.faits.length) listeEdt.appendChild(el('p', 'ra-note', 'Objectif du jour atteint. Le reste peut attendre demain.'));
+        if (!vis.length && !R.faits.length && !R.lignes.length) listeEdt.appendChild(el('p', 'ra-note', 'Aucun rappel à faire aujourd’hui : tes chapitres sont à jour. Le plan reprend dès qu’une évaluation approche.'));
+        if (R.lignes.length > R.montre){
           const n = R.lignes.length - R.montre, txt = R.tout ? 'Réduire la liste' : 'Voir ' + (n > 1 ? 'les ' + n + ' autres rappels possibles' : 'l’autre rappel possible');
           const bp = go(txt, 'ra-plus', txt, function(){ toutRa = !toutRa; renderCarte(); }); bp.className = 'ra-plus'; listeEdt.appendChild(bp);
         }
         if (kE){ const bE = Array.prototype.filter.call(listeEdt.querySelectorAll('[data-k]'), function(x){ return x.dataset.k === kE; })[0]; focus(bE); }
-      } else if (carteEdt){ carteEdt.remove(); carteEdt = null; listeEdt = null; }
+      }
+      listeEdt.hidden = !listeEdt.children.length;
+      //  une séance en cours passe devant tout ; sinon les retours programmés viennent après le plan du jour
+      const devant = !!m.cur;
+      if (devant ? blocRet.nextSibling !== listeEdt : listeEdt.nextSibling !== blocRet) carte.insertBefore(devant ? blocRet : listeEdt, devant ? listeEdt : blocRet);
+      blocRet.classList.toggle('seul', listeEdt.hidden);
       if (ul.children.length) liste.appendChild(ul);
       if (!m.cur && !m.dus.length && !m.evals.length){
         liste.appendChild(el('p', 'ag-vide', (m.faits.length ? 'Tout est fait pour aujourd’hui. ' : 'Rien à revoir aujourd’hui. ') + (m.prochain
           ? 'Prochain retour : ' + jourCourt(m.prochain.date) + ', ' + m.prochain.court + '.' : 'Lance une séance depuis une fiche.')));
       }
+      blocRet.hidden = !liste.children.length;
       if (k){ const b = Array.prototype.filter.call(liste.querySelectorAll('[data-k]'), function(x){ return x.dataset.k === k; })[0]; focus(b); }
     }
     function renderTout(){
