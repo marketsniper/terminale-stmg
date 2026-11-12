@@ -524,9 +524,64 @@ button:active{transform:translateY(1px) scale(.985)}
 .seance-carte .sj-go{display:inline-block; margin-top:.4rem; min-height:44px; padding:.35rem 1.05rem; border-radius:99px;
   font-size:.85rem; font-weight:650; color:var(--ink); background:transparent; border:1px solid color-mix(in srgb, var(--ink) 40%, var(--line)); font-family:inherit; cursor:pointer}
 .seance-carte .sj-go:hover{border-color:var(--ink)}
-.seance-carte p.sj-edt-t{margin:0; padding:.2rem .7rem .5rem; font-size:.9rem; color:var(--muted)}
-.seance-carte .sj-edt-ch{display:block; margin-top:.35rem; font-size:.86rem}
-.seance-carte .sj-edt-ch select{max-width:100%; min-height:36px; margin-top:.15rem; font:inherit; border-radius:8px; padding:.15rem .3rem}
+/* ===== la carte « Rappel actif du jour » : plan piloté par les échéances (12/11/2026) =====
+   --ra : l'indigo de la carte, toujours mêlé à l'encre (lisible en clair comme en sombre). Les tuiles prennent la
+   couleur de leur matière (--acc) ; le bouton plein reprend la règle de .seance-btn (blanc sur matière assombrie). */
+#rappel-edt.ra{--ra:color-mix(in srgb, #5B4BD6 62%, var(--ink)); border-top:0; border-radius:14px}
+#rappel-edt .ra-tete{display:flex; align-items:center; gap:.9rem; padding:1rem 1rem .9rem;
+  background:linear-gradient(135deg, color-mix(in srgb, #5B4BD6 15%, var(--card)), color-mix(in srgb, #2C7FA8 9%, var(--card)) 70%, var(--card)); border-bottom:1px solid var(--line)}
+#rappel-edt .ra-tx{flex:1 1 auto; min-width:0}
+#rappel-edt h2{font-size:1.1rem; letter-spacing:-.01em}
+#rappel-edt .ra-sous{margin:.2rem 0 0; font-size:.8rem; line-height:1.35; color:var(--muted)}
+#rappel-edt .ra-sous::first-letter{text-transform:uppercase}
+.ra-anneau{flex:none; width:64px; height:64px; border-radius:50%; display:grid; place-items:center;
+  background:conic-gradient(var(--ra) calc(var(--p) * 1%), color-mix(in srgb, var(--ink) 13%, transparent) 0)}
+.ra-anneau.fini{background:color-mix(in srgb, var(--ok) 80%, var(--ink))}
+.ra-anneau > span{width:50px; height:50px; border-radius:50%; background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05}
+.ra-anneau b{font-size:.98rem; font-weight:750; font-variant-numeric:tabular-nums}
+.ra-anneau small{font-size:.62rem; font-weight:600; color:var(--muted)}
+#rappel-edt p.ra-h{margin:0; padding:.85rem 1rem .45rem; font-size:.7rem; font-weight:750; letter-spacing:.07em; text-transform:uppercase; color:var(--muted)}
+.ra-evals{display:flex; gap:.55rem; overflow-x:auto; padding:0 1rem .35rem; scroll-padding:0 1rem; scroll-snap-type:x proximity; scrollbar-width:thin; -webkit-overflow-scrolling:touch}
+.ra-ev{flex:0 0 auto; width:11.2rem; scroll-snap-align:start; border:1px solid var(--line); border-radius:12px; padding:.6rem .7rem .65rem; background:var(--bg)}
+.ra-ev.attente{border-style:dashed; background:transparent}
+.ra-ev-l1{display:flex; align-items:center; justify-content:space-between; gap:.45rem}
+.ra-j{padding:.1rem .5rem; border-radius:99px; font-size:.72rem; font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap}
+.ra-j.soon, .ra-why.soon{color:color-mix(in srgb, #D8433B 58%, var(--ink)); background:color-mix(in srgb, #D8433B 13%, var(--card))}
+.ra-j.near, .ra-why.near{color:color-mix(in srgb, #DD8A17 45%, var(--ink)); background:color-mix(in srgb, #DD8A17 15%, var(--card))}
+.ra-j.loin, .ra-why.loin{color:var(--ra); background:color-mix(in srgb, #5B4BD6 11%, var(--card))}
+.ra-why.cours{color:color-mix(in srgb, #2C7FA8 55%, var(--ink)); background:color-mix(in srgb, #2C7FA8 12%, var(--card))}
+.ra-ev-d{font-size:.72rem; color:var(--muted); white-space:nowrap}
+.ra-ev-k{margin:.1rem 0 .5rem; font-size:.72rem; color:var(--muted)}
+.ra-ev-n{margin:.45rem 0 0; font-size:.9rem; font-weight:700; line-height:1.25; overflow-wrap:anywhere}
+.ra-barre{height:6px; border-radius:99px; background:color-mix(in srgb, var(--ink) 11%, transparent); overflow:hidden}
+.ra-barre i{display:block; height:100%; width:calc(var(--p) * 1%); min-width:0; border-radius:99px; background:color-mix(in srgb, var(--ok) 80%, var(--ink))}
+.ra-ev-p{margin-top:.35rem; font-size:.72rem; color:var(--muted)}
+.ra-l{--acc:#5B4BD6; display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:.5rem .9rem; margin:0 .8rem .55rem; padding:.75rem .85rem .75rem .9rem;
+  border:1px solid var(--line); border-left:5px solid color-mix(in srgb, var(--acc) 85%, var(--ink)); border-radius:12px; background:var(--card)}
+.ra-l1{display:flex; align-items:center; flex-wrap:wrap; gap:.3rem .5rem}
+.ra-mat{font-size:.7rem; font-weight:750; letter-spacing:.06em; text-transform:uppercase; color:color-mix(in srgb, var(--acc) 50%, var(--ink))}
+.ra-why{padding:.08rem .5rem; border-radius:99px; font-size:.7rem; font-weight:700; white-space:nowrap}
+.ra-tit{margin-top:.2rem; font-size:.98rem; font-weight:650; line-height:1.3; overflow-wrap:anywhere}
+.ra-meta{margin-top:.2rem; font-size:.76rem; line-height:1.4; color:var(--muted)}
+.ra-ch{display:block; margin-top:.4rem; font-size:.74rem; color:var(--muted)}
+.ra-ch select{max-width:100%; min-height:36px; margin-top:.15rem; padding:.15rem .4rem; font:inherit; font-size:.8rem; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:8px}
+.ra-go{min-height:44px; padding:.45rem 1.1rem; border:0; border-radius:99px; font-family:inherit; font-size:.86rem; font-weight:700; white-space:nowrap; cursor:pointer;
+  color:#fff; background:color-mix(in srgb, var(--acc) 72%, #000)}
+.ra-go:hover{background:color-mix(in srgb, var(--acc) 62%, #000)}
+.ra-l.ra-fait{padding-top:.5rem; padding-bottom:.5rem; background:transparent; border-left-color:color-mix(in srgb, var(--ok) 80%, var(--ink))}
+.ra-l.ra-fait .ra-tit{font-size:.88rem; font-weight:500; color:var(--muted); text-decoration:line-through}
+.ra-ok{font-size:.8rem; font-weight:700; color:color-mix(in srgb, var(--ok) 70%, var(--ink)); white-space:nowrap}
+#rappel-edt p.ra-note{margin:0; padding:.1rem 1rem .7rem; font-size:.84rem; line-height:1.45; color:var(--muted)}
+.ra-plus{display:block; min-height:44px; margin:.1rem auto .5rem; padding:.3rem 1rem; border:0; background:transparent; font-family:inherit; font-size:.82rem; font-weight:650; color:var(--ink);
+  text-decoration:underline; text-underline-offset:.18em; text-decoration-color:color-mix(in srgb, currentColor 45%, transparent); cursor:pointer}
+#rappel-edt .ra-corps{padding-bottom:.35rem}
+#rappel-edt :focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+@media (max-width:520px){
+  .ra-l{grid-template-columns:minmax(0,1fr)}
+  .ra-go{width:100%; text-align:center}
+  .ra-l.ra-fait{grid-template-columns:minmax(0,1fr) auto}
+  .ra-anneau{width:58px; height:58px} .ra-anneau > span{width:45px; height:45px}
+}
 .agenda.seance-carte li.sj-plus-ret{display:block; padding:.4rem .5rem .2rem}
 .agenda.seance-carte li.sj-plus-ret .ag-plus{margin:0; min-height:44px}
 .seance-carte li.sj-fait .ag-title{color:var(--muted); text-decoration:line-through}
@@ -13690,7 +13745,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
     let carte = null, carteListe = null, carteErr = '', sigCarte = '';
     function placerCarte(){
       if (!carte) return;
-      const sj = $('seance-jour');
+      const sj = $('rappel-edt') || $('seance-jour');       // sous « Rappel actif du jour » quand il existe
       if (sj && sj.nextSibling !== carte && sj.parentNode) sj.parentNode.insertBefore(carte, sj.nextSibling);
     }
     function creerCarte(){
@@ -15702,11 +15757,10 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
       d.appendChild(el('p', 'sj-pourquoi', 'Pourquoi ça marche : les études (synthèse Dunlosky et al., 2013) classent « se tester » et « espacer ses révisions » parmi les techniques les plus efficaces, relire et surligner parmi les moins efficaces.'));
       return d;
     }
-    /* ---- rappel actif selon l'emploi du temps (demande du 12/11/2026) ----
-       Chaque jour de cours, la carte propose un rappel (page blanche + correction, 15 min) par matière du jour, sur le
-       chapitre en cours de la matière. Le chapitre proposé : celui que l'élève a choisi (K_EDT), sinon celui de la
-       prochaine évaluation de la matière, sinon celui de sa dernière séance, sinon le premier chapitre vu en classe.
-       Le week-end, ce sont les matières du prochain jour de cours. Emploi du temps type : matières par jour, sans heures. */
+    /* ---- rappel actif : l'emploi du temps (demande du 12/11/2026) ----
+       EDT = les matières de chaque jour de cours (sans heures) ; elles complètent le plan des échéances (raModele, plus bas).
+       Le chapitre proposé pour un cours du jour : celui que l'élève a choisi (K_EDT), sinon celui de la prochaine
+       évaluation de la matière, sinon celui de sa dernière séance, sinon EDT_DEF. Le week-end : le prochain jour de cours. */
     const K_EDT = 'stmg-edt-chap';
     let EDT = {};             // vide dans les autres éditions : pas de carte
     EDT = { 1: ['anglais', 'maths', 'emc'], 2: ['hg', 'droit', 'eco', 'management', 'gf'], 3: ['droit', 'eco', 'management', 'gf', 'anglais'], 4: ['anglais', 'management', 'gf', 'maths'], 5: ['hg', 'philo', 'maths', 'espagnol'] };
@@ -15730,19 +15784,94 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
       if (der) return der.fiche;
       return own(EDT_DEF, sec) && ids.indexOf(EDT_DEF[sec]) !== -1 ? EDT_DEF[sec] : ids[0];
     }
-    function edtModele(auj){
-      const d = new Date(); let n = 0;
-      if (!Object.keys(EDT).length) return null;
-      while (!EDT[d.getDay()] && n < 3){ d.setDate(d.getDate() + 1); n++; }
-      const secs = EDT[d.getDay()] || [], out = { jour: JOURS_LONGS[d.getDay()], auj: n === 0, lignes: [] };
-      secs.forEach(function(sec){
-        if (!matVisible(sec)) return;
-        const ids = fichesVues(sec); if (!ids.length) return;
-        const id = chapEnCours(sec, ids), I = info(id); if (!I) return;
-        const fait = hist.some(function(h){ return h.type === 'rappel' && !h.retour && ids.indexOf(h.fiche) !== -1 && isoDe(new Date(h.fin)) === auj; });
-        out.lignes.push({ sec: sec, mat: I.mat, id: id, lab: I.lab, titre: I.titre, fait: fait, encours: !!(cur && cur.type === 'rappel' && !cur.retour && ids.indexOf(cur.fiche) !== -1),
-          opts: ids.map(function(x){ const J = info(x); return [x, J ? (J.num ? J.num + ' · ' : '') + raccourci(J.titre, 44) : x]; }) });
+    /* ---- le plan du jour, piloté par les échéances (demande du 12/11/2026 : « en fonction de mes échéances, de mon
+       relevé École Directe ; un DS dans quelques semaines → tu commences le rappel actif sur cette matière ») ----
+       1. Chaque évaluation à venir (stmg-echeances, relevé d'École Directe) entre dans le plan RA_MIN jours avant sa date,
+          plus tôt si elle porte sur beaucoup de chapitres (3 jours par chapitre, plafonné à RA_MAX).
+       2. Un chapitre d'une évaluation est « à rappeler » s'il n'a jamais été travaillé, ou si son dernier passage date d'au
+          moins raPas(j) jours : tous les 7 jours de loin, puis 4, puis 2, puis chaque jour les trois derniers jours.
+          Un retour J+1/J+3/J+7 déjà programmé dans ce délai compte : le chapitre n'est pas proposé deux fois.
+       3. L'ordre : l'évaluation qui a le moins de marge d'abord (jours restants ÷ chapitres encore à rappeler).
+       4. Les matières du jour (emploi du temps) complètent, sur le chapitre en cours, s'il n'a pas été revu depuis 2 jours.
+       5. Objectif : RA_JOUR rappels par jour (1 h) ; la veille d'une évaluation, tous ses chapitres sont affichés. */
+    const RA_MIN = 21, RA_MAX = 42, RA_JOUR = 4, RA_PLAFOND = 6;
+    let toutRa = false;
+    function raPas(j){ return j <= 3 ? 1 : j <= 7 ? 2 : j <= 14 ? 4 : 7; }
+    function ficheVue(id){ let th = ''; try { th = (FICHE_META[id] || {}).theme || ''; } catch(e){} return !/Pas encore vu/i.test(th); }
+    function raModele(auj){
+      const n0 = new Date(); n0.setHours(0, 0, 0, 0);
+      const depuis = function(ts){ const d = new Date(ts); d.setHours(0, 0, 0, 0); return Math.round((n0 - d) / 864e5); };
+      const der = carte0(), nbH = carte0(), faitAuj = carte0();
+      hist.forEach(function(h){
+        nbH[h.fiche] = (nbH[h.fiche] || 0) + 1;
+        if (!der[h.fiche] || h.fin > der[h.fiche]) der[h.fiche] = h.fin;
+        if (h.type === 'rappel' && !h.retour && isoDe(new Date(h.fin)) === auj) faitAuj[h.fiche] = h.fin;
       });
+      const couvert = function(id, pas){ return rets.some(function(r){ return r.fiche === id && ouvert(r) && ecartJours(r.date) < pas; }); };
+      const enCours = function(id){ return !!(cur && cur.fiche === id && cur.type === 'rappel' && !cur.retour); };
+      const out = { evals: [], lignes: [], faits: [], jour: '', auj: true, maj: '', tout: toutRa };
+      const d0 = load('stmg-echeances', null), mj = objet(d0) && typeof d0.maj === 'string' ? new Date(d0.maj) : null;
+      if (mj && !isNaN(mj)) out.maj = jjmm(mj);
+      /* 1 et 2 : les évaluations et leurs chapitres à rappeler */
+      const pris = carte0(), actifs = [];
+      evaluations().forEach(function(e, k){
+        const j = ecartJours(e.it.due), fs = e.fiches.filter(function(id){ return !pris[id] && ficheVue(id) && visibleSrc(id); });
+        if (!fs.length || j < 0) return;
+        const hz = Math.min(RA_MAX, Math.max(RA_MIN, fs.length * 3)), actif = j <= hz, mats = [];
+        fs.forEach(function(id){ const I = info(id); if (I && mats.indexOf(I.mat) === -1) mats.push(I.mat); });
+        const deb = dateDe(e.it.due); deb.setDate(deb.getDate() - hz);
+        const E = { k: k + ':' + String(e.it.id || ''), nom: mats.slice(0, 3).join(' · ') + (mats.length > 3 ? ' …' : ''), kind: KINDS[e.it.kind], due: e.it.due, j: j,
+          actif: actif, debut: jjmm(deb), total: fs.length, vus: 0, reste: 0 };
+        if (actif){
+          const du = [];
+          fs.forEach(function(id){
+            pris[id] = 1;
+            if (der[id] && depuis(der[id]) <= hz - j) E.vus++;
+            if (cur && cur.fiche === id && !enCours(id)) return;                 // une autre séance est en cours sur ce chapitre
+            if (enCours(id) || ((!der[id] || depuis(der[id]) >= raPas(j)) && !couvert(id, raPas(j)))) du.push(id);
+          });
+          du.sort(function(x, y){ return (der[x] || 0) - (der[y] || 0); });      // jamais vu d'abord, puis le plus ancien
+          E.reste = du.length;
+          if (du.length) actifs.push({ E: E, du: du });
+        }
+        out.evals.push(E);
+      });
+      //  on montre les évaluations dans le plan, et la prochaine qui y entrera
+      let hors = 0; out.evals = out.evals.filter(function(E){ return E.actif || !hors++; }).slice(0, 6);
+      /* 3 : la moins de marge d'abord, un chapitre à la fois */
+      const file = actifs.map(function(a){ return { E: a.E, du: a.du.slice() }; });
+      while (file.some(function(a){ return a.du.length; })){
+        let m = null;
+        //  d'abord la tranche d'urgence (≤ 3 j, ≤ 7 j, ≤ 14 j, au-delà) : une évaluation lointaine, même chargée, ne passe
+        //  jamais devant une proche ; dans la tranche, la moins de marge
+        const rang = function(a){ return (a.E.j <= 3 ? 0 : a.E.j <= 7 ? 1 : a.E.j <= 14 ? 2 : 3) * 1000 + (a.E.j + .5) / a.du.length; };
+        file.forEach(function(a){ if (a.du.length && (!m || rang(a) < rang(m))) m = a; });
+        const id = m.du.shift(), I = info(id); if (!I) continue;
+        out.lignes.push({ k: 'ra:' + id, id: id, sec: I.sec, mat: I.mat, titre: I.titre, num: I.num, acc: I.acc, j: m.E.j,
+          why: m.E.kind + ' ' + relTxt(m.E.j), urg: m.E.j <= 3 ? 'soon' : m.E.j <= 7 ? 'near' : 'loin',
+          nb: nbH[id] || 0, der: der[id] ? depuis(der[id]) : null, encours: enCours(id), opts: null });
+      }
+      /* 4 : les cours du jour (ou du prochain jour de cours, le week-end) */
+      if (Object.keys(EDT).length){
+        const d = new Date(); let n = 0;
+        while (!EDT[d.getDay()] && n < 3){ d.setDate(d.getDate() + 1); n++; }
+        out.jour = JOURS_LONGS[d.getDay()]; out.auj = n === 0;
+        (EDT[d.getDay()] || []).forEach(function(sec){
+          if (!matVisible(sec)) return;
+          const ids = fichesVues(sec); if (!ids.length) return;
+          const id = chapEnCours(sec, ids), I = info(id); if (!I) return;
+          if (out.lignes.some(function(L){ return L.id === id; }) || faitAuj[id]) return;
+          if (cur && cur.fiche === id && !enCours(id)) return;
+          if (!enCours(id) && ((der[id] && depuis(der[id]) < 2) || couvert(id, 2))) return;
+          out.lignes.push({ k: 'ra:' + id, id: id, sec: sec, mat: I.mat, titre: I.titre, num: I.num, acc: I.acc, j: 99,
+            why: out.auj ? 'Cours du jour' : 'Cours de ' + out.jour, urg: 'cours', nb: nbH[id] || 0, der: der[id] ? depuis(der[id]) : null, encours: enCours(id),
+            opts: ids.length > 1 ? ids.map(function(x){ const J = info(x); return [x, J ? (J.num ? J.num + ' · ' : '') + raccourci(J.titre, 44) : x]; }) : null });
+        });
+      }
+      Object.keys(faitAuj).sort(function(x, y){ return faitAuj[x] - faitAuj[y]; }).forEach(function(id){ const I = info(id); if (I) out.faits.push({ mat: I.mat, titre: I.titre, acc: I.acc }); });
+      /* 5 : l'objectif du jour */
+      const urgent = out.lignes.filter(function(L){ return L.j <= 1 || L.encours; }).length;
+      out.montre = Math.min(out.lignes.length, Math.min(RA_PLAFOND, Math.max(RA_JOUR - out.faits.length, urgent)));
       return out;
     }
     function creerCarte(){
@@ -15785,7 +15914,7 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
       rets.filter(function(r){ const t = date0(r.fait); return t && isoDe(new Date(t)) === auj && existe(r.fiche) && visibleSrc(r.fiche); })
         .sort(function(a, b){ return a.fait - b.fait; })
         .forEach(function(r){ m.faits.push({ type: r.type, j: jOk(r.j), court: info(r.fiche).court }); });
-      try { m.edt = edtModele(auj); } catch(e){ m.edt = null; }
+      try { m.ra = raModele(auj); } catch(e){ m.ra = null; }
       const vus = carte0(); hist.forEach(function(h){ vus[h.fiche] = 1; });
       evaluations().forEach(function(e, k){
         if (ecartJours(e.it.due) > 7) return;
@@ -15858,36 +15987,88 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-12-20c3583b","date
         if (e.reste) ch.appendChild(el('span', 'sj-plus', '… et ' + pluriel(e.reste, 'autre')));
         x.main.appendChild(ch);
       });
-      if (m.edt && m.edt.lignes.length){
+      const R = m.ra;
+      if (R && (R.lignes.length || R.faits.length || R.evals.length)){
         if (!carteEdt){
-          carteEdt = el('section', 'agenda seance-carte'); carteEdt.id = 'rappel-edt'; carteEdt.setAttribute('aria-labelledby', 'rappel-edt-t');
-          const hd = el('div', 'ag-head'), h2 = el('h2', null, '🧠 Rappel actif du jour'); h2.id = 'rappel-edt-t'; hd.appendChild(h2); carteEdt.appendChild(hd);
-          listeEdt = el('div', 'sj-liste'); carteEdt.appendChild(listeEdt);
+          carteEdt = el('section', 'agenda seance-carte ra'); carteEdt.id = 'rappel-edt'; carteEdt.setAttribute('aria-labelledby', 'rappel-edt-t');
+          listeEdt = el('div', 'ra-corps'); carteEdt.appendChild(listeEdt);
           carte.parentNode.insertBefore(carteEdt, carte.nextSibling);
           carteEdt.hidden = !!search.value.trim();
-          search.addEventListener('input', function(){ carteEdt.hidden = !!search.value.trim(); });
+          search.addEventListener('input', function(){ if (carteEdt) carteEdt.hidden = !!search.value.trim(); });
         }
+        //  toujours juste sous « Révisions du jour » (la carte « Cours du jour » s'intercale après coup)
+        if (carte.nextElementSibling !== carteEdt) carte.parentNode.insertBefore(carteEdt, carte.nextSibling);
         const kE = ae && listeEdt.contains(ae) && ae.dataset ? ae.dataset.k : '';
         listeEdt.textContent = '';
-        listeEdt.appendChild(el('p', 'sj-edt-t', fr((m.edt.auj ? 'Tes cours d’aujourd’hui (' + m.edt.jour + ')' : 'Tes cours de ' + m.edt.jour) + '. Fiche fermée, écris tout ce que tu sais du chapitre, puis corrige-toi : 15 min par matière.')));
-        const ulE = el('ul'); cible = ulE;
-        m.edt.lignes.forEach(function(L){
-          if (L.fait){ ligne(['✓', 'fait'], 'encours', L.mat + ' — rappel actif', null).li.classList.add('sj-fait'); return; }
-          const x = ligne([L.mat, ''], 'near', L.titre, 'Page blanche + correction, 15 min');
-          x.li.classList.add('sj-edt');
-          if (L.opts.length > 1){
-            const lab = el('label', 'sj-edt-ch', 'Chapitre en cours : '), sel = el('select');
+        const vis = R.tout ? R.lignes : R.lignes.slice(0, R.montre), cache = R.lignes.length - vis.length;
+        const nF = R.faits.length, nT = nF + (R.tout ? R.lignes.length : R.montre), pct = nT ? Math.round(nF / nT * 100) : 0;
+        /* l'en-tête : le titre, d'où vient le plan, et l'anneau d'avancement du jour */
+        const tete = el('div', 'ra-tete'), tx = el('div', 'ra-tx'), h2 = el('h2', null, '🧠 Rappel actif du jour'); h2.id = 'rappel-edt-t';
+        tx.appendChild(h2);
+        const dj = new Date();
+        tx.appendChild(el('p', 'ra-sous', JOURS_LONGS[dj.getDay()] + ' ' + jjmm(dj) + ' · ' + (R.evals.length
+          ? (CFG.echeances ? 'calculé sur ton relevé École Directe' + (R.maj ? ' du ' + R.maj : '') : 'calculé sur tes échéances')
+          : 'selon ton emploi du temps')));
+        tete.appendChild(tx);
+        if (nT){
+          const an = el('div', 'ra-anneau' + (nF && nF >= nT ? ' fini' : '')); an.style.setProperty('--p', String(pct));
+          an.setAttribute('role', 'img'); an.setAttribute('aria-label', nF + ' rappel' + (nF > 1 ? 's' : '') + ' fait' + (nF > 1 ? 's' : '') + ' sur ' + nT + ' aujourd’hui');
+          const c = el('span'); c.appendChild(el('b', null, nF + '/' + nT)); c.appendChild(el('small', null, nF >= nT ? 'bravo' : (nT - nF) * 15 + ' min')); an.appendChild(c);
+          tete.appendChild(an);
+        }
+        listeEdt.appendChild(tete);
+        /* les évaluations qui pilotent le plan */
+        if (R.evals.length){
+          listeEdt.appendChild(el('p', 'ra-h', 'Tes évaluations'));
+          const bande = el('div', 'ra-evals'); bande.setAttribute('role', 'list');
+          R.evals.forEach(function(E){
+            const c = el('div', 'ra-ev' + (E.actif ? '' : ' attente')); c.setAttribute('role', 'listitem');
+            const l1 = el('div', 'ra-ev-l1');
+            l1.appendChild(el('span', 'ra-j ' + (E.j <= 3 ? 'soon' : E.j <= 7 ? 'near' : 'loin'), E.j <= 0 ? 'aujourd’hui' : E.j === 1 ? 'demain' : 'J-' + E.j));
+            l1.appendChild(el('span', 'ra-ev-d', jourCourt(E.due)));
+            c.appendChild(l1); c.appendChild(el('div', 'ra-ev-n', E.nom)); c.appendChild(el('div', 'ra-ev-k', E.kind));
+            if (E.actif){
+              const br = el('div', 'ra-barre'), i = el('i'); i.style.setProperty('--p', String(Math.round(E.vus / E.total * 100))); br.appendChild(i);
+              br.setAttribute('role', 'img'); br.setAttribute('aria-label', E.vus + ' chapitre' + (E.vus > 1 ? 's' : '') + ' sur ' + E.total + ' déjà rappelé' + (E.vus > 1 ? 's' : ''));
+              c.appendChild(br);
+              c.appendChild(el('div', 'ra-ev-p', E.vus + '/' + E.total + (E.total > 1 ? ' chapitres revus' : ' chapitre revu')));
+            } else c.appendChild(el('div', 'ra-ev-p', 'Rappel à partir du ' + E.debut));
+            bande.appendChild(c);
+          });
+          listeEdt.appendChild(bande);
+        }
+        /* à faire aujourd'hui */
+        if (vis.length || nF) listeEdt.appendChild(el('p', 'ra-h', 'À faire aujourd’hui'));
+        const tuile = function(L){
+          const t = el('div', 'ra-l'), g = el('div', 'ra-g'); if (L.acc) t.style.setProperty('--acc', L.acc);
+          const l1 = el('div', 'ra-l1'); l1.appendChild(el('span', 'ra-mat', L.mat)); l1.appendChild(el('span', 'ra-why ' + L.urg, L.why));
+          g.appendChild(l1); g.appendChild(el('div', 'ra-tit', (L.num ? L.num + ' · ' : '') + L.titre));
+          g.appendChild(el('div', 'ra-meta', (L.nb ? 'Déjà travaillé ' + L.nb + ' fois · dernier passage ' + (L.der === 0 ? 'aujourd’hui' : L.der === 1 ? 'hier' : 'il y a ' + L.der + ' j') : 'Premier rappel') + ' · page blanche + correction'));
+          if (L.opts){
+            const lab = el('label', 'ra-ch', 'Chapitre en cours '), sel = el('select');
             sel.dataset.k = 'edt-s:' + L.sec; sel.setAttribute('aria-label', 'Chapitre en cours en ' + L.mat);
             L.opts.forEach(function(o){ const op = el('option', null, o[1]); op.value = o[0]; if (o[0] === L.id) op.selected = true; sel.appendChild(op); });
-            sel.addEventListener('change', function(){
-              const ch = load(K_EDT, null), c = objet(ch) ? ch : {}; c[L.sec] = sel.value; save(K_EDT, c); renderCarte();
-            });
-            lab.appendChild(sel); x.main.appendChild(lab);
+            sel.addEventListener('change', function(){ const ch = load(K_EDT, null), c = objet(ch) ? ch : {}; c[L.sec] = sel.value; save(K_EDT, c); renderCarte(); });
+            lab.appendChild(sel); g.appendChild(lab);
           }
-          x.main.appendChild(go(L.encours ? 'Reprendre' : 'Commencer', 'edt:' + L.sec, (L.encours ? 'Reprendre' : 'Commencer') + ' le rappel actif : ' + L.mat + ', ' + L.titre,
-            function(b){ demarrer(L.id, 'rappel', null, b); }));
+          t.appendChild(g);
+          const b = go(L.encours ? 'Reprendre' : 'Commencer · 15 min', L.k, (L.encours ? 'Reprendre' : 'Commencer') + ' le rappel actif : ' + L.mat + ', ' + L.titre + ' (' + L.why + ')',
+            function(btn){ demarrer(L.id, 'rappel', null, btn); });
+          b.className = 'ra-go'; t.appendChild(b);
+          return t;
+        };
+        vis.forEach(function(L){ listeEdt.appendChild(tuile(L)); });
+        R.faits.forEach(function(F){
+          const t = el('div', 'ra-l ra-fait'); if (F.acc) t.style.setProperty('--acc', F.acc);
+          const g = el('div', 'ra-g'); g.appendChild(el('span', 'ra-mat', F.mat)); g.appendChild(el('div', 'ra-tit', F.titre));
+          t.appendChild(g); t.appendChild(el('span', 'ra-ok', '✓ fait')); listeEdt.appendChild(t);
         });
-        cible = ul; listeEdt.appendChild(ulE);
+        if (!vis.length && nF) listeEdt.appendChild(el('p', 'ra-note', 'Objectif du jour atteint. Le reste peut attendre demain.'));
+        if (!vis.length && !nF && !R.lignes.length) listeEdt.appendChild(el('p', 'ra-note', 'Rien à rappeler aujourd’hui : tes chapitres sont à jour. Le plan reprend dès qu’une évaluation approche.'));
+        if (cache > 0 || (R.tout && R.lignes.length > R.montre)){
+          const n = R.lignes.length - R.montre, txt = R.tout ? 'Réduire la liste' : 'Voir ' + (n > 1 ? 'les ' + n + ' autres rappels possibles' : 'l’autre rappel possible');
+          const bp = go(txt, 'ra-plus', txt, function(){ toutRa = !toutRa; renderCarte(); }); bp.className = 'ra-plus'; listeEdt.appendChild(bp);
+        }
         if (kE){ const bE = Array.prototype.filter.call(listeEdt.querySelectorAll('[data-k]'), function(x){ return x.dataset.k === kE; })[0]; focus(bE); }
       } else if (carteEdt){ carteEdt.remove(); carteEdt = null; listeEdt = null; }
       if (ul.children.length) liste.appendChild(ul);
