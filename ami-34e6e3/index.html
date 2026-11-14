@@ -1196,7 +1196,6 @@ html.sommet-ouvert, html.sommet-ouvert body{overflow:hidden}
   </p>
   <p id="profil-avis" class="profil-avis hidden"></p>
   <section id="agenda" class="agenda hidden" aria-label="Prochaines échéances"></section>
-  <section id="planjour" class="agenda planjour hidden" aria-label="Ma journée"></section>
 
   <nav class="tabs" aria-label="Matières">
     <a href="#management" style="--acc:#3454D1">Management SDGN</a>
@@ -14478,7 +14477,6 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-14-2a116894","date
 
     function render(){
       seanceAJour();
-      try { renderJour(); } catch(e){}
       document.querySelectorAll('.f-due, .due-line').forEach(function(n){ n.remove(); });
       box.textContent = '';
       if (besoinCode){ box.classList.remove('hidden'); champCode(); return; }
