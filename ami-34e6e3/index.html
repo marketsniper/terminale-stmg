@@ -16020,8 +16020,8 @@ const NOUVEAUTES = {"edition":"ami","entrees":[{"id":"2026-11-15-f2764742","date
       function majFiches(){ boxF.textContent = '';
         const tous = btn('Tout cocher / décocher', 'ds-mini', function(){ const cb = boxF.querySelectorAll('input'); const on = Array.prototype.some.call(cb, function(c){ return !c.checked; }); cb.forEach(function(c){ c.checked = on; }); });
         boxF.appendChild(tous);
-        fichesDe(selSec.value).forEach(function(f){ const m = FICHE_META[f.id] || {}, l = el('label', 'ds-chk'), c = el('input'); c.type = 'checkbox'; c.value = f.id; c.checked = ficheVue(f.id);
-          const w = faiblesse(f.id); l.appendChild(c); l.appendChild(el('span', null, (m.num ? m.num + ' — ' : '') + (m.title || f.id))); if (!ficheVue(f.id)) l.appendChild(el('em', 'ds-nonvu', 'pas encore vu')); else if (w > 0.55) l.appendChild(el('em', 'ds-weak', 'point faible')); boxF.appendChild(l); }); }
+        fichesDe(selSec.value).forEach(function(f){ const m = FICHE_META[f.id] || {}, l = el('label', 'ds-chk'), c = el('input'); c.type = 'checkbox'; c.value = f.id; c.checked = true;
+          const w = faiblesse(f.id); l.appendChild(c); l.appendChild(el('span', null, (m.num ? m.num + ' — ' : '') + (m.title || f.id))); if (w > 0.55) l.appendChild(el('em', 'ds-weak', 'point faible')); boxF.appendChild(l); }); }
       selSec.addEventListener('change', majFiches); majFiches();
       form.appendChild(el('label', 'ds-lab', 'Format'));
       const boxFmt = el('div', 'ds-formats'); let fmt = (last && FORMATS[last.format]) ? last.format : 'court';
