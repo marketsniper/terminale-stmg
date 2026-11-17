@@ -1,4 +1,4 @@
-const CACHE = 'stmg-2e09d658c8';
+const CACHE = 'stmg-65283d5b26';
 //  Plusieurs apps cohabitent sur le domaine (perso à la racine, Maths dans /maths/, version partagée dans
 //  son propre dossier). Chacune ne nettoie QUE ses caches (même préfixe) et ne sert QUE son dossier.
 const PREFIX = CACHE.slice(0, CACHE.lastIndexOf('-') + 1);
